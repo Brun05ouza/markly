@@ -228,7 +228,15 @@ function Header() {
     window.addEventListener("scroll", h, { passive: true })
     return () => window.removeEventListener("scroll", h)
   }, [])
-  const links = ["Produto", "Recursos", "Clientes", "Preços", "Novidades", "Contato"]
+  const links = [
+    { label: "Produto", href: "#produto" },
+    { label: "Recursos", href: "#recursos" },
+    { label: "Clientes", href: "#clientes" },
+    { label: "Preços", href: "#precos" },
+    { label: "Novidades", href: "#novidades" },
+    { label: "Contato", href: "#contato" },
+  ]
+  const headerBeam = "linear-gradient(90deg, #4FC5D4, transparent)"
   return (
     <header
       className="fixed top-0 left-0 right-0 z-50 transition-all duration-500"
@@ -240,27 +248,56 @@ function Header() {
       }}
     >
       <div className="max-w-[1280px] mx-auto px-5 md:px-8 flex items-center justify-between h-[68px]">
-        <a href="#" className="flex items-center gap-3.5" style={{ color: T.text }}>
-          <BrandMark size={36} />
+        <a href="#inicio" className="flex items-center gap-3.5" style={{ color: T.text }}>
+          <BrandMark size={48} />
           <span
-            className="text-[22px] font-bold leading-none"
+            className="text-[24px] font-bold leading-none"
             style={{ fontFamily: "'Syne', sans-serif", letterSpacing: "-0.04em" }}
           >
             InkDesk
           </span>
         </a>
         <nav className="hidden lg:flex items-center gap-7">
-          {links.map((l) => (
-            <a key={l} href="#" className="text-[13px] transition-colors duration-200" style={{ color: "rgba(240,237,228,0.58)" }}
+          {links.map(({ label, href }) => (
+            <a
+              key={label}
+              href={href}
+              className="group relative inline-flex py-2 text-[13px] transition-colors duration-200"
+              style={{ color: "rgba(240,237,228,0.58)" }}
               onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = T.text)}
-              onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "rgba(240,237,228,0.58)")}>{l}</a>
+              onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "rgba(240,237,228,0.58)")}
+            >
+              {label}
+              <span
+                className="pointer-events-none absolute -bottom-0.5 left-0 h-[2px] w-0 transition-all duration-500 group-hover:w-full"
+                style={{ background: headerBeam }}
+              />
+              <span
+                className="pointer-events-none absolute -bottom-1 left-0 h-3 w-0 blur-md transition-all duration-500 group-hover:w-full"
+                style={{ background: headerBeam }}
+              />
+            </a>
           ))}
         </nav>
         <div className="hidden lg:flex items-center gap-5">
-          <a href="#" className="text-[13px] transition-colors duration-200" style={{ color: "rgba(240,237,228,0.58)" }}
+          <a
+            href="#contato"
+            className="group relative inline-flex py-2 text-[13px] transition-colors duration-200"
+            style={{ color: "rgba(240,237,228,0.58)" }}
             onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = T.text)}
-            onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "rgba(240,237,228,0.58)")}>Entrar</a>
-          <a href="#" className="text-[13px] font-semibold px-4 py-2 rounded-full transition-all duration-200" style={{ background: T.text, color: T.bg }}
+            onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "rgba(240,237,228,0.58)")}
+          >
+            Entrar
+            <span
+              className="pointer-events-none absolute -bottom-0.5 left-0 h-[2px] w-0 transition-all duration-500 group-hover:w-full"
+              style={{ background: headerBeam }}
+            />
+            <span
+              className="pointer-events-none absolute -bottom-1 left-0 h-3 w-0 blur-md transition-all duration-500 group-hover:w-full"
+              style={{ background: headerBeam }}
+            />
+          </a>
+          <a href="#precos" className="text-[13px] font-semibold px-4 py-2 rounded-full transition-all duration-200" style={{ background: T.text, color: T.bg }}
             onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.transform = "translateY(-1px)"; (e.currentTarget as HTMLElement).style.boxShadow = `0 10px 28px rgba(240,237,228,0.16)` }}
             onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; (e.currentTarget as HTMLElement).style.boxShadow = "none" }}>
             Começar
@@ -272,10 +309,10 @@ function Header() {
       </div>
       {open && (
         <div className="lg:hidden border-t px-6 py-6 flex flex-col gap-4" style={{ background: "rgba(3,4,5,0.97)", borderColor: T.border }}>
-          {links.map((l) => <a key={l} href="#" className="text-sm py-1" style={{ color: T.muted }}>{l}</a>)}
+          {links.map(({ label, href }) => <a key={label} href={href} className="text-sm py-1" style={{ color: T.muted }} onClick={() => setOpen(false)}>{label}</a>)}
           <div className="flex flex-col gap-3 pt-4 border-t" style={{ borderColor: T.border }}>
-            <a href="#" className="text-sm text-center py-2" style={{ color: T.muted }}>Entrar</a>
-            <a href="#" className="text-sm font-semibold py-3 rounded-full text-center" style={{ background: T.text, color: T.bg }}>Começar</a>
+            <a href="#contato" className="text-sm text-center py-2" style={{ color: T.muted }} onClick={() => setOpen(false)}>Entrar</a>
+            <a href="#precos" className="text-sm font-semibold py-3 rounded-full text-center" style={{ background: T.text, color: T.bg }} onClick={() => setOpen(false)}>Começar</a>
           </div>
         </div>
       )}
@@ -366,7 +403,7 @@ function HeroHeadline() {
 
 function HeroSection() {
   return (
-    <section className="relative flex min-h-[112vh] flex-col pt-[68px] px-5 md:px-8 overflow-hidden" style={{ background: "#020303" }}>
+    <section id="inicio" className="relative flex min-h-[112vh] flex-col pt-[68px] px-5 md:px-8 overflow-hidden" style={{ background: "#020303" }}>
       <div className="absolute inset-0 pointer-events-none" style={{
         background: "linear-gradient(180deg, rgba(240,237,228,0.018) 0%, transparent 38%), radial-gradient(ellipse 70% 34% at 50% 102%, rgba(0,71,65,0.34) 0%, transparent 72%)"
       }} />
@@ -477,6 +514,14 @@ function ProductSection() {
     { name: "Carlos Mendes", sessions: 2, tag: "Realismo" },
     { name: "Juliana Costa", sessions: 7, tag: "Old School" },
   ]
+  const portfolioImages = [
+    { src: "/tattoos/rose-fineline.svg", alt: "Rosa em estilo fineline", style: "Fineline" },
+    { src: "/tattoos/koi-realism.svg", alt: "Koi em preto e cinza", style: "Realismo" },
+    { src: "/tattoos/geometric-wolf.svg", alt: "Lobo geométrico", style: "Geométrico" },
+    { src: "/tattoos/old-school-swallow.svg", alt: "Andorinha old school", style: "Old School" },
+    { src: "/tattoos/watercolor-phoenix.svg", alt: "Fênix aquarela", style: "Aquarela" },
+    { src: "/tattoos/mandala-blackwork.svg", alt: "Mandala blackwork", style: "Blackwork" },
+  ]
 
   // Sincroniza o painel sticky com o item que cruza a faixa central da viewport.
   // Threshold 0 + banda estreita: dispara poucas vezes e os cards têm altura fixa,
@@ -504,7 +549,7 @@ function ProductSection() {
   const accent = "#4FC5D4"
 
   return (
-    <section className="relative overflow-x-clip px-5 py-28 md:px-8 lg:py-32" style={{ background: T.bg }}>
+    <section id="produto" className="relative overflow-x-clip px-5 py-28 md:px-8 lg:py-32" style={{ background: T.bg }}>
       <div
         className="pointer-events-none absolute inset-x-0 top-0 h-px"
         style={{ background: "linear-gradient(90deg, transparent 0%, rgba(79,197,212,0.35) 50%, transparent 100%)" }}
@@ -605,7 +650,7 @@ function ProductSection() {
           <div className="sticky top-28 overflow-hidden rounded-[18px] border" style={{ ...fs(visible, 260), background: T.card, borderColor: "rgba(79,197,212,0.16)", boxShadow: `0 28px 90px rgba(0,0,0,0.5), 0 0 60px rgba(79,197,212,0.05), 0 0 0 1px rgba(240,237,228,0.04)` }}>
             <div className="flex items-center justify-between border-b px-5 py-4" style={{ borderColor: T.border, background: "rgba(2,6,5,0.68)" }}>
               <div className="flex min-w-0 items-center gap-3">
-                <BrandMark size={18} />
+                <BrandMark size={28} />
                 <div className="min-w-0">
                   <span className="block truncate text-[12px] font-semibold" style={{ color: T.text }}>{features[active].title}</span>
                   <span className="block text-[10px]" style={{ color: T.muted }}>InkDesk workspace</span>
@@ -696,7 +741,15 @@ function ProductSection() {
               {active === 3 && (
                 <div>
                   <div className="mb-4 grid grid-cols-3 gap-2">
-                    {Array.from({ length: 6 }).map((_, i) => <div key={i} className="aspect-square rounded-[12px] border" style={{ background: `linear-gradient(135deg, rgba(240,237,228,0.09) 0%, rgba(0,71,65,0.28) 100%)`, borderColor: T.border }} />)}
+                    {portfolioImages.map(({ src, alt, style }) => (
+                      <div key={src} className="group relative aspect-square overflow-hidden rounded-[12px] border" style={{ background: T.bgSec, borderColor: T.border }}>
+                        <img src={src} alt={alt} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
+                        <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(180deg, transparent 42%, rgba(3,4,5,0.82) 100%)" }} />
+                        <span className="absolute bottom-1.5 left-1.5 rounded-full px-2 py-0.5 text-[8px] font-medium" style={{ background: "rgba(3,4,5,0.72)", color: T.text }}>
+                          {style}
+                        </span>
+                      </div>
+                    ))}
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     {["Fineline", "Realismo", "Geométrico", "Old School", "Aquarela"].map((s) => <span key={s} className="rounded-full border px-2 py-0.5 text-[9px]" style={{ borderColor: T.border, color: T.muted }}>{s}</span>)}
@@ -744,7 +797,7 @@ function WorkflowSection() {
   const stepDelay = (i: number) => 0.3 + i * 0.45
 
   return (
-    <section className="relative overflow-x-clip px-5 py-28 md:px-8 lg:py-32" style={{ background: T.bgSec }}>
+    <section id="recursos" className="relative overflow-x-clip px-5 py-28 md:px-8 lg:py-32" style={{ background: T.bgSec }}>
       <div
         className="pointer-events-none absolute inset-x-0 top-0 h-px"
         style={{ background: "linear-gradient(90deg, transparent 0%, rgba(79,197,212,0.35) 50%, transparent 100%)" }}
@@ -971,7 +1024,7 @@ function InterfaceShowcaseSection() {
         >
           <div className="flex items-center justify-between border-b px-4 py-3 md:px-5" style={{ borderColor: T.border, background: "rgba(2,6,5,0.72)" }}>
             <div className="flex items-center gap-3">
-              <BrandMark size={18} />
+              <BrandMark size={28} />
               <div>
                 <div className="text-[12px] font-semibold" style={{ color: T.text }}>InkDesk Studio</div>
                 <div className="text-[10px]" style={{ color: T.muted }}>Operação de hoje</div>
@@ -1137,7 +1190,7 @@ function ForWhomSection() {
     { title: "Artista em crescimento", tag: "Escala", desc: "Estrutura profissional para vender melhor, acompanhar leads e manter qualidade no atendimento.", fit: "Para quem está aumentando demanda e quer parecer mais premium.", metric: "+ demanda", Icon: TrendingUp },
   ]
   return (
-    <section className="relative overflow-hidden px-5 py-28 md:px-8 lg:py-32" style={{ background: T.bgSec }}>
+    <section id="clientes" className="relative overflow-hidden px-5 py-28 md:px-8 lg:py-32" style={{ background: T.bgSec }}>
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px" style={{ background: `linear-gradient(90deg, transparent, ${T.text}22, transparent)` }} />
       <div className="pointer-events-none absolute -left-40 top-20 h-[520px] w-[520px] rounded-full blur-3xl" style={{ background: "rgba(0,71,65,0.32)" }} />
 
@@ -1408,7 +1461,7 @@ function PricingShowcaseSection() {
   ]
 
   return (
-    <section className="relative overflow-hidden px-5 py-28 md:px-8 lg:py-32" style={{ background: T.bgSec }}>
+    <section id="precos" className="relative overflow-hidden px-5 py-28 md:px-8 lg:py-32" style={{ background: T.bgSec }}>
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px" style={{ background: `linear-gradient(90deg, transparent, ${T.text}24, transparent)` }} />
       <div className="pointer-events-none absolute left-1/2 top-24 h-[560px] w-[760px] -translate-x-1/2 blur-3xl" style={{ background: "radial-gradient(ellipse, rgba(0,71,65,0.34) 0%, transparent 70%)" }} />
 
@@ -1511,7 +1564,7 @@ function FAQSection() {
     { q: "Posso cadastrar meu portfólio?", a: "Sim. O portfólio faz parte da organização do artista dentro do sistema, conectado a estilos, clientes e orçamentos." },
   ]
   return (
-    <section className="py-28 px-6" style={{ background: T.bg }}>
+    <section id="novidades" className="py-28 px-6" style={{ background: T.bg }}>
       <div className="max-w-3xl mx-auto">
         <div ref={ref} className="text-center mb-14">
           <h2 className="text-3xl md:text-5xl font-bold" style={{ ...fs(visible), color: T.text }}>Perguntas frequentes</h2>
@@ -1609,11 +1662,11 @@ function Footer() {
 
   return (
     <>
-      <footer className="border-t px-5 py-12 md:px-8" style={{ background: T.bg, borderColor: T.border }}>
+      <footer id="contato" className="border-t px-5 py-12 md:px-8" style={{ background: T.bg, borderColor: T.border }}>
         <div className="mx-auto grid max-w-6xl gap-10 md:grid-cols-[1.3fr_1fr_1fr] md:items-start">
           <div>
             <div className="mb-3 flex items-center gap-3">
-              <BrandMark size={28} />
+              <BrandMark size={42} />
               <span className="text-xl font-semibold" style={{ color: T.text }}>InkDesk</span>
             </div>
             <p className="max-w-[280px] text-sm leading-6" style={{ color: T.muted }}>Sua bancada digital para organizar pedidos, clientes e agenda.</p>
@@ -1706,7 +1759,7 @@ export default function App() {
   return (
     <div style={{ fontFamily: "Poppins, sans-serif", background: T.bg, minHeight: "100vh" }}>
       <style>{`
-        html { scroll-behavior: smooth; }
+        html { scroll-behavior: smooth; scroll-padding-top: 88px; }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: rgba(0,71,65,0.45); border-radius: 3px; }

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 360" role="img" aria-label="Old school swallow tattoo">
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1f3438"/><stop offset="1" stop-color="#080808"/></linearGradient></defs>
+  <rect width="360" height="360" rx="34" fill="url(#bg)"/>
+  <g stroke-linejoin="round" stroke-linecap="round">
+    <path d="M80 190c51-34 91-44 129-31 20 7 45 23 72 49-46 4-82-3-108-22-34 30-68 43-102 40 26-19 36-27 45-44-14 2-25 4-36 8Z" fill="#102c32" stroke="#e8e8e8" stroke-width="6"/>
+    <path d="M207 159c-17-41-8-76 28-105 1 38 15 63 42 77-29 9-52 18-70 28Z" fill="#173c42" stroke="#4fc5d4" stroke-width="6"/><path d="M172 186c-13 31-8 64 16 100-37-13-63-38-78-76" fill="#173c42" stroke="#4fc5d4" stroke-width="6"/>
+    <path d="M230 166c20 2 36 11 48 28M148 181c-16 5-32 15-49 31" fill="none" stroke="#e8e8e8" stroke-width="4"/><circle cx="236" cy="143" r="6" fill="#e8e8e8"/>
+  </g>
+</svg>

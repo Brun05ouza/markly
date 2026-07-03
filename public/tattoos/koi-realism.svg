@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 360" role="img" aria-label="Koi fish tattoo">
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#13383f"/><stop offset="1" stop-color="#06090a"/></linearGradient><filter id="grain"><feTurbulence type="fractalNoise" baseFrequency=".75" numOctaves="4"/><feComponentTransfer><feFuncA type="table" tableValues="0 .12"/></feComponentTransfer></filter></defs>
+  <rect width="360" height="360" rx="34" fill="url(#bg)"/><rect width="360" height="360" rx="34" filter="url(#grain)" opacity=".5"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M96 215c49-96 131-112 178-67-33 7-55 27-70 61-21 48-64 69-108 6Z" fill="#0f2024" stroke="#e8e8e8" stroke-width="6"/>
+    <path d="M151 195c30-27 65-38 108-39M133 225c29 6 56 2 81-12" stroke="#e8e8e8" stroke-width="5"/>
+    <path d="M244 143c32-27 57-29 80-6-23 12-45 14-67 6" fill="#102d32" stroke="#4fc5d4" stroke-width="5"/><path d="M101 213c-29 3-48-7-61-29 25-3 48 4 69 22" fill="#102d32" stroke="#4fc5d4" stroke-width="5"/>
+    <circle cx="218" cy="163" r="6" fill="#e8e8e8"/><path d="M84 109c24 25 24 52 0 82M59 133c17 17 17 34 0 51M277 219c-18 28-44 42-77 43" stroke="#4fc5d4" stroke-width="4" opacity=".8"/>
+  </g>
+</svg>

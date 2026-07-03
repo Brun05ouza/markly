@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 360" role="img" aria-label="Watercolor phoenix tattoo">
+  <defs><radialGradient id="teal" cx="45%" cy="45%" r="55%"><stop offset="0" stop-color="#4fc5d4" stop-opacity=".9"/><stop offset="1" stop-color="#4fc5d4" stop-opacity="0"/></radialGradient><radialGradient id="amber" cx="65%" cy="55%" r="60%"><stop offset="0" stop-color="#d8a24a" stop-opacity=".85"/><stop offset="1" stop-color="#d8a24a" stop-opacity="0"/></radialGradient></defs>
+  <rect width="360" height="360" rx="34" fill="#071012"/><circle cx="136" cy="134" r="122" fill="url(#teal)"/><circle cx="221" cy="188" r="116" fill="url(#amber)"/>
+  <g fill="none" stroke="#e8e8e8" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M177 284c18-42 20-79 5-111-12-26-7-55 19-82-5 33 11 54 49 63-34 13-49 34-44 65"/><path d="M178 169c-37-34-75-46-115-36 29 22 48 49 56 82"/><path d="M194 186c38-25 73-32 106-20-25 21-45 47-58 78"/><path d="M174 225c-24 20-45 44-62 73M203 225c14 20 24 43 30 69"/>
+  </g>
+</svg>

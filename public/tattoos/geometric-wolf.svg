@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 360" role="img" aria-label="Geometric wolf tattoo">
+  <defs><radialGradient id="bg" cx="50%" cy="42%" r="70%"><stop offset="0" stop-color="#21464d"/><stop offset="1" stop-color="#070b0c"/></radialGradient></defs>
+  <rect width="360" height="360" rx="34" fill="url(#bg)"/>
+  <g fill="none" stroke="#e8e8e8" stroke-width="5" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M180 64 92 125l26 118 62 55 62-55 26-118-88-61Z"/><path d="M180 64v234M92 125l88 41 88-41M118 243l62-77 62 77M137 132l43 34 43-34"/><path d="m112 132-42-42 60 14M248 104l60-14-42 42"/><path d="M142 190h35M183 190h35"/><path d="m156 213 24 20 24-20"/>
+  </g>
+  <g fill="#4fc5d4"><circle cx="156" cy="190" r="5"/><circle cx="204" cy="190" r="5"/></g>
+</svg>
