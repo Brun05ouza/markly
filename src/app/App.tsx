@@ -1,22 +1,28 @@
 import { useState, useEffect, useRef, CSSProperties } from "react"
 import { motion } from "motion/react"
+import gsap from "gsap"
+import { SplitText } from "gsap/SplitText"
 import {
   LayoutDashboard, Users, Calendar, ImageIcon, MessageSquare, Settings,
   TrendingUp, Clock, CheckCircle2, Package, ChevronDown,
   Zap, ArrowRight, Menu, X, FileText, Bell,
-  Star, Layers, Filter, BarChart3, Inbox
+  Layers, Filter, BarChart3, Inbox
 } from "lucide-react"
+import inkdeskIcon from "../assets/inkdesk-icon-friendly-urikana.svg"
+import LaserFlow from "./components/LaserFlow/LaserFlow"
+
+gsap.registerPlugin(SplitText)
 
 const T = {
-  teal: "#42B8C8",
-  amber: "#D8943A",
-  green: "#16A979",
-  bg: "#030405",
-  bgSec: "#080B0D",
-  card: "#0D1114",
-  border: "rgba(255,255,255,0.08)",
-  text: "#F4F7F8",
-  muted: "#9AADB8",
+  teal: "#004741",
+  amber: "#C8B99C",
+  green: "#2F7F68",
+  bg: "#020605",
+  bgSec: "#07110F",
+  card: "#0B1714",
+  border: "rgba(240,237,228,0.1)",
+  text: "#F0EDE4",
+  muted: "#A9A69C",
 }
 
 function useFadeIn(threshold = 0.1) {
@@ -43,21 +49,71 @@ function fs(visible: boolean, delay = 0): CSSProperties {
   }
 }
 
+function BrandMark({ size = 24 }: { size?: number }) {
+  return (
+    <img
+      src={inkdeskIcon}
+      alt=""
+      className="inline-flex shrink-0 object-contain"
+      style={{
+        width: size,
+        height: size,
+        filter: "drop-shadow(0 0 18px rgba(0,71,65,0.18))",
+      }}
+      aria-hidden="true"
+    />
+  )
+}
+
 function LaptopMockup() {
   return (
-    <div className="relative w-full max-w-[820px] mx-auto select-none">
+    <div className="relative w-full max-w-[1320px] mx-auto select-none">
       <div
-        className="absolute -inset-8 blur-3xl opacity-[0.15] pointer-events-none rounded-full"
-        style={{ background: `radial-gradient(ellipse, ${T.teal} 0%, transparent 70%)` }}
+        className="absolute -inset-x-20 bottom-[-18%] h-72 blur-3xl opacity-[0.16] pointer-events-none"
+        style={{ background: `radial-gradient(ellipse, ${T.teal} 0%, transparent 68%)` }}
       />
       <div
-        className="relative rounded-2xl overflow-hidden border"
+        className="absolute inset-x-0 z-0 pointer-events-none"
         style={{
-          borderColor: T.border,
+          top: "calc(-1 * clamp(360px, 52vh, 620px))",
+          height: "calc(clamp(360px, 52vh, 620px) + clamp(220px, 30vh, 340px))",
+          maskImage: "linear-gradient(to bottom, transparent 0%, black 16%)",
+          WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 16%)",
+        }}
+        aria-hidden
+      >
+        <LaserFlow
+          className="h-full w-full"
+          horizontalBeamOffset={0.12}
+          verticalBeamOffset={-0.13}
+          verticalSizing={3.0}
+          horizontalSizing={0.42}
+          color="#4FC5D4"
+          fogIntensity={0.55}
+          wispIntensity={5}
+          flowSpeed={0.35}
+          mouseTiltStrength={0.012}
+          wispDensity={1.1}
+        />
+      </div>
+      <div
+        className="relative z-10 overflow-visible border rounded-[10px]"
+        style={{
+          borderColor: "rgba(240,237,228,0.13)",
           background: T.bgSec,
-          boxShadow: `0 0 0 1px ${T.border}, 0 80px 120px rgba(0,0,0,0.9), 0 0 60px rgba(66,184,200,0.06)`,
+          boxShadow: `0 0 0 1px rgba(240,237,228,0.04), 0 80px 150px rgba(0,0,0,0.9), 0 -18px 80px rgba(240,237,228,0.035) inset`,
         }}
       >
+        <a
+          href="#"
+          className="group absolute right-0 z-40 hidden items-center gap-2 md:flex"
+          style={{ bottom: "100%", marginBottom: "0.625rem", color: "rgba(240,237,228,0.64)", fontSize: 15, fontWeight: 500 }}
+        >
+          <span className="font-semibold" style={{ color: T.text }}>Novo</span>
+          Veja o painel
+          <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
+        </a>
+        <div className="overflow-hidden rounded-[10px]">
         <div
           className="flex items-center gap-3 px-4 py-3 border-b"
           style={{ borderColor: T.border, background: "#040608" }}
@@ -69,18 +125,21 @@ function LaptopMockup() {
           </div>
           <div
             className="flex-1 max-w-[200px] mx-auto rounded-md px-3 py-1 text-[10px] font-mono text-center"
-            style={{ background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.22)" }}
+            style={{ background: "rgba(240,237,228,0.04)", color: "rgba(240,237,228,0.24)" }}
           >
             app.inkdesk.com.br
           </div>
-          <Bell size={11} style={{ color: "rgba(255,255,255,0.2)" }} />
+          <Bell size={11} style={{ color: "rgba(240,237,228,0.22)" }} />
         </div>
-        <div className="flex" style={{ height: "420px" }}>
+        <div className="flex" style={{ height: "min(46vw, 520px)", minHeight: 360 }}>
           <div
-            className="w-44 flex-shrink-0 flex flex-col p-3 gap-0.5 border-r"
+            className="w-48 flex-shrink-0 flex flex-col p-3 gap-0.5 border-r"
             style={{ background: "#040608", borderColor: T.border }}
           >
-            <div className="font-bold text-[13px] px-2 py-2.5 mb-1" style={{ color: T.teal }}>InkDesk</div>
+            <div className="flex items-center gap-2 px-2 py-2.5 mb-1 text-[13px] font-bold" style={{ color: T.text }}>
+              <BrandMark size={14} />
+              InkDesk
+            </div>
             {([
               { Icon: LayoutDashboard, label: "Visão geral", active: true, badge: 0 },
               { Icon: FileText, label: "Orçamentos", active: false, badge: 0 },
@@ -92,7 +151,7 @@ function LaptopMockup() {
               <div
                 key={label}
                 className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[11px] cursor-default"
-                style={{ background: active ? `${T.teal}14` : "transparent", color: active ? T.teal : "rgba(255,255,255,0.38)" }}
+                style={{ background: active ? `${T.teal}14` : "transparent", color: active ? T.text : "rgba(240,237,228,0.42)" }}
               >
                 <Icon size={13} />
                 <span>{label}</span>
@@ -102,7 +161,7 @@ function LaptopMockup() {
               </div>
             ))}
             <div className="mt-auto border-t pt-2" style={{ borderColor: T.border }}>
-              <div className="flex items-center gap-2.5 px-2.5 py-2 text-[11px]" style={{ color: "rgba(255,255,255,0.25)" }}>
+              <div className="flex items-center gap-2.5 px-2.5 py-2 text-[11px]" style={{ color: "rgba(240,237,228,0.28)" }}>
                 <Settings size={13} /><span>Configurações</span>
               </div>
             </div>
@@ -143,19 +202,18 @@ function LaptopMockup() {
                   <div className="flex items-center gap-1.5 mb-0.5">
                     <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: dot }} />
                     <span className="text-[9px] font-medium" style={{ color: T.muted }}>{label}</span>
-                    <span className="ml-auto text-[8px] px-1.5 rounded-full" style={{ background: "rgba(255,255,255,0.04)", color: T.muted }}>{cards.length}</span>
+                    <span className="ml-auto text-[8px] px-1.5 rounded-full" style={{ background: "rgba(240,237,228,0.05)", color: T.muted }}>{cards.length}</span>
                   </div>
                   {cards.map((c) => (
-                    <div key={c} className="rounded-lg p-2 border text-[9px] leading-4" style={{ background: "#080B0D", borderColor: T.border, color: "rgba(255,255,255,0.55)" }}>{c}</div>
+                    <div key={c} className="rounded-lg p-2 border text-[9px] leading-4" style={{ background: T.bgSec, borderColor: T.border, color: "rgba(240,237,228,0.58)" }}>{c}</div>
                   ))}
                 </div>
               ))}
             </div>
           </div>
         </div>
+        </div>
       </div>
-      <div className="h-3 mx-10 border-x border-b rounded-b-xl" style={{ background: "#050708", borderColor: T.border }} />
-      <div className="h-2 mx-3 rounded-b-2xl" style={{ background: T.bg }} />
     </div>
   )
 }
@@ -168,46 +226,54 @@ function Header() {
     window.addEventListener("scroll", h, { passive: true })
     return () => window.removeEventListener("scroll", h)
   }, [])
-  const links = ["Produto", "Recursos", "Como funciona", "Preços", "FAQ"]
+  const links = ["Produto", "Recursos", "Clientes", "Preços", "Novidades", "Contato"]
   return (
     <header
       className="fixed top-0 left-0 right-0 z-50 transition-all duration-500"
       style={{
-        background: scrolled ? "rgba(3,4,5,0.88)" : "transparent",
+        background: scrolled ? "rgba(3,4,5,0.9)" : "rgba(3,4,5,0.76)",
         backdropFilter: scrolled ? "blur(20px)" : "none",
         WebkitBackdropFilter: scrolled ? "blur(20px)" : "none",
-        borderBottom: scrolled ? `1px solid ${T.border}` : "1px solid transparent",
+        borderBottom: "1px solid rgba(240,237,228,0.08)",
       }}
     >
-      <div className="max-w-7xl mx-auto px-6 flex items-center justify-between h-16">
-        <a href="#" className="font-bold text-xl tracking-tight" style={{ color: T.teal }}>InkDesk</a>
-        <nav className="hidden md:flex items-center gap-8">
+      <div className="max-w-[1280px] mx-auto px-5 md:px-8 flex items-center justify-between h-[68px]">
+        <a href="#" className="flex items-center gap-3.5" style={{ color: T.text }}>
+          <BrandMark size={36} />
+          <span
+            className="text-[22px] font-bold leading-none"
+            style={{ fontFamily: "'Syne', sans-serif", letterSpacing: "-0.04em" }}
+          >
+            InkDesk
+          </span>
+        </a>
+        <nav className="hidden lg:flex items-center gap-7">
           {links.map((l) => (
-            <a key={l} href="#" className="text-sm transition-colors duration-200" style={{ color: T.muted }}
+            <a key={l} href="#" className="text-[13px] transition-colors duration-200" style={{ color: "rgba(240,237,228,0.58)" }}
               onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = T.text)}
-              onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = T.muted)}>{l}</a>
+              onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "rgba(240,237,228,0.58)")}>{l}</a>
           ))}
         </nav>
-        <div className="hidden md:flex items-center gap-4">
-          <a href="#" className="text-sm transition-colors duration-200" style={{ color: T.muted }}
+        <div className="hidden lg:flex items-center gap-5">
+          <a href="#" className="text-[13px] transition-colors duration-200" style={{ color: "rgba(240,237,228,0.58)" }}
             onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = T.text)}
-            onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = T.muted)}>Entrar</a>
-          <a href="#" className="text-sm font-semibold px-5 py-2 rounded-full transition-all duration-200" style={{ background: T.teal, color: T.bg }}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.transform = "translateY(-1px)"; (e.currentTarget as HTMLElement).style.boxShadow = `0 8px 24px ${T.teal}40` }}
+            onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "rgba(240,237,228,0.58)")}>Entrar</a>
+          <a href="#" className="text-[13px] font-semibold px-4 py-2 rounded-full transition-all duration-200" style={{ background: T.text, color: T.bg }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.transform = "translateY(-1px)"; (e.currentTarget as HTMLElement).style.boxShadow = `0 10px 28px rgba(240,237,228,0.16)` }}
             onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; (e.currentTarget as HTMLElement).style.boxShadow = "none" }}>
-            Começar agora
+            Começar
           </a>
         </div>
-        <button className="md:hidden p-2" style={{ color: T.muted }} onClick={() => setOpen(!open)}>
+        <button className="lg:hidden p-2" style={{ color: T.muted }} onClick={() => setOpen(!open)}>
           {open ? <X size={20} /> : <Menu size={20} />}
         </button>
       </div>
       {open && (
-        <div className="md:hidden border-t px-6 py-6 flex flex-col gap-4" style={{ background: "rgba(3,4,5,0.97)", borderColor: T.border }}>
+        <div className="lg:hidden border-t px-6 py-6 flex flex-col gap-4" style={{ background: "rgba(3,4,5,0.97)", borderColor: T.border }}>
           {links.map((l) => <a key={l} href="#" className="text-sm py-1" style={{ color: T.muted }}>{l}</a>)}
           <div className="flex flex-col gap-3 pt-4 border-t" style={{ borderColor: T.border }}>
             <a href="#" className="text-sm text-center py-2" style={{ color: T.muted }}>Entrar</a>
-            <a href="#" className="text-sm font-semibold py-3 rounded-full text-center" style={{ background: T.teal, color: T.bg }}>Começar agora</a>
+            <a href="#" className="text-sm font-semibold py-3 rounded-full text-center" style={{ background: T.text, color: T.bg }}>Começar</a>
           </div>
         </div>
       )}
@@ -215,61 +281,98 @@ function Header() {
   )
 }
 
+function HeroHeadline() {
+  const rootRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const root = rootRef.current
+    if (!root) return
+    const title = root.querySelector("[data-hero-title]")
+    const sub = root.querySelector("[data-hero-sub]")
+    if (!title || !sub) return
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      gsap.set([title, sub], { opacity: 1 })
+      return
+    }
+
+    const splitTitle = new SplitText(title, { type: "words,chars" })
+    const splitSub = new SplitText(sub, { type: "lines" })
+    // background-clip: text do pai quebra quando os chars ganham transform; aplica o gradiente char a char
+    const gradChars = splitTitle.chars.filter((c) => (c as HTMLElement).closest("[data-grad]"))
+    gsap.set(gradChars, {
+      backgroundImage: "linear-gradient(92deg, #4FC5D4 0%, #BDFFFF 55%, #4FC5D4 100%)",
+      webkitBackgroundClip: "text",
+      backgroundClip: "text",
+      color: "transparent",
+    })
+    gsap.set([title, sub], { opacity: 1 })
+
+    const tl = gsap.timeline({ delay: 0.25 })
+    tl.from(splitTitle.chars, {
+      opacity: 0,
+      y: 48,
+      rotateX: -70,
+      filter: "blur(10px)",
+      transformOrigin: "50% 100%",
+      duration: 0.9,
+      ease: "power4.out",
+      stagger: { each: 0.018, from: "start" },
+    }).from(
+      splitSub.lines,
+      { opacity: 0, y: 22, filter: "blur(6px)", duration: 0.8, ease: "power3.out", stagger: 0.1 },
+      "-=0.45",
+    )
+
+    return () => {
+      tl.kill()
+      splitTitle.revert()
+      splitSub.revert()
+    }
+  }, [])
+
+  return (
+    <div ref={rootRef} className="relative z-10 flex w-full max-w-[680px] flex-col items-start px-2 text-left">
+      <h1
+        data-hero-title
+        className="text-[44px] font-semibold leading-[1.02] tracking-tight opacity-0 md:text-[60px] lg:text-[72px]"
+        style={{ color: T.text, fontFamily: "Poppins, sans-serif", perspective: 800 }}
+      >
+        Sua arte no corpo.{" "}
+        <span
+          data-grad
+          style={{
+            background: "linear-gradient(92deg, #4FC5D4 0%, #BDFFFF 55%, #4FC5D4 100%)",
+            WebkitBackgroundClip: "text",
+            backgroundClip: "text",
+            color: "transparent",
+          }}
+        >
+          Seu estúdio no controle.
+        </span>
+      </h1>
+      <p
+        data-hero-sub
+        className="mt-6 max-w-[520px] text-base leading-7 opacity-0 md:text-lg"
+        style={{ color: "rgba(240,237,228,0.6)" }}
+      >
+        Orçamentos, agenda, clientes e portfólio em um único painel — menos WhatsApp, mais tatuagem.
+      </p>
+    </div>
+  )
+}
+
 function HeroSection() {
   return (
-    <section className="relative min-h-screen flex flex-col items-center justify-center pt-24 pb-16 px-6 overflow-hidden" style={{ background: T.bg }}>
+    <section className="relative flex min-h-[112vh] flex-col pt-[68px] px-5 md:px-8 overflow-hidden" style={{ background: "#020303" }}>
       <div className="absolute inset-0 pointer-events-none" style={{
-        background: `radial-gradient(ellipse 80% 50% at 50% -10%, rgba(66,184,200,0.12) 0%, transparent 60%), radial-gradient(ellipse 40% 30% at 80% 60%, rgba(14,127,143,0.06) 0%, transparent 50%)`
+        background: "linear-gradient(180deg, rgba(240,237,228,0.018) 0%, transparent 38%), radial-gradient(ellipse 70% 34% at 50% 102%, rgba(0,71,65,0.34) 0%, transparent 72%)"
       }} />
-      <div className="absolute inset-0 pointer-events-none opacity-[0.025]" style={{
-        backgroundImage: `linear-gradient(${T.muted} 1px, transparent 1px), linear-gradient(90deg, ${T.muted} 1px, transparent 1px)`,
-        backgroundSize: "80px 80px",
-      }} />
-      <div className="relative z-10 w-full max-w-6xl mx-auto flex flex-col items-center text-center">
-        <motion.div
-          initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-full border text-sm mb-8"
-          style={{ background: `${T.teal}0d`, borderColor: `${T.teal}25`, color: T.teal }}
-        >
-          <Star size={13} fill={T.teal} />
-          Feito para tatuadores que querem vender e organizar melhor
-        </motion.div>
-        <motion.h1
-          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.1 }}
-          className="text-5xl md:text-7xl font-bold leading-[1.08] tracking-tight mb-6 max-w-4xl"
-          style={{ color: T.text, fontFamily: "Inter, sans-serif" }}
-        >
-          A gestão do seu estúdio em uma{" "}
-          <span style={{ background: `linear-gradient(135deg, ${T.teal} 0%, #a8e8f0 50%, ${T.text} 100%)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
-            bancada digital.
-          </span>
-        </motion.h1>
-        <motion.p
-          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.2 }}
-          className="text-lg md:text-xl max-w-2xl mb-10 leading-relaxed" style={{ color: T.muted }}
-        >
-          Organize orçamentos, clientes, agenda, mensagens e portfólio em um painel simples, rápido e visual.{" "}
-          <span style={{ color: T.text }}>Menos planilha. Mais controle.</span>
-        </motion.p>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.3 }}
-          className="flex flex-col sm:flex-row items-center gap-3 mb-5"
-        >
-          <a href="#" className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full font-semibold text-sm transition-all duration-200 w-full sm:w-auto justify-center" style={{ background: T.teal, color: T.bg }}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; (e.currentTarget as HTMLElement).style.boxShadow = `0 12px 32px ${T.teal}40` }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; (e.currentTarget as HTMLElement).style.boxShadow = "none" }}>
-            Criar minha conta <ArrowRight size={16} />
-          </a>
-          <a href="#" className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full font-medium text-sm border transition-all duration-200 w-full sm:w-auto justify-center" style={{ borderColor: T.border, color: T.text, background: "rgba(255,255,255,0.03)" }}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = `${T.teal}40`; (e.currentTarget as HTMLElement).style.background = `${T.teal}08` }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = T.border; (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.03)" }}>
-            Ver demonstração
-          </a>
-        </motion.div>
-        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.8, delay: 0.45 }} className="text-sm mb-16" style={{ color: "rgba(155,173,184,0.55)" }}>
-          Sem complexidade. Ideal para tatuadores independentes e pequenos estúdios.
-        </motion.p>
-        <motion.div initial={{ opacity: 0, scale: 0.96, y: 24 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 1, delay: 0.5 }} className="w-full">
+      <div className="relative z-10 mx-auto flex w-full max-w-[1280px] flex-1 flex-col justify-end">
+        <div className="flex flex-1 items-center justify-start pt-14 pb-8 md:pt-20">
+          <HeroHeadline />
+        </div>
+        <motion.div initial={{ opacity: 0, scale: 0.985, y: 24 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 1, delay: 0.45 }} className="w-full pb-4 md:pb-5">
           <LaptopMockup />
         </motion.div>
       </div>
@@ -279,6 +382,7 @@ function HeroSection() {
 
 function ProblemSection() {
   const { ref, visible } = useFadeIn()
+  const accent = "#4FC5D4"
   const problems = [
     { Icon: Inbox, title: "Orçamentos perdidos no WhatsApp", desc: "Pedidos importantes somem entre conversas, áudios e fotos sem organização." },
     { Icon: Users, title: "Clientes sem histórico organizado", desc: "Sem registro de sessões anteriores, estilos preferidos ou contato centralizado." },
@@ -286,26 +390,60 @@ function ProblemSection() {
     { Icon: ImageIcon, title: "Portfólio sem controle comercial", desc: "Artes e referências em pastas soltas, sem conexão com clientes ou orçamentos." },
   ]
   return (
-    <section className="py-28 px-6" style={{ background: T.bgSec }}>
-      <div className="max-w-6xl mx-auto">
-        <div ref={ref} className="text-center mb-16">
-          <h2 className="text-3xl md:text-5xl font-bold leading-tight mb-6 max-w-3xl mx-auto" style={{ ...fs(visible), color: T.text }}>
-            Seu trabalho é arte. A bagunça da gestão <span style={{ color: T.muted }}>não precisa fazer parte.</span>
-          </h2>
-          <p className="text-base md:text-lg max-w-2xl mx-auto leading-relaxed" style={{ ...fs(visible, 100), color: T.muted }}>
+    <section className="relative overflow-hidden py-28 px-6" style={{ background: T.bgSec }}>
+      <div
+        className="absolute inset-x-0 top-0 h-px"
+        style={{ background: "linear-gradient(90deg, transparent 0%, rgba(79,197,212,0.35) 50%, transparent 100%)" }}
+      />
+      <div
+        className="pointer-events-none absolute -top-40 left-1/2 h-96 w-[900px] -translate-x-1/2 blur-3xl"
+        style={{ background: "radial-gradient(ellipse, rgba(79,197,212,0.06) 0%, transparent 70%)" }}
+      />
+      <div className="relative z-10 max-w-6xl mx-auto">
+        <div ref={ref} className="mb-14 grid gap-8 md:mb-16 md:grid-cols-[1fr_minmax(0,400px)] md:items-end">
+          <div>
+            <p className="mb-5 flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.22em]" style={{ ...fs(visible), color: accent }}>
+              <span className="h-px w-9" style={{ background: accent }} />
+              O problema
+            </p>
+            <h2 className="text-3xl md:text-5xl font-bold leading-[1.08]" style={{ ...fs(visible, 60), color: T.text }}>
+              Seu trabalho é arte.
+              <br />
+              <span style={{ color: T.muted }}>A bagunça da gestão não precisa fazer parte.</span>
+            </h2>
+          </div>
+          <p className="text-base leading-relaxed md:pb-2 md:text-lg" style={{ ...fs(visible, 140), color: T.muted }}>
             Muitos tatuadores ainda controlam pedidos pelo WhatsApp, agenda por aplicativos separados, referências em pastas soltas e pagamentos em anotações manuais. O InkDesk centraliza tudo.
           </p>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 gap-px overflow-hidden rounded-2xl border sm:grid-cols-2 lg:grid-cols-4" style={{ background: T.border, borderColor: T.border }}>
           {problems.map(({ Icon, title, desc }, i) => (
-            <div key={title} className="rounded-2xl border p-6 transition-all duration-300 cursor-default"
-              style={{ ...fs(visible, 150 + i * 80), background: T.card, borderColor: T.border }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = `${T.teal}30`; (e.currentTarget as HTMLElement).style.boxShadow = `0 0 32px ${T.teal}10` }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = T.border; (e.currentTarget as HTMLElement).style.boxShadow = "none" }}>
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-5" style={{ background: `${T.teal}12` }}>
-                <Icon size={18} style={{ color: T.teal }} />
+            <div
+              key={title}
+              className="group relative flex min-h-[250px] flex-col p-7 transition-colors duration-300 cursor-default"
+              style={{ ...fs(visible, 180 + i * 90), background: T.card }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "#0E1D19" }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = T.card }}
+            >
+              <span
+                className="absolute left-0 top-0 h-[2px] w-0 transition-all duration-500 group-hover:w-full"
+                style={{ background: `linear-gradient(90deg, ${accent}, transparent)` }}
+              />
+              <div className="mb-12 flex items-start justify-between">
+                <span
+                  className="text-[38px] font-bold leading-none transition-colors duration-300 group-hover:text-[#4FC5D4]"
+                  style={{ fontFamily: "'Syne', sans-serif", color: "rgba(240,237,228,0.13)" }}
+                >
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <div
+                  className="flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-300 group-hover:scale-105"
+                  style={{ background: "rgba(79,197,212,0.07)", borderColor: "rgba(79,197,212,0.14)" }}
+                >
+                  <Icon size={17} style={{ color: accent }} />
+                </div>
               </div>
-              <h3 className="text-sm font-semibold mb-2" style={{ color: T.text }}>{title}</h3>
+              <h3 className="mt-auto mb-2.5 text-[15px] font-semibold leading-snug" style={{ color: T.text }}>{title}</h3>
               <p className="text-sm leading-relaxed" style={{ color: T.muted }}>{desc}</p>
             </div>
           ))}
@@ -351,7 +489,7 @@ function ProductSection() {
               <div key={title} className="flex gap-4 p-5 rounded-2xl border cursor-pointer transition-all duration-200"
                 style={{ background: active === i ? `${T.teal}08` : "transparent", borderColor: active === i ? `${T.teal}25` : "transparent" }}
                 onClick={() => setActive(i)}
-                onMouseEnter={(e) => { if (active !== i) (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.02)" }}
+                onMouseEnter={(e) => { if (active !== i) (e.currentTarget as HTMLElement).style.background = "rgba(240,237,228,0.025)" }}
                 onMouseLeave={(e) => { if (active !== i) (e.currentTarget as HTMLElement).style.background = "transparent" }}>
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: active === i ? `${T.teal}18` : `${T.teal}0a` }}>
                   <Icon size={16} style={{ color: T.teal }} />
@@ -379,7 +517,7 @@ function ProductSection() {
                         <div className="w-1.5 h-1.5 rounded-full" style={{ background: dot }} />
                         <span className="text-[10px]" style={{ color: T.muted }}>{label}</span>
                       </div>
-                      {cards.map((c) => <div key={c} className="p-2.5 rounded-xl border text-[10px]" style={{ background: T.bgSec, borderColor: T.border, color: "rgba(255,255,255,0.6)" }}>{c}</div>)}
+                      {cards.map((c) => <div key={c} className="p-2.5 rounded-xl border text-[10px]" style={{ background: T.bgSec, borderColor: T.border, color: "rgba(240,237,228,0.62)" }}>{c}</div>)}
                     </div>
                   ))}
                 </div>
@@ -415,7 +553,7 @@ function ProductSection() {
               {active === 3 && (
                 <div>
                   <div className="grid grid-cols-3 gap-2 mb-3">
-                    {Array.from({ length: 6 }).map((_, i) => <div key={i} className="aspect-square rounded-xl border" style={{ background: `linear-gradient(135deg, ${T.card} 0%, rgba(66,184,200,0.08) 100%)`, borderColor: T.border }} />)}
+                    {Array.from({ length: 6 }).map((_, i) => <div key={i} className="aspect-square rounded-xl border" style={{ background: `linear-gradient(135deg, ${T.card} 0%, rgba(0,71,65,0.18) 100%)`, borderColor: T.border }} />)}
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     {["Fineline", "Realismo", "Geométrico", "Old School", "Aquarela"].map((s) => <span key={s} className="text-[9px] px-2 py-0.5 rounded-full border" style={{ borderColor: T.border, color: T.muted }}>{s}</span>)}
@@ -565,7 +703,7 @@ function InterfaceSection() {
               </div>
               <div className="mt-3">
                 <div className="text-[10px] mb-1.5 font-medium" style={{ color: T.muted }}>Referências</div>
-                <div className="flex gap-1.5">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="w-10 h-10 rounded-lg border" style={{ background: `linear-gradient(135deg, ${T.card} 0%, rgba(66,184,200,0.06) 100%)`, borderColor: T.border }} />)}</div>
+                <div className="flex gap-1.5">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="w-10 h-10 rounded-lg border" style={{ background: `linear-gradient(135deg, ${T.card} 0%, rgba(0,71,65,0.16) 100%)`, borderColor: T.border }} />)}</div>
               </div>
             </div>
           </div>
@@ -733,7 +871,7 @@ function CTASection() {
       <div ref={ref} className="relative max-w-4xl mx-auto text-center">
         <h2 className="text-4xl md:text-6xl font-bold leading-tight mb-6" style={{ ...fs(visible), color: T.text }}>
           Transforme sua rotina de tatuador em uma{" "}
-          <span style={{ background: `linear-gradient(135deg, ${T.teal}, #a8e8f0)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
+          <span style={{ background: `linear-gradient(135deg, ${T.text}, ${T.teal})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
             operação organizada.
           </span>
         </h2>
@@ -746,9 +884,9 @@ function CTASection() {
             onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; (e.currentTarget as HTMLElement).style.boxShadow = "none" }}>
             Começar agora <ArrowRight size={16} />
           </a>
-          <a href="#" className="inline-flex items-center gap-2 px-8 py-4 rounded-full font-medium text-sm border transition-all duration-200 w-full sm:w-auto justify-center" style={{ borderColor: T.border, color: T.text, background: "rgba(255,255,255,0.03)" }}
+          <a href="#" className="inline-flex items-center gap-2 px-8 py-4 rounded-full font-medium text-sm border transition-all duration-200 w-full sm:w-auto justify-center" style={{ borderColor: T.border, color: T.text, background: "rgba(240,237,228,0.035)" }}
             onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = `${T.teal}35`; (e.currentTarget as HTMLElement).style.background = `${T.teal}08` }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = T.border; (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.03)" }}>
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = T.border; (e.currentTarget as HTMLElement).style.background = "rgba(240,237,228,0.035)" }}>
             Ver interface
           </a>
         </div>
@@ -780,12 +918,12 @@ function Footer() {
 
 export default function App() {
   return (
-    <div style={{ fontFamily: "Inter, sans-serif", background: T.bg, minHeight: "100vh" }}>
+    <div style={{ fontFamily: "Poppins, sans-serif", background: T.bg, minHeight: "100vh" }}>
       <style>{`
         html { scroll-behavior: smooth; }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(66,184,200,0.2); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb { background: rgba(0,71,65,0.45); border-radius: 3px; }
       `}</style>
       <Header />
       <main>
