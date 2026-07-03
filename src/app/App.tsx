@@ -4,12 +4,14 @@ import gsap from "gsap"
 import { SplitText } from "gsap/SplitText"
 import {
   LayoutDashboard, Users, Calendar, ImageIcon, MessageSquare, Settings,
-  TrendingUp, Clock, CheckCircle2, Package, ChevronDown,
+  TrendingUp, Clock, CheckCircle2, Package,
   Zap, ArrowRight, Menu, X, FileText, Bell,
   Layers, Filter, BarChart3, Inbox
 } from "lucide-react"
 import inkdeskIcon from "../assets/inkdesk-icon-friendly-urikana.svg"
 import LaserFlow from "./components/LaserFlow/LaserFlow"
+import CardSwap, { Card } from "./components/ui/CardSwap"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./components/ui/accordion"
 
 gsap.registerPlugin(SplitText)
 
@@ -456,17 +458,18 @@ function ProblemSection() {
 function ProductSection() {
   const { ref, visible } = useFadeIn()
   const [active, setActive] = useState(0)
+  const featureRefs = useRef<Array<HTMLDivElement | null>>([])
   const features = [
-    { Icon: FileText, title: "Orçamentos visuais", desc: "Acompanhe cada pedido por status, valor, estilo e cliente. Do primeiro contato ao sinal pago." },
-    { Icon: Users, title: "Clientes organizados", desc: "Tenha histórico, referências, sessões e contatos em um só lugar. Nunca mais procure informação." },
-    { Icon: Calendar, title: "Agenda inteligente", desc: "Veja sessões marcadas, retornos, sinais pagos e horários livres em uma visão clara." },
-    { Icon: ImageIcon, title: "Portfólio comercial", desc: "Organize artes, estilos, fotos e ideias para apresentar melhor seu trabalho aos clientes." },
-    { Icon: MessageSquare, title: "Mensagens e follow-up", desc: "Nunca mais esqueça de responder um pedido importante. Seu painel de comunicação centralizado." },
+    { Icon: FileText, title: "Orçamentos visuais", desc: "Cada pedido entra com estilo, tamanho, referência, valor e status. Você acompanha do primeiro contato ao sinal pago.", metric: "18 pedidos ativos" },
+    { Icon: Users, title: "Clientes organizados", desc: "Histórico, preferências, sessões, contatos e referências ficam reunidos em uma ficha simples de consultar.", metric: "127 clientes salvos" },
+    { Icon: Calendar, title: "Agenda inteligente", desc: "Sessões, retornos, encaixes e horários livres aparecem conectados ao cliente e ao orçamento.", metric: "9 sessões na semana" },
+    { Icon: ImageIcon, title: "Portfólio comercial", desc: "Artes, flashs, fotos e estilos viram um acervo vendável para responder melhor cada briefing.", metric: "42 referências" },
+    { Icon: MessageSquare, title: "Mensagens e follow-up", desc: "Veja quem precisa de resposta, quem confirmou sinal e quem merece um lembrete para fechar.", metric: "6 conversas quentes" },
   ]
   const kanbanCols = [
-    { label: "Novo", dot: T.teal, cards: ["Flor oriental", "Lobo geométrico"] },
+    { label: "Novo", dot: T.text, cards: ["Flor oriental", "Lobo geométrico"] },
     { label: "Respondido", dot: T.amber, cards: ["Dragão old school"] },
-    { label: "Ag. sinal", dot: "#6b7e89", cards: ["Fênix aquarela"] },
+    { label: "Ag. sinal", dot: T.muted, cards: ["Fênix aquarela"] },
     { label: "Fechado", dot: T.green, cards: ["Mandala P&B"] },
   ]
   const clientList = [
@@ -474,50 +477,189 @@ function ProductSection() {
     { name: "Carlos Mendes", sessions: 2, tag: "Realismo" },
     { name: "Juliana Costa", sessions: 7, tag: "Old School" },
   ]
+
+  // Sincroniza o painel sticky com o item que cruza a faixa central da viewport.
+  // Threshold 0 + banda estreita: dispara poucas vezes e os cards têm altura fixa,
+  // então não há loop de layout nem custo perceptível no scroll.
+  useEffect(() => {
+    const items = featureRefs.current.filter(Boolean) as HTMLDivElement[]
+    if (items.length === 0) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            const index = Number((entry.target as HTMLElement).dataset.featureIndex)
+            if (!Number.isNaN(index)) setActive(index)
+          }
+        }
+      },
+      { rootMargin: "-42% 0px -42% 0px", threshold: 0 }
+    )
+
+    items.forEach((item) => observer.observe(item))
+    return () => observer.disconnect()
+  }, [])
+
+  const accent = "#4FC5D4"
+
   return (
-    <section className="py-28 px-6" style={{ background: T.bg }}>
-      <div className="max-w-6xl mx-auto">
-        <div ref={ref} className="mb-16 max-w-xl">
-          <p className="text-sm font-medium mb-3" style={{ ...fs(visible), color: T.teal }}>Produto</p>
-          <h2 className="text-3xl md:text-5xl font-bold leading-tight" style={{ ...fs(visible, 80), color: T.text }}>
-            Tudo que o tatuador precisa para vender, organizar e acompanhar.
-          </h2>
+    <section className="relative overflow-x-clip px-5 py-28 md:px-8 lg:py-32" style={{ background: T.bg }}>
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-px"
+        style={{ background: "linear-gradient(90deg, transparent 0%, rgba(79,197,212,0.35) 50%, transparent 100%)" }}
+      />
+      <div
+        className="pointer-events-none absolute right-[-18%] top-24 h-[520px] w-[520px] rounded-full blur-3xl"
+        style={{ background: "rgba(79,197,212,0.07)" }}
+      />
+      <div className="relative z-10 mx-auto max-w-6xl">
+        <div ref={ref} className="mb-16 grid gap-8 lg:grid-cols-[minmax(0,680px)_minmax(260px,360px)] lg:items-end">
+          <div>
+            <p className="mb-5 flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.22em]" style={{ ...fs(visible), color: accent }}>
+              <span className="h-px w-9" style={{ background: accent }} />
+              Produto
+            </p>
+            <h2 className="max-w-[680px] text-3xl font-semibold leading-[1.04] md:text-5xl" style={{ ...fs(visible, 80), color: T.text }}>
+              Um painel para vender melhor <span style={{ color: T.muted }}>sem perder o controle do estúdio.</span>
+            </h2>
+          </div>
+          <p className="max-w-[360px] text-sm leading-7 md:text-base lg:pb-1" style={{ ...fs(visible, 140), color: T.muted }}>
+            Cada módulo conversa com o outro: pedido vira orçamento, orçamento vira agenda, agenda alimenta histórico e follow-up.
+          </p>
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
-          <div className="flex flex-col gap-2" style={fs(visible, 160)}>
-            {features.map(({ Icon, title, desc }, i) => (
-              <div key={title} className="flex gap-4 p-5 rounded-2xl border cursor-pointer transition-all duration-200"
-                style={{ background: active === i ? `${T.teal}08` : "transparent", borderColor: active === i ? `${T.teal}25` : "transparent" }}
+
+        <div className="grid grid-cols-1 items-start gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(420px,480px)]">
+          <div className="flex flex-col gap-3 lg:py-6" style={fs(visible, 180)}>
+            {features.map(({ Icon, title, desc, metric }, i) => (
+              <div
+                key={title}
+                ref={(node) => { featureRefs.current[i] = node }}
+                data-feature-index={i}
+                className="group relative cursor-pointer overflow-hidden rounded-[14px] border p-4 transition-colors duration-300 md:p-5"
+                style={{
+                  background: active === i ? "rgba(79,197,212,0.055)" : "rgba(240,237,228,0.018)",
+                  borderColor: active === i ? "rgba(79,197,212,0.28)" : "rgba(240,237,228,0.06)",
+                }}
                 onClick={() => setActive(i)}
-                onMouseEnter={(e) => { if (active !== i) (e.currentTarget as HTMLElement).style.background = "rgba(240,237,228,0.025)" }}
-                onMouseLeave={(e) => { if (active !== i) (e.currentTarget as HTMLElement).style.background = "transparent" }}>
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: active === i ? `${T.teal}18` : `${T.teal}0a` }}>
-                  <Icon size={16} style={{ color: T.teal }} />
-                </div>
-                <div>
-                  <h3 className="text-sm font-semibold mb-1" style={{ color: T.text }}>{title}</h3>
-                  <p className="text-sm leading-relaxed" style={{ color: T.muted }}>{desc}</p>
+                onMouseEnter={(e) => {
+                  if (active !== i) {
+                    const target = e.currentTarget as HTMLElement
+                    target.style.background = "rgba(240,237,228,0.035)"
+                    target.style.borderColor = "rgba(240,237,228,0.12)"
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (active !== i) {
+                    const target = e.currentTarget as HTMLElement
+                    target.style.background = "rgba(240,237,228,0.018)"
+                    target.style.borderColor = "rgba(240,237,228,0.06)"
+                  }
+                }}
+              >
+                <span
+                  className="absolute left-0 top-0 h-full w-[3px] transition-all duration-300"
+                  style={{ background: active === i ? `linear-gradient(180deg, ${accent}, transparent)` : "transparent" }}
+                />
+                <div className="grid grid-cols-[44px_1fr] gap-4">
+                  <div
+                    className="flex h-11 w-11 items-center justify-center rounded-[12px] border transition-all duration-300"
+                    style={{
+                      background: active === i ? "rgba(79,197,212,0.14)" : "rgba(240,237,228,0.04)",
+                      borderColor: active === i ? "rgba(79,197,212,0.3)" : "rgba(240,237,228,0.1)",
+                    }}
+                  >
+                    <Icon size={17} style={{ color: active === i ? accent : T.text }} />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="mb-1.5 flex flex-wrap items-center justify-between gap-3">
+                      <h3 className="flex items-baseline gap-2.5 text-[15px] font-semibold leading-snug" style={{ color: T.text }}>
+                        <span className="text-[10px] font-bold tracking-wide" style={{ fontFamily: "'Syne', sans-serif", color: active === i ? accent : "rgba(240,237,228,0.25)" }}>
+                          {String(i + 1).padStart(2, "0")}
+                        </span>
+                        {title}
+                      </h3>
+                      <span
+                        className="rounded-full border px-2.5 py-1 text-[10px] font-medium transition-colors duration-300"
+                        style={{
+                          borderColor: active === i ? "rgba(79,197,212,0.3)" : "rgba(240,237,228,0.12)",
+                          color: active === i ? accent : T.muted,
+                          background: active === i ? "rgba(79,197,212,0.08)" : "transparent",
+                        }}
+                      >
+                        {metric}
+                      </span>
+                    </div>
+                    <p
+                      className="max-w-[560px] text-sm leading-relaxed transition-opacity duration-300"
+                      style={{ color: T.muted, opacity: active === i ? 1 : 0.72 }}
+                    >
+                      {desc}
+                    </p>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
-          <div className="rounded-2xl border overflow-hidden sticky top-28" style={{ ...fs(visible, 240), background: T.card, borderColor: T.border, boxShadow: `0 0 80px rgba(0,0,0,0.6)` }}>
-            <div className="flex items-center justify-between px-5 py-3.5 border-b" style={{ borderColor: T.border, background: T.bgSec }}>
-              <span className="text-[12px] font-medium" style={{ color: T.muted }}>{features[active].title}</span>
-              <div className="flex gap-1.5">
-                {[T.teal, T.amber, T.green].map((c) => <div key={c} className="w-2 h-2 rounded-full opacity-50" style={{ background: c }} />)}
+
+          <div className="sticky top-28 overflow-hidden rounded-[18px] border" style={{ ...fs(visible, 260), background: T.card, borderColor: "rgba(79,197,212,0.16)", boxShadow: `0 28px 90px rgba(0,0,0,0.5), 0 0 60px rgba(79,197,212,0.05), 0 0 0 1px rgba(240,237,228,0.04)` }}>
+            <div className="flex items-center justify-between border-b px-5 py-4" style={{ borderColor: T.border, background: "rgba(2,6,5,0.68)" }}>
+              <div className="flex min-w-0 items-center gap-3">
+                <BrandMark size={18} />
+                <div className="min-w-0">
+                  <span className="block truncate text-[12px] font-semibold" style={{ color: T.text }}>{features[active].title}</span>
+                  <span className="block text-[10px]" style={{ color: T.muted }}>InkDesk workspace</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5">
+                {features.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setActive(i)}
+                    className="h-1.5 rounded-full transition-all duration-300"
+                    style={{ width: active === i ? 16 : 6, background: active === i ? accent : "rgba(240,237,228,0.18)" }}
+                    aria-label={`Ver ${features[i].title}`}
+                  />
+                ))}
               </div>
             </div>
-            <div className="p-5">
+
+            <div className="border-b px-5 py-4" style={{ borderColor: T.border, background: "rgba(240,237,228,0.025)" }}>
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  ["Receita", "R$8.450"],
+                  ["Resposta", "12 min"],
+                  ["Fechados", "68%"],
+                ].map(([label, value]) => (
+                  <div key={label}>
+                    <div className="text-[10px]" style={{ color: T.muted }}>{label}</div>
+                    <div className="mt-1 text-sm font-semibold" style={{ color: T.text }}>{value}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <motion.div
+              key={active}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, ease: "easeOut" }}
+              className="min-h-[260px] p-5"
+            >
               {active === 0 && (
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                   {kanbanCols.map(({ label, dot, cards }) => (
-                    <div key={label} className="flex flex-col gap-1.5">
-                      <div className="flex items-center gap-1.5 mb-1">
-                        <div className="w-1.5 h-1.5 rounded-full" style={{ background: dot }} />
-                        <span className="text-[10px]" style={{ color: T.muted }}>{label}</span>
+                    <div key={label} className="flex min-h-[180px] flex-col gap-2 rounded-[12px] border p-2.5" style={{ background: T.bgSec, borderColor: T.border }}>
+                      <div className="mb-1 flex items-center gap-1.5">
+                        <div className="h-1.5 w-1.5 rounded-full" style={{ background: dot }} />
+                        <span className="text-[10px] font-medium" style={{ color: T.muted }}>{label}</span>
                       </div>
-                      {cards.map((c) => <div key={c} className="p-2.5 rounded-xl border text-[10px]" style={{ background: T.bgSec, borderColor: T.border, color: "rgba(240,237,228,0.62)" }}>{c}</div>)}
+                      {cards.map((c) => (
+                        <div key={c} className="rounded-[10px] border p-2 text-[10px] leading-4" style={{ background: "rgba(240,237,228,0.035)", borderColor: T.border, color: "rgba(240,237,228,0.68)" }}>
+                          {c}
+                          <div className="mt-1 text-[9px]" style={{ color: T.muted }}>Briefing completo</div>
+                        </div>
+                      ))}
                     </div>
                   ))}
                 </div>
@@ -525,13 +667,13 @@ function ProductSection() {
               {active === 1 && (
                 <div className="flex flex-col gap-2">
                   {clientList.map(({ name, sessions, tag }) => (
-                    <div key={name} className="flex items-center gap-3 p-3 rounded-xl border" style={{ background: T.bgSec, borderColor: T.border }}>
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold" style={{ background: `${T.teal}20`, color: T.teal }}>{name[0]}</div>
+                    <div key={name} className="flex items-center gap-3 rounded-[12px] border p-3" style={{ background: T.bgSec, borderColor: T.border }}>
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full text-[11px] font-bold" style={{ background: T.text, color: T.teal }}>{name[0]}</div>
                       <div className="flex-1">
                         <div className="text-[11px] font-medium" style={{ color: T.text }}>{name}</div>
                         <div className="text-[10px]" style={{ color: T.muted }}>{sessions} sessões</div>
                       </div>
-                      <span className="text-[9px] px-2 py-0.5 rounded-full" style={{ background: `${T.teal}14`, color: T.teal }}>{tag}</span>
+                      <span className="rounded-full px-2 py-0.5 text-[9px]" style={{ background: "rgba(240,237,228,0.08)", color: T.text }}>{tag}</span>
                     </div>
                   ))}
                 </div>
@@ -539,33 +681,34 @@ function ProductSection() {
               {active === 2 && (
                 <div className="flex flex-col gap-2">
                   {[{ client: "Ana Ferreira", time: "10:00", paid: true }, { client: "Carlos Mendes", time: "14:00", paid: false }, { client: "Juliana Costa", time: "17:30", paid: true }].map(({ client, time, paid }) => (
-                    <div key={client} className="flex items-center gap-2 p-2.5 rounded-lg border"
+                    <div key={client} className="flex items-center gap-3 rounded-[12px] border p-3"
                       style={{ background: paid ? `${T.green}10` : `${T.teal}08`, borderColor: paid ? `${T.green}20` : `${T.teal}18` }}>
-                      <div className="w-1 h-6 rounded-full" style={{ background: paid ? T.green : T.teal }} />
-                      <div>
+                      <div className="h-10 w-1 rounded-full" style={{ background: paid ? T.green : T.text }} />
+                      <div className="flex-1">
                         <div className="text-[11px] font-medium" style={{ color: T.text }}>{client}</div>
                         <div className="text-[10px]" style={{ color: T.muted }}>{time}{paid ? " · Sinal pago ✓" : ""}</div>
                       </div>
+                      <span className="text-[10px]" style={{ color: paid ? T.text : T.muted }}>{paid ? "Confirmado" : "Pendente"}</span>
                     </div>
                   ))}
                 </div>
               )}
               {active === 3 && (
                 <div>
-                  <div className="grid grid-cols-3 gap-2 mb-3">
-                    {Array.from({ length: 6 }).map((_, i) => <div key={i} className="aspect-square rounded-xl border" style={{ background: `linear-gradient(135deg, ${T.card} 0%, rgba(0,71,65,0.18) 100%)`, borderColor: T.border }} />)}
+                  <div className="mb-4 grid grid-cols-3 gap-2">
+                    {Array.from({ length: 6 }).map((_, i) => <div key={i} className="aspect-square rounded-[12px] border" style={{ background: `linear-gradient(135deg, rgba(240,237,228,0.09) 0%, rgba(0,71,65,0.28) 100%)`, borderColor: T.border }} />)}
                   </div>
                   <div className="flex flex-wrap gap-1.5">
-                    {["Fineline", "Realismo", "Geométrico", "Old School", "Aquarela"].map((s) => <span key={s} className="text-[9px] px-2 py-0.5 rounded-full border" style={{ borderColor: T.border, color: T.muted }}>{s}</span>)}
+                    {["Fineline", "Realismo", "Geométrico", "Old School", "Aquarela"].map((s) => <span key={s} className="rounded-full border px-2 py-0.5 text-[9px]" style={{ borderColor: T.border, color: T.muted }}>{s}</span>)}
                   </div>
                 </div>
               )}
               {active === 4 && (
                 <div className="flex flex-col gap-2">
                   {[{ from: "Ana Ferreira", preview: "Queria fazer uma flor no antebraço...", time: "10m", unread: true }, { from: "Carlos Mendes", preview: "Quando fica pronto o orçamento?", time: "1h", unread: true }, { from: "Juliana Costa", preview: "Confirmei o sinal!", time: "3h", unread: false }].map(({ from, preview, time, unread }) => (
-                    <div key={from} className="flex items-center gap-3 p-3 rounded-xl border"
+                    <div key={from} className="flex items-center gap-3 rounded-[12px] border p-3"
                       style={{ background: unread ? `${T.teal}06` : T.bgSec, borderColor: unread ? `${T.teal}20` : T.border }}>
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold" style={{ background: `${T.teal}20`, color: T.teal }}>{from[0]}</div>
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full text-[11px] font-bold" style={{ background: unread ? T.text : "rgba(240,237,228,0.08)", color: unread ? T.teal : T.text }}>{from[0]}</div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
                           <span className="text-[11px] font-medium" style={{ color: T.text }}>{from}</span>
@@ -573,12 +716,12 @@ function ProductSection() {
                         </div>
                         <p className="text-[10px] truncate" style={{ color: T.muted }}>{preview}</p>
                       </div>
-                      {unread && <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: T.teal }} />}
+                      {unread && <div className="h-2 w-2 flex-shrink-0 rounded-full" style={{ background: accent }} />}
                     </div>
                   ))}
                 </div>
               )}
-            </div>
+            </motion.div>
           </div>
         </div>
       </div>
@@ -587,7 +730,8 @@ function ProductSection() {
 }
 
 function WorkflowSection() {
-  const { ref, visible } = useFadeIn()
+  const { ref, visible } = useFadeIn(0.3)
+  const accent = "#4FC5D4"
   const steps = [
     { n: "01", Icon: MessageSquare, title: "Cliente envia uma ideia", desc: "Referências, estilo, tamanho e localização chegam pelo seu canal." },
     { n: "02", Icon: FileText, title: "Você cria o orçamento", desc: "Registra valor, estilo, tempo estimado e envia o retorno." },
@@ -595,27 +739,88 @@ function WorkflowSection() {
     { n: "04", Icon: CheckCircle2, title: "Cliente confirma o sinal", desc: "Você marca o pagamento e o pedido avança automaticamente." },
     { n: "05", Icon: Calendar, title: "Sessão entra na agenda", desc: "Data, horário e cliente confirmados na sua grade da semana." },
   ]
+  // Cascata: cada passo "carrega" depois do anterior; a linha de progresso
+  // percorre o trilho no mesmo ritmo para conectar os disparos.
+  const stepDelay = (i: number) => 0.3 + i * 0.45
+
   return (
-    <section className="py-28 px-6" style={{ background: T.bgSec }}>
-      <div className="max-w-6xl mx-auto">
-        <div ref={ref} className="text-center mb-16">
-          <p className="text-sm font-medium mb-3" style={{ ...fs(visible), color: T.teal }}>Como funciona</p>
-          <h2 className="text-3xl md:text-5xl font-bold leading-tight" style={{ ...fs(visible, 80), color: T.text }}>Do primeiro contato até a sessão fechada.</h2>
+    <section className="relative overflow-x-clip px-5 py-28 md:px-8 lg:py-32" style={{ background: T.bgSec }}>
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-px"
+        style={{ background: "linear-gradient(90deg, transparent 0%, rgba(79,197,212,0.35) 50%, transparent 100%)" }}
+      />
+      <div className="relative z-10 mx-auto max-w-6xl">
+        <div ref={ref} className="mb-16 grid gap-6 md:grid-cols-[1fr_auto] md:items-end">
+          <div>
+            <p className="mb-5 flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.22em]" style={{ ...fs(visible), color: accent }}>
+              <span className="h-px w-9" style={{ background: accent }} />
+              Como funciona
+            </p>
+            <h2 className="max-w-[640px] text-3xl font-bold leading-[1.08] md:text-5xl" style={{ ...fs(visible, 60), color: T.text }}>
+              Do primeiro contato <span style={{ color: T.muted }}>até a sessão fechada.</span>
+            </h2>
+          </div>
+          <span
+            className="hidden rounded-full border px-3.5 py-1.5 text-[11px] font-medium md:inline-flex"
+            style={{ ...fs(visible, 140), borderColor: "rgba(79,197,212,0.22)", color: accent, background: "rgba(79,197,212,0.06)" }}
+          >
+            5 passos · sem planilha
+          </span>
         </div>
+
         <div className="relative">
-          <div className="absolute top-10 left-0 right-0 h-px hidden lg:block" style={{ background: `linear-gradient(90deg, transparent, ${T.teal}25, transparent)` }} />
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-            {steps.map(({ n, Icon, title, desc }, i) => (
-              <div key={n} className="flex flex-col items-center text-center lg:items-start lg:text-left" style={fs(visible, 120 + i * 80)}>
-                <div className="relative w-10 h-10 rounded-full border flex items-center justify-center mb-5 flex-shrink-0 z-10" style={{ background: T.card, borderColor: `${T.teal}30` }}>
-                  <Icon size={16} style={{ color: T.teal }} />
-                  <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold" style={{ background: T.teal, color: T.bg }}>{i + 1}</span>
+          <div className="absolute left-0 right-0 top-[22px] hidden h-px lg:block" style={{ background: "rgba(240,237,228,0.08)" }} />
+          <div
+            className="absolute left-0 top-[22px] hidden h-px lg:block"
+            style={{
+              width: visible ? "100%" : "0%",
+              background: `linear-gradient(90deg, ${accent}00, ${accent})`,
+              boxShadow: `0 0 12px rgba(79,197,212,0.45)`,
+              transition: "width 2.4s cubic-bezier(0.3, 0.6, 0.3, 1) 0.3s",
+            }}
+          />
+
+          <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-5 lg:gap-8">
+            {steps.map(({ n, Icon, title, desc }, i) => {
+              const d = stepDelay(i)
+              return (
+                <div
+                  key={n}
+                  className="flex flex-col items-center text-center lg:items-start lg:text-left"
+                  style={{
+                    opacity: visible ? 1 : 0,
+                    transform: visible ? "none" : "translateY(22px)",
+                    filter: visible ? "blur(0px)" : "blur(6px)",
+                    transition: `opacity 0.6s ease ${d}s, transform 0.6s ease ${d}s, filter 0.6s ease ${d}s`,
+                  }}
+                >
+                  <div
+                    className="relative z-10 mb-6 flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full border"
+                    style={{
+                      background: T.card,
+                      borderColor: visible ? "rgba(79,197,212,0.45)" : "rgba(240,237,228,0.1)",
+                      boxShadow: visible ? "0 0 22px rgba(79,197,212,0.16)" : "none",
+                      transition: `border-color 0.5s ease ${d + 0.15}s, box-shadow 0.5s ease ${d + 0.15}s`,
+                    }}
+                  >
+                    <Icon size={16} style={{ color: accent }} />
+                  </div>
+                  <div className="mb-2 flex items-baseline gap-2">
+                    <span className="text-[11px] font-bold tracking-[0.08em]" style={{ fontFamily: "'Syne', sans-serif", color: accent }}>{n}</span>
+                    <span
+                      className="h-[3px] w-7 rounded-full"
+                      style={{
+                        background: visible ? accent : "rgba(240,237,228,0.1)",
+                        opacity: 0.5,
+                        transition: `background 0.4s ease ${d + 0.25}s`,
+                      }}
+                    />
+                  </div>
+                  <h3 className="mb-2 text-sm font-semibold" style={{ color: T.text }}>{title}</h3>
+                  <p className="text-[13px] leading-relaxed" style={{ color: T.muted }}>{desc}</p>
                 </div>
-                <div className="text-[11px] font-bold mb-1" style={{ color: T.teal, letterSpacing: "0.08em" }}>{n}</div>
-                <h3 className="text-sm font-semibold mb-2" style={{ color: T.text }}>{title}</h3>
-                <p className="text-[13px] leading-relaxed" style={{ color: T.muted }}>{desc}</p>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       </div>
@@ -713,33 +918,290 @@ function InterfaceSection() {
   )
 }
 
+function InterfaceShowcaseSection() {
+  const { ref, visible } = useFadeIn()
+  const budgetRows = [
+    { status: "Novo", client: "Beatriz Almada", style: "Fineline", value: "R$800", dot: T.text },
+    { status: "Ag. sinal", client: "Pedro Ramos", style: "Realismo", value: "R$1.500", dot: T.amber },
+    { status: "Fechado", client: "Carla Neves", style: "Old School", value: "R$600", dot: T.green },
+  ]
+  const stats = [
+    { label: "Pedidos", value: "18" },
+    { label: "Agenda", value: "09" },
+    { label: "Receita", value: "R$8.4k" },
+  ]
+  const summaryItems = [
+    { label: "Tempo médio de resposta", value: "12 min", Icon: MessageSquare },
+    { label: "Sessões confirmadas", value: "09", Icon: CheckCircle2 },
+    { label: "Clientes em follow-up", value: "06", Icon: Users },
+  ]
+
+  return (
+    <section className="relative overflow-hidden px-5 py-28 md:px-8 lg:py-32" style={{ background: T.bgSec }}>
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px" style={{ background: `linear-gradient(90deg, transparent, ${T.text}26, transparent)` }} />
+      <div
+        className="pointer-events-none absolute left-1/2 top-12 h-[520px] w-[920px] -translate-x-1/2 blur-3xl"
+        style={{ background: "radial-gradient(ellipse, rgba(0,71,65,0.34) 0%, transparent 70%)" }}
+      />
+
+      <div className="relative z-10 mx-auto max-w-6xl">
+        <div ref={ref} className="mb-14 grid gap-8 lg:grid-cols-[minmax(0,680px)_minmax(260px,360px)] lg:items-end">
+          <div>
+            <p className="mb-5 flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.22em]" style={{ ...fs(visible), color: T.text }}>
+              <span className="h-px w-9" style={{ background: T.text }} />
+              Interface
+            </p>
+            <h2 className="max-w-[680px] text-3xl font-semibold leading-[1.04] md:text-5xl" style={{ ...fs(visible, 80), color: T.text }}>
+              Uma tela limpa para decidir rápido e atender melhor.
+            </h2>
+          </div>
+          <p className="max-w-[360px] text-sm leading-7 md:text-base lg:pb-1" style={{ ...fs(visible, 140), color: T.muted }}>
+            Status, agenda e histórico do cliente aparecem juntos, com o mínimo de atrito para a rotina do estúdio.
+          </p>
+        </div>
+
+        <div
+          className="overflow-hidden rounded-[24px] border"
+          style={{
+            ...fs(visible, 180),
+            background: "linear-gradient(180deg, rgba(240,237,228,0.055), rgba(240,237,228,0.018))",
+            borderColor: "rgba(240,237,228,0.12)",
+            boxShadow: "0 34px 110px rgba(0,0,0,0.52), inset 0 1px 0 rgba(240,237,228,0.08)",
+          }}
+        >
+          <div className="flex items-center justify-between border-b px-4 py-3 md:px-5" style={{ borderColor: T.border, background: "rgba(2,6,5,0.72)" }}>
+            <div className="flex items-center gap-3">
+              <BrandMark size={18} />
+              <div>
+                <div className="text-[12px] font-semibold" style={{ color: T.text }}>InkDesk Studio</div>
+                <div className="text-[10px]" style={{ color: T.muted }}>Operação de hoje</div>
+              </div>
+            </div>
+            <div className="hidden items-center gap-2 md:flex">
+              {["Hoje", "Semana", "Mês"].map((label, i) => (
+                <span
+                  key={label}
+                  className="rounded-full border px-3 py-1 text-[11px] font-medium"
+                  style={{ background: i === 0 ? T.text : "transparent", borderColor: i === 0 ? T.text : T.border, color: i === 0 ? T.teal : T.muted }}
+                >
+                  {label}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid min-h-[560px] grid-cols-1 lg:grid-cols-[190px_minmax(0,1fr)_330px]">
+            <aside className="hidden border-r p-4 lg:block" style={{ borderColor: T.border, background: "rgba(2,6,5,0.34)" }}>
+              <div className="mb-5 text-[10px] uppercase tracking-[0.18em]" style={{ color: T.muted }}>Workspace</div>
+              <div className="flex flex-col gap-1.5">
+                {[
+                  { Icon: LayoutDashboard, label: "Resumo", active: true },
+                  { Icon: FileText, label: "Orçamentos", active: false },
+                  { Icon: Calendar, label: "Agenda", active: false },
+                  { Icon: Users, label: "Clientes", active: false },
+                ].map(({ Icon, label, active }) => (
+                  <div key={label} className="flex items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-[12px]" style={{ background: active ? "rgba(240,237,228,0.08)" : "transparent", color: active ? T.text : T.muted }}>
+                    <Icon size={14} />
+                    {label}
+                  </div>
+                ))}
+              </div>
+              <div className="mt-8 rounded-[14px] border p-3" style={{ borderColor: T.border, background: "rgba(240,237,228,0.035)" }}>
+                <div className="mb-3 text-[10px]" style={{ color: T.muted }}>Meta do mês</div>
+                <div className="text-xl font-semibold" style={{ color: T.text }}>68%</div>
+                <div className="mt-3 h-1.5 overflow-hidden rounded-full" style={{ background: "rgba(240,237,228,0.08)" }}>
+                  <div className="h-full w-[68%] rounded-full" style={{ background: T.text }} />
+                </div>
+              </div>
+            </aside>
+
+            <div className="border-r p-4 md:p-5" style={{ borderColor: T.border }}>
+              <div className="mb-4 grid grid-cols-3 gap-3">
+                {stats.map(({ label, value }) => (
+                  <div key={label} className="rounded-[14px] border p-3" style={{ borderColor: T.border, background: "rgba(2,6,5,0.42)" }}>
+                    <div className="text-[10px]" style={{ color: T.muted }}>{label}</div>
+                    <div className="mt-1 text-lg font-semibold" style={{ color: T.text }}>{value}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="rounded-[18px] border" style={{ borderColor: T.border, background: T.card }}>
+                <div className="flex items-center justify-between border-b px-4 py-3" style={{ borderColor: T.border }}>
+                  <div>
+                    <div className="text-sm font-semibold" style={{ color: T.text }}>Orçamentos</div>
+                    <div className="text-[10px]" style={{ color: T.muted }}>Pipeline comercial</div>
+                  </div>
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full border" style={{ borderColor: T.border, color: T.muted }}>
+                    <Filter size={14} />
+                  </div>
+                </div>
+
+                <div className="p-3">
+                  {budgetRows.map(({ status, client, style, value, dot }) => (
+                    <div key={client} className="mb-2 rounded-[14px] border p-3 last:mb-0" style={{ background: T.bgSec, borderColor: T.border }}>
+                      <div className="mb-2 flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <div className="h-1.5 w-1.5 rounded-full" style={{ background: dot }} />
+                          <span className="text-[10px]" style={{ color: T.muted }}>{status}</span>
+                        </div>
+                        <span className="text-[11px] font-semibold" style={{ color: T.text }}>{value}</span>
+                      </div>
+                      <div className="text-[12px] font-medium" style={{ color: T.text }}>{client}</div>
+                      <div className="text-[10px]" style={{ color: T.muted }}>{style}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-px" style={{ background: T.border }}>
+              <div className="p-4 md:p-5" style={{ background: T.card }}>
+                <div className="mb-4 flex items-center justify-between">
+                  <div>
+                    <div className="text-sm font-semibold" style={{ color: T.text }}>Agenda</div>
+                    <div className="text-[10px]" style={{ color: T.muted }}>Julho 2026</div>
+                  </div>
+                  <span className="rounded-full border px-2.5 py-1 text-[10px]" style={{ borderColor: T.border, color: T.muted }}>5 sessões</span>
+                </div>
+                <div className="mb-4 grid grid-cols-7 gap-1">
+                  {["D","S","T","Q","Q","S","S"].map((d, i) => <div key={i} className="text-center text-[9px]" style={{ color: T.muted }}>{d}</div>)}
+                  {Array.from({ length: 21 }, (_, i) => i + 1).map((d) => (
+                    <div key={d} className="flex aspect-square items-center justify-center rounded-md text-[10px]" style={{ background: [3,9,14,17].includes(d) ? "rgba(240,237,228,0.08)" : "transparent", color: [3,9,14,17].includes(d) ? T.text : T.muted, fontWeight: [3,9,14,17].includes(d) ? 600 : 400 }}>
+                      {d}
+                    </div>
+                  ))}
+                </div>
+                <div className="flex flex-col gap-2">
+                  {[{ client: "Ana Ferreira", time: "10:00", paid: true }, { client: "Carlos Mendes", time: "14:00", paid: false }].map(({ client, time, paid }) => (
+                    <div key={client} className="flex items-center gap-3 rounded-[12px] border p-2.5" style={{ background: paid ? `${T.green}10` : `${T.teal}08`, borderColor: paid ? `${T.green}20` : `${T.teal}18` }}>
+                      <div className="h-7 w-1 rounded-full" style={{ background: paid ? T.green : T.text }} />
+                      <div>
+                        <div className="text-[11px] font-medium" style={{ color: T.text }}>{client}</div>
+                        <div className="text-[10px]" style={{ color: T.muted }}>{time}{paid ? " · Sinal pago ✓" : ""}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="p-4 md:p-5" style={{ background: T.card }}>
+                <div className="mb-4 flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-full text-sm font-bold" style={{ background: T.text, color: T.teal }}>J</div>
+                  <div>
+                    <div className="text-sm font-semibold" style={{ color: T.text }}>Juliana Costa</div>
+                    <div className="text-[11px]" style={{ color: T.muted }}>7 sessões · Desde 2023</div>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-2">
+                  {[{ label: "Estilo favorito", value: "Old School" }, { label: "Próxima sessão", value: "09/07 às 15:00" }, { label: "Valor total", value: "R$4.200" }].map(({ label, value }) => (
+                    <div key={label} className="flex items-center justify-between rounded-[10px] border p-2.5" style={{ background: T.bgSec, borderColor: T.border }}>
+                      <span className="text-[10px]" style={{ color: T.muted }}>{label}</span>
+                      <span className="text-[10px] font-semibold" style={{ color: T.text }}>{value}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-4">
+                  <div className="mb-2 text-[10px] font-medium" style={{ color: T.muted }}>Referências</div>
+                  <div className="grid grid-cols-4 gap-2">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                      <div key={i} className="aspect-square rounded-[10px] border" style={{ background: `linear-gradient(135deg, rgba(240,237,228,0.08), rgba(0,71,65,0.22))`, borderColor: T.border }} />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-px border-t md:grid-cols-3" style={{ borderColor: T.border, background: T.border }}>
+            {summaryItems.map(({ label, value, Icon }) => (
+              <div key={label} className="flex items-center justify-between p-4" style={{ background: "rgba(2,6,5,0.74)" }}>
+                <div>
+                  <div className="text-[10px]" style={{ color: T.muted }}>{label}</div>
+                  <div className="mt-1 text-base font-semibold" style={{ color: T.text }}>{value}</div>
+                </div>
+                <Icon size={17} style={{ color: T.text }} />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
 function ForWhomSection() {
   const { ref, visible } = useFadeIn()
   const personas = [
-    { title: "Tatuador independente", desc: "Controle pedidos, agenda e clientes sem depender de planilhas, grupos de WhatsApp ou anotações avulsas.", accent: T.teal },
-    { title: "Estúdio pequeno", desc: "Organize a operação sem precisar de sistemas complexos. Uma visão clara de tudo que está acontecendo.", accent: T.amber },
-    { title: "Artista em crescimento", desc: "Tenha uma estrutura profissional para vender melhor, atender mais rápido e escalar com qualidade.", accent: T.green },
+    { title: "Tatuador independente", tag: "Solo", desc: "Pedidos, agenda e clientes sem depender de planilhas, grupos de WhatsApp ou anotações soltas.", fit: "Ideal para quem atende sozinho e quer responder mais rápido.", metric: "1 artista", Icon: FileText },
+    { title: "Estúdio pequeno", tag: "Equipe", desc: "Uma visão clara da operação, com orçamentos, sessões e clientes no mesmo fluxo.", fit: "Para estúdios que precisam organizar a rotina sem sistema pesado.", metric: "2-8 pessoas", Icon: Users },
+    { title: "Artista em crescimento", tag: "Escala", desc: "Estrutura profissional para vender melhor, acompanhar leads e manter qualidade no atendimento.", fit: "Para quem está aumentando demanda e quer parecer mais premium.", metric: "+ demanda", Icon: TrendingUp },
   ]
   return (
-    <section className="py-28 px-6" style={{ background: T.bgSec }}>
-      <div className="max-w-6xl mx-auto">
-        <div ref={ref} className="text-center mb-16">
-          <h2 className="text-3xl md:text-5xl font-bold leading-tight" style={{ ...fs(visible), color: T.text }}>Feito para quem vive da própria arte.</h2>
+    <section className="relative overflow-hidden px-5 py-28 md:px-8 lg:py-32" style={{ background: T.bgSec }}>
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px" style={{ background: `linear-gradient(90deg, transparent, ${T.text}22, transparent)` }} />
+      <div className="pointer-events-none absolute -left-40 top-20 h-[520px] w-[520px] rounded-full blur-3xl" style={{ background: "rgba(0,71,65,0.32)" }} />
+
+      <div className="relative z-10 mx-auto max-w-6xl">
+        <div ref={ref} className="mb-14 grid gap-8 lg:grid-cols-[430px_minmax(0,1fr)] lg:items-end">
+          <div>
+            <p className="mb-5 flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.22em]" style={{ ...fs(visible), color: T.text }}>
+              <span className="h-px w-9" style={{ background: T.text }} />
+              Para quem é
+            </p>
+            <h2 className="text-3xl font-semibold leading-[1.04] md:text-5xl" style={{ ...fs(visible, 70), color: T.text }}>
+              Feito para quem vive da própria arte.
+            </h2>
+          </div>
+          <p className="max-w-[520px] text-sm leading-7 md:text-base" style={{ ...fs(visible, 130), color: T.muted }}>
+            O InkDesk se adapta ao tamanho do seu estúdio: começa simples para o artista solo e continua útil quando a demanda cresce.
+          </p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {personas.map(({ title, desc, accent }, i) => (
-            <div key={title} className="rounded-2xl border p-7 flex flex-col gap-4 transition-all duration-300 cursor-default"
-              style={{ ...fs(visible, 100 + i * 100), background: `linear-gradient(135deg, ${accent}10 0%, transparent 60%)`, borderColor: T.border }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = `${accent}30`; (e.currentTarget as HTMLElement).style.transform = "translateY(-4px)" }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = T.border; (e.currentTarget as HTMLElement).style.transform = "translateY(0)" }}>
-              <div className="w-10 h-10 rounded-full" style={{ background: `radial-gradient(circle, ${accent}40 0%, ${accent}08 70%)`, boxShadow: `0 0 20px ${accent}20` }} />
-              <div>
-                <h3 className="text-base font-bold mb-2" style={{ color: T.text }}>{title}</h3>
-                <p className="text-sm leading-relaxed" style={{ color: T.muted }}>{desc}</p>
+
+        <div className="overflow-hidden rounded-[24px] border" style={{ ...fs(visible, 190), background: "rgba(240,237,228,0.025)", borderColor: "rgba(240,237,228,0.11)" }}>
+          <div className="grid gap-px lg:grid-cols-3" style={{ background: T.border }}>
+            {personas.map(({ title, tag, desc, fit, metric, Icon }, i) => (
+              <div
+                key={title}
+                className="group min-h-[360px] p-6 transition-all duration-300 md:p-7"
+                style={{ background: i === 1 ? "rgba(240,237,228,0.045)" : T.card }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "rgba(240,237,228,0.06)" }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = i === 1 ? "rgba(240,237,228,0.045)" : T.card }}
+              >
+                <div className="mb-12 flex items-start justify-between">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-[14px] border transition-transform duration-300 group-hover:scale-105" style={{ background: i === 1 ? T.text : "rgba(240,237,228,0.06)", borderColor: "rgba(240,237,228,0.12)" }}>
+                    <Icon size={17} style={{ color: i === 1 ? T.teal : T.text }} />
+                  </div>
+                  <span className="rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em]" style={{ borderColor: "rgba(240,237,228,0.14)", color: T.muted }}>
+                    {tag}
+                  </span>
+                </div>
+
+                <div className="mb-8">
+                  <div className="mb-3 text-[11px] font-semibold" style={{ color: T.muted }}>{metric}</div>
+                  <h3 className="mb-3 text-xl font-semibold leading-tight" style={{ color: T.text }}>{title}</h3>
+                  <p className="text-sm leading-relaxed" style={{ color: T.muted }}>{desc}</p>
+                </div>
+
+                <div className="mt-auto rounded-[16px] border p-4" style={{ background: "rgba(2,6,5,0.42)", borderColor: T.border }}>
+                  <div className="mb-2 text-[10px] uppercase tracking-[0.16em]" style={{ color: T.muted }}>Melhor para</div>
+                  <p className="text-[13px] leading-relaxed" style={{ color: T.text }}>{fit}</p>
+                </div>
               </div>
-              <div className="mt-auto flex items-center gap-1.5 text-sm font-medium" style={{ color: accent }}>Saiba mais <ArrowRight size={14} /></div>
-            </div>
-          ))}
+            ))}
+          </div>
+
+          <div className="grid gap-px border-t md:grid-cols-3" style={{ background: T.border, borderColor: T.border }}>
+            {[
+              ["Menos dispersão", "Tudo parte do mesmo painel."],
+              ["Mais previsibilidade", "Status claros para cada pedido."],
+              ["Mais profissionalismo", "Atendimento com cara de produto premium."],
+            ].map(([title, desc]) => (
+              <div key={title} className="p-5" style={{ background: "rgba(2,6,5,0.72)" }}>
+                <div className="text-sm font-semibold" style={{ color: T.text }}>{title}</div>
+                <div className="mt-1 text-[12px]" style={{ color: T.muted }}>{desc}</div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </section>
@@ -748,6 +1210,7 @@ function ForWhomSection() {
 
 function DifferentialsSection() {
   const { ref, visible } = useFadeIn()
+  const accent = "#4FC5D4"
   const diffs = [
     { Icon: Layers, title: "Painel limpo e direto", desc: "Sem menus escondidos. Tudo que você precisa na primeira tela." },
     { Icon: BarChart3, title: "Controle por status", desc: "Orçamentos, sessões e clientes sempre com situação clara." },
@@ -756,25 +1219,110 @@ function DifferentialsSection() {
     { Icon: ImageIcon, title: "Portfólio organizado", desc: "Suas artes, estilos e fotos em um portfólio dentro do sistema." },
     { Icon: Zap, title: "Pensado para tatuadores", desc: "Não é um sistema genérico adaptado. É feito para o seu negócio." },
   ]
+  const stackCards = [
+    {
+      icon: <BarChart3 className="size-4" style={{ color: accent }} />,
+      title: "Controle por status",
+      description: "Cada pedido com situação clara",
+      date: "Kanban de orçamentos",
+    },
+    {
+      icon: <Users className="size-4" style={{ color: accent }} />,
+      title: "Histórico completo",
+      description: "Sessões, referências e valores",
+      date: "Ficha do cliente",
+    },
+    {
+      icon: <Zap className="size-4" style={{ color: accent }} />,
+      title: "Feito para tattoo",
+      description: "Nada de sistema genérico adaptado",
+      date: "Direto ao ponto",
+    },
+  ]
   return (
-    <section className="py-28 px-6" style={{ background: T.bg }}>
-      <div className="max-w-6xl mx-auto">
-        <div ref={ref} className="text-center mb-16">
-          <h2 className="text-3xl md:text-5xl font-bold leading-tight max-w-2xl mx-auto" style={{ ...fs(visible), color: T.text }}>Gestão com estética, velocidade e clareza.</h2>
+    <section className="relative overflow-x-clip px-5 py-28 md:px-8 lg:py-32" style={{ background: T.bg }}>
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-px"
+        style={{ background: "linear-gradient(90deg, transparent 0%, rgba(79,197,212,0.35) 50%, transparent 100%)" }}
+      />
+      <div className="relative z-10 mx-auto max-w-6xl">
+        <div ref={ref} className="mb-16">
+          <p className="mb-5 flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.22em]" style={{ ...fs(visible), color: accent }}>
+            <span className="h-px w-9" style={{ background: accent }} />
+            Diferenciais
+          </p>
+          <h2 className="max-w-[620px] text-3xl font-bold leading-[1.08] md:text-5xl" style={{ ...fs(visible, 60), color: T.text }}>
+            Gestão com estética, <span style={{ color: T.muted }}>velocidade e clareza.</span>
+          </h2>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {diffs.map(({ Icon, title, desc }, i) => (
-            <div key={title} className="p-6 rounded-2xl border transition-all duration-200 cursor-default"
-              style={{ ...fs(visible, 80 + i * 60), background: T.card, borderColor: T.border }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = `${T.teal}28`; (e.currentTarget as HTMLElement).style.boxShadow = `0 0 0 1px ${T.teal}18` }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = T.border; (e.currentTarget as HTMLElement).style.boxShadow = "none" }}>
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-4" style={{ background: `${T.teal}10` }}>
-                <Icon size={16} style={{ color: T.teal }} />
+
+        <div className="grid grid-cols-1 items-center gap-16 lg:grid-cols-[minmax(0,1fr)_minmax(420px,520px)]">
+          <div
+            className="grid grid-cols-1 gap-px overflow-hidden rounded-2xl border sm:grid-cols-2"
+            style={{ ...fs(visible, 140), background: T.border, borderColor: T.border }}
+          >
+            {diffs.map(({ Icon, title, desc }, i) => (
+              <div
+                key={title}
+                className="group relative flex flex-col gap-4 p-6 transition-colors duration-300 cursor-default"
+                style={{ ...fs(visible, 160 + i * 70), background: T.card }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "#0E1D19" }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = T.card }}
+              >
+                <span
+                  className="absolute left-0 top-0 h-[2px] w-0 transition-all duration-500 group-hover:w-full"
+                  style={{ background: `linear-gradient(90deg, ${accent}, transparent)` }}
+                />
+                <div className="flex items-center justify-between">
+                  <div
+                    className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[12px] border transition-all duration-300 group-hover:scale-105 group-hover:border-[rgba(79,197,212,0.35)]"
+                    style={{ background: "rgba(79,197,212,0.07)", borderColor: "rgba(79,197,212,0.14)" }}
+                  >
+                    <Icon size={16} style={{ color: accent }} />
+                  </div>
+                  <span
+                    className="text-[11px] font-bold tracking-[0.08em] transition-colors duration-300 group-hover:text-[#4FC5D4]"
+                    style={{ fontFamily: "'Syne', sans-serif", color: "rgba(240,237,228,0.18)" }}
+                  >
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                </div>
+                <div>
+                  <h3 className="mb-1 text-sm font-semibold" style={{ color: T.text }}>{title}</h3>
+                  <p className="text-[13px] leading-relaxed" style={{ color: T.muted }}>{desc}</p>
+                </div>
               </div>
-              <h3 className="text-sm font-semibold mb-1.5" style={{ color: T.text }}>{title}</h3>
-              <p className="text-[13px] leading-relaxed" style={{ color: T.muted }}>{desc}</p>
+            ))}
+          </div>
+
+          <div className="flex items-center justify-center py-10 lg:py-0" style={fs(visible, 260)}>
+            <div className="relative w-full max-w-xl lg:-translate-y-16">
+              <CardSwap
+                width={416}
+                height={176}
+                cardDistance={56}
+                verticalDistance={44}
+                delay={4000}
+                pauseOnHover
+                skewAmount={8}
+              >
+                {stackCards.map(({ icon, title, description, date }) => (
+                  <Card key={title} customClass="inkdesk-swap-card">
+                    <div className="flex h-full flex-col justify-between px-5 py-4">
+                      <div className="flex flex-col gap-2.5">
+                        <span className="inline-flex w-fit items-center justify-center rounded-full border border-[rgba(79,197,212,0.28)] bg-[rgba(79,197,212,0.12)] p-2">
+                          {icon}
+                        </span>
+                        <p className="text-lg font-semibold text-[#BDFFFF]">{title}</p>
+                      </div>
+                      <p className="whitespace-nowrap text-base font-medium text-[#F0EDE4]">{description}</p>
+                      <p className="text-sm text-[#A9A69C]">{date}</p>
+                    </div>
+                  </Card>
+                ))}
+              </CardSwap>
             </div>
-          ))}
+          </div>
         </div>
       </div>
     </section>
@@ -828,9 +1376,133 @@ function PricingSection() {
   )
 }
 
+function PricingShowcaseSection() {
+  const { ref, visible } = useFadeIn()
+  const features = [
+    "Orçamentos ilimitados",
+    "Cadastro de clientes",
+    "Agenda de sessões",
+    "Portfólio organizado",
+    "Painel de visão geral",
+    "Suporte inicial",
+  ]
+  const plans = [
+    {
+      name: "Mensal",
+      eyebrow: "Flexível",
+      price: "R$49",
+      period: "/mês",
+      note: "Para testar o InkDesk sem compromisso anual.",
+      badge: "Beta",
+      highlight: false,
+    },
+    {
+      name: "Anual",
+      eyebrow: "Melhor valor",
+      price: "R$39",
+      period: "/mês",
+      note: "Cobrado anualmente. Desconto aproximado de 20% sobre o mensal.",
+      badge: "Economize 20%",
+      highlight: true,
+    },
+  ]
+
+  return (
+    <section className="relative overflow-hidden px-5 py-28 md:px-8 lg:py-32" style={{ background: T.bgSec }}>
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px" style={{ background: `linear-gradient(90deg, transparent, ${T.text}24, transparent)` }} />
+      <div className="pointer-events-none absolute left-1/2 top-24 h-[560px] w-[760px] -translate-x-1/2 blur-3xl" style={{ background: "radial-gradient(ellipse, rgba(0,71,65,0.34) 0%, transparent 70%)" }} />
+
+      <div className="relative z-10 mx-auto max-w-6xl">
+        <div ref={ref} className="mb-14 grid gap-8 lg:grid-cols-[minmax(0,640px)_minmax(260px,360px)] lg:items-end">
+          <div>
+            <p className="mb-5 flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.22em]" style={{ ...fs(visible), color: T.text }}>
+              <span className="h-px w-9" style={{ background: T.text }} />
+              Planos
+            </p>
+            <h2 className="text-3xl font-semibold leading-[1.04] md:text-5xl" style={{ ...fs(visible, 80), color: T.text }}>
+              Comece simples. Evolua conforme seu estúdio cresce.
+            </h2>
+          </div>
+          <p className="max-w-[360px] text-sm leading-7 md:text-base lg:pb-1" style={{ ...fs(visible, 140), color: T.muted }}>
+            Valores iniciais para validar o produto. O anual entra como opção com desconto para quem já quer travar o acesso.
+          </p>
+        </div>
+
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-stretch">
+          <div className="grid h-full gap-5 md:grid-cols-2 md:items-stretch" style={fs(visible, 190)}>
+            {plans.map(({ name, eyebrow, price, period, note, badge, highlight }) => (
+              <div
+                key={name}
+                className="relative flex h-full flex-col justify-center overflow-hidden rounded-[24px] border p-7"
+                style={{
+                  background: highlight ? "linear-gradient(180deg, rgba(240,237,228,0.1), rgba(240,237,228,0.035))" : T.card,
+                  borderColor: highlight ? "rgba(240,237,228,0.28)" : T.border,
+                  boxShadow: highlight ? "0 28px 90px rgba(0,0,0,0.46), inset 0 1px 0 rgba(240,237,228,0.12)" : "none",
+                }}
+              >
+                {highlight && <div className="pointer-events-none absolute -right-20 -top-20 h-52 w-52 rounded-full blur-3xl" style={{ background: "rgba(240,237,228,0.14)" }} />}
+                <div className="relative">
+                  <div className="mb-7 flex items-start justify-between gap-4">
+                    <div>
+                      <p className="mb-1 text-[12px] font-semibold uppercase tracking-[0.16em]" style={{ color: highlight ? T.text : T.muted }}>{eyebrow}</p>
+                      <h3 className="text-xl font-semibold" style={{ color: T.text }}>InkDesk {name}</h3>
+                    </div>
+                    <span className="rounded-full border px-3 py-1 text-[10px] font-semibold" style={{ background: highlight ? T.text : "transparent", borderColor: highlight ? T.text : T.border, color: highlight ? T.teal : T.muted }}>
+                      {badge}
+                    </span>
+                  </div>
+
+                  <div className="mb-5 flex items-end gap-2">
+                    <span className="text-5xl font-semibold leading-none md:text-6xl" style={{ color: T.text }}>{price}</span>
+                    <span className="pb-1 text-sm" style={{ color: T.muted }}>{period}</span>
+                  </div>
+                  <p className="mb-8 min-h-[48px] text-sm leading-6" style={{ color: T.muted }}>{note}</p>
+
+                  <a
+                    href="#"
+                    className="flex w-full items-center justify-center gap-2 rounded-[16px] py-3.5 text-sm font-semibold transition-all duration-200"
+                    style={{ background: highlight ? T.text : "rgba(240,237,228,0.08)", color: highlight ? T.teal : T.text }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.transform = "translateY(-1px)" }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.transform = "translateY(0)" }}
+                  >
+                    Entrar na lista <ArrowRight size={16} />
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="rounded-[24px] border p-6" style={{ ...fs(visible, 260), background: "rgba(2,6,5,0.54)", borderColor: T.border }}>
+            <div className="mb-5 flex items-center gap-4">
+              <BrandMark size={44} />
+              <div>
+                <div className="text-sm font-semibold" style={{ color: T.text }}>Incluído nos dois planos</div>
+                <div className="text-[11px]" style={{ color: T.muted }}>Base para organizar o estúdio</div>
+              </div>
+            </div>
+            <div className="flex flex-col gap-3">
+              {features.map((item) => (
+                <div key={item} className="flex items-center gap-3">
+                  <CheckCircle2 size={15} style={{ color: T.text, flexShrink: 0 }} />
+                  <span className="text-sm" style={{ color: T.text }}>{item}</span>
+                </div>
+              ))}
+            </div>
+            <div className="mt-6 rounded-[16px] border p-4" style={{ background: "rgba(240,237,228,0.035)", borderColor: T.border }}>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: T.muted }}>Observação</div>
+              <p className="mt-2 text-[13px] leading-6" style={{ color: T.muted }}>
+                Preços e recursos podem mudar durante a fase beta. O anual é uma sugestão inicial com desconto.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
 function FAQSection() {
   const { ref, visible } = useFadeIn()
-  const [open, setOpen] = useState<number | null>(null)
   const faqs = [
     { q: "O InkDesk é para tatuador autônomo?", a: "Sim. Ele foi pensado para tatuadores independentes e pequenos estúdios que querem organizar pedidos, clientes e agenda." },
     { q: "Preciso instalar alguma coisa?", a: "Não. O InkDesk funciona online, direto pelo navegador, sem necessidade de instalação." },
@@ -844,20 +1516,33 @@ function FAQSection() {
         <div ref={ref} className="text-center mb-14">
           <h2 className="text-3xl md:text-5xl font-bold" style={{ ...fs(visible), color: T.text }}>Perguntas frequentes</h2>
         </div>
-        <div className="flex flex-col gap-2" style={fs(visible, 100)}>
+        <Accordion
+          type="single"
+          collapsible
+          className="flex flex-col gap-2"
+          style={fs(visible, 100)}
+        >
           {faqs.map(({ q, a }, i) => (
-            <div key={q} className="rounded-2xl border overflow-hidden transition-all duration-200"
-              style={{ background: open === i ? `${T.teal}06` : T.card, borderColor: open === i ? `${T.teal}25` : T.border }}>
-              <button className="flex items-center justify-between w-full px-6 py-5 text-left gap-4" onClick={() => setOpen(open === i ? null : i)}>
-                <span className="text-sm font-medium" style={{ color: T.text }}>{q}</span>
-                <ChevronDown size={16} style={{ color: T.muted, flexShrink: 0, transform: open === i ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.3s ease" }} />
-              </button>
-              <div style={{ maxHeight: open === i ? "200px" : "0px", overflow: "hidden", transition: "max-height 0.4s ease" }}>
-                <p className="px-6 pb-5 text-sm leading-relaxed" style={{ color: T.muted }}>{a}</p>
-              </div>
-            </div>
+            <AccordionItem
+              key={q}
+              value={`faq-${i}`}
+              className="rounded-md border overflow-hidden border-b-0 transition-colors duration-200 data-[state=open]:bg-[rgba(0,71,65,0.06)] data-[state=closed]:bg-[#0B1714] data-[state=open]:border-[rgba(0,71,65,0.15)] data-[state=closed]:border-[rgba(240,237,228,0.1)]"
+            >
+              <AccordionTrigger
+                className="px-6 py-5 hover:no-underline [&>svg]:text-[#A9A69C]"
+                style={{ color: T.text }}
+              >
+                {q}
+              </AccordionTrigger>
+              <AccordionContent
+                keepRendered
+                className="px-6 pb-5 text-sm leading-relaxed text-[#A9A69C]"
+              >
+                {a}
+              </AccordionContent>
+            </AccordionItem>
           ))}
-        </div>
+        </Accordion>
       </div>
     </section>
   )
@@ -865,30 +1550,51 @@ function FAQSection() {
 
 function CTASection() {
   const { ref, visible } = useFadeIn()
+
   return (
-    <section className="py-28 px-6 relative overflow-hidden" style={{ background: T.bgSec }}>
-      <div className="absolute inset-0 pointer-events-none" style={{ background: `radial-gradient(ellipse 60% 60% at 50% 50%, ${T.teal}0e 0%, transparent 70%)` }} />
-      <div ref={ref} className="relative max-w-4xl mx-auto text-center">
-        <h2 className="text-4xl md:text-6xl font-bold leading-tight mb-6" style={{ ...fs(visible), color: T.text }}>
-          Transforme sua rotina de tatuador em uma{" "}
-          <span style={{ background: `linear-gradient(135deg, ${T.text}, ${T.teal})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
-            operação organizada.
-          </span>
-        </h2>
-        <p className="text-base md:text-lg mb-10 max-w-2xl mx-auto leading-relaxed" style={{ ...fs(visible, 100), color: T.muted }}>
-          O InkDesk coloca seus pedidos, clientes, agenda e portfólio em um só lugar — com a estética que seu trabalho merece.
-        </p>
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3" style={fs(visible, 180)}>
-          <a href="#" className="inline-flex items-center gap-2 px-8 py-4 rounded-full font-semibold text-sm transition-all duration-200 w-full sm:w-auto justify-center" style={{ background: T.teal, color: T.bg }}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; (e.currentTarget as HTMLElement).style.boxShadow = `0 16px 40px ${T.teal}40` }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; (e.currentTarget as HTMLElement).style.boxShadow = "none" }}>
-            Começar agora <ArrowRight size={16} />
-          </a>
-          <a href="#" className="inline-flex items-center gap-2 px-8 py-4 rounded-full font-medium text-sm border transition-all duration-200 w-full sm:w-auto justify-center" style={{ borderColor: T.border, color: T.text, background: "rgba(240,237,228,0.035)" }}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = `${T.teal}35`; (e.currentTarget as HTMLElement).style.background = `${T.teal}08` }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = T.border; (e.currentTarget as HTMLElement).style.background = "rgba(240,237,228,0.035)" }}>
-            Ver interface
-          </a>
+    <section className="relative overflow-hidden px-5 py-24 md:px-8 lg:py-32" style={{ background: T.bgSec }}>
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px" style={{ background: `linear-gradient(90deg, transparent, ${T.text}20, transparent)` }} />
+      <div className="pointer-events-none absolute left-1/2 top-1/2 h-[420px] w-[720px] -translate-x-1/2 -translate-y-1/2 blur-3xl" style={{ background: "radial-gradient(ellipse, rgba(0,71,65,0.24) 0%, transparent 68%)" }} />
+
+      <div ref={ref} className="relative z-10 mx-auto max-w-4xl text-center">
+        <div
+          className="rounded-[28px] border px-6 py-14 md:px-12 md:py-16"
+          style={{
+            ...fs(visible),
+            background: "linear-gradient(180deg, rgba(240,237,228,0.055), rgba(240,237,228,0.018))",
+            borderColor: "rgba(240,237,228,0.12)",
+            boxShadow: "0 28px 90px rgba(0,0,0,0.42), inset 0 1px 0 rgba(240,237,228,0.08)",
+          }}
+        >
+          <div className="mx-auto mb-8 flex h-24 w-24 items-center justify-center rounded-full border md:h-32 md:w-32" style={{ borderColor: T.border, background: "rgba(2,6,5,0.42)", boxShadow: "0 22px 70px rgba(0,0,0,0.32)" }}>
+            <BrandMark size={96} />
+          </div>
+          <p className="mb-5 text-[12px] font-semibold uppercase tracking-[0.22em]" style={{ color: T.muted }}>InkDesk beta</p>
+          <h2 className="mx-auto max-w-[760px] text-4xl font-semibold leading-[1.04] md:text-6xl" style={{ color: T.text }}>
+            Organize seu estúdio com a calma de quem tem tudo no lugar.
+          </h2>
+          <p className="mx-auto mt-6 max-w-[600px] text-base leading-7 md:text-lg" style={{ color: T.muted }}>
+            Pedidos, agenda e clientes em uma experiência simples, elegante e feita para tatuadores.
+          </p>
+
+          <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <a
+              href="#"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full px-7 py-3.5 text-sm font-semibold transition-all duration-200 sm:w-auto"
+              style={{ background: T.text, color: T.teal }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)" }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.transform = "translateY(0)" }}
+            >
+              Começar agora <ArrowRight size={16} />
+            </a>
+            <a
+              href="#"
+              className="inline-flex w-full items-center justify-center rounded-full border px-7 py-3.5 text-sm font-semibold transition-all duration-200 sm:w-auto"
+              style={{ borderColor: T.border, color: T.text, background: "rgba(240,237,228,0.025)" }}
+            >
+              Ver interface
+            </a>
+          </div>
         </div>
       </div>
     </section>
@@ -896,23 +1602,103 @@ function CTASection() {
 }
 
 function Footer() {
+  const [supportOpen, setSupportOpen] = useState(false)
+  const [supportMessage, setSupportMessage] = useState("")
+  const supportEmail = "suporteinkdesk@gmail.com.br"
+  const supportHref = `mailto:${supportEmail}?subject=${encodeURIComponent("Suporte InkDesk")}&body=${encodeURIComponent(supportMessage || "Olá, preciso de suporte com o InkDesk.")}`
+
   return (
-    <footer className="px-6 py-12 border-t" style={{ background: T.bg, borderColor: T.border }}>
-      <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
-        <div>
-          <div className="font-bold text-xl mb-1" style={{ color: T.teal }}>InkDesk</div>
-          <p className="text-sm" style={{ color: T.muted }}>Sua bancada digital.</p>
+    <>
+      <footer className="border-t px-5 py-12 md:px-8" style={{ background: T.bg, borderColor: T.border }}>
+        <div className="mx-auto grid max-w-6xl gap-10 md:grid-cols-[1.3fr_1fr_1fr] md:items-start">
+          <div>
+            <div className="mb-3 flex items-center gap-3">
+              <BrandMark size={28} />
+              <span className="text-xl font-semibold" style={{ color: T.text }}>InkDesk</span>
+            </div>
+            <p className="max-w-[280px] text-sm leading-6" style={{ color: T.muted }}>Sua bancada digital para organizar pedidos, clientes e agenda.</p>
+          </div>
+
+          <div>
+            <div className="mb-4 text-[12px] font-semibold" style={{ color: T.text }}>Navegação</div>
+            <nav className="flex flex-wrap gap-x-5 gap-y-3">
+              {["Produto", "Recursos", "Preços", "FAQ"].map((l) => (
+                <a key={l} href="#" className="text-sm transition-colors duration-200" style={{ color: T.muted }}
+                  onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = T.text)}
+                  onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = T.muted)}>{l}</a>
+              ))}
+            </nav>
+          </div>
+
+          <div>
+            <div className="mb-4 text-[12px] font-semibold" style={{ color: T.text }}>Suporte e créditos</div>
+            <div className="flex flex-col gap-2 text-sm" style={{ color: T.muted }}>
+              <a href={`mailto:${supportEmail}`} className="transition-colors duration-200 hover:text-[#F0EDE4]">{supportEmail}</a>
+              <a href="https://brunosouza.dev.br" target="_blank" rel="noreferrer" className="transition-colors duration-200 hover:text-[#F0EDE4]">
+                Desenvolvido por Bruno Souza
+              </a>
+              <button
+                type="button"
+                className="mt-2 inline-flex w-fit items-center justify-center rounded-full border px-4 py-2 text-sm font-semibold transition-all duration-200"
+                style={{ borderColor: T.border, color: T.text, background: "rgba(240,237,228,0.035)" }}
+                onClick={() => setSupportOpen(true)}
+              >
+                Abrir SAC
+              </button>
+            </div>
+          </div>
         </div>
-        <nav className="flex flex-wrap gap-6">
-          {["Produto", "Recursos", "Preços", "FAQ", "Contato"].map((l) => (
-            <a key={l} href="#" className="text-sm transition-colors duration-200" style={{ color: T.muted }}
-              onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = T.text)}
-              onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = T.muted)}>{l}</a>
-          ))}
-        </nav>
-        <p className="text-[12px]" style={{ color: "rgba(155,173,184,0.4)" }}>© 2026 InkDesk. Todos os direitos reservados.</p>
-      </div>
-    </footer>
+        <div className="mx-auto mt-10 flex max-w-6xl flex-col gap-3 border-t pt-6 text-[12px] md:flex-row md:items-center md:justify-between" style={{ borderColor: T.border, color: "rgba(240,237,228,0.42)" }}>
+          <span>© 2026 InkDesk. Todos os direitos reservados.</span>
+          <a href="https://brunosouza.dev.br" target="_blank" rel="noreferrer" className="transition-colors duration-200 hover:text-[#F0EDE4]">brunosouza.dev.br</a>
+        </div>
+      </footer>
+
+      {supportOpen && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center px-5" role="dialog" aria-modal="true" aria-label="SAC InkDesk">
+          <button
+            type="button"
+            className="absolute inset-0"
+            style={{ background: "rgba(0,0,0,0.72)", backdropFilter: "blur(10px)" }}
+            onClick={() => setSupportOpen(false)}
+            aria-label="Fechar SAC"
+          />
+          <div className="relative w-full max-w-lg rounded-[24px] border p-6" style={{ background: T.card, borderColor: "rgba(240,237,228,0.16)", boxShadow: "0 30px 100px rgba(0,0,0,0.65)" }}>
+            <div className="mb-5 flex items-start justify-between gap-4">
+              <div>
+                <div className="mb-2 flex items-center gap-3">
+                  <BrandMark size={22} />
+                  <h3 className="text-lg font-semibold" style={{ color: T.text }}>SAC InkDesk</h3>
+                </div>
+                <p className="text-sm leading-6" style={{ color: T.muted }}>Descreva sua dúvida ou problema. O botão abre seu email com a mensagem pronta para envio.</p>
+              </div>
+              <button type="button" className="rounded-full p-2" style={{ color: T.muted }} onClick={() => setSupportOpen(false)} aria-label="Fechar SAC">
+                <X size={18} />
+              </button>
+            </div>
+            <textarea
+              value={supportMessage}
+              onChange={(e) => setSupportMessage(e.target.value)}
+              rows={6}
+              className="w-full resize-none rounded-[16px] border p-4 text-sm outline-none"
+              style={{ background: T.bgSec, borderColor: T.border, color: T.text }}
+              placeholder="Escreva sua mensagem para o suporte..."
+            />
+            <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <span className="text-[12px]" style={{ color: T.muted }}>{supportEmail}</span>
+              <a
+                href={supportHref}
+                className="inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold"
+                style={{ background: T.text, color: T.teal }}
+                onClick={() => setSupportOpen(false)}
+              >
+                Enviar email <ArrowRight size={15} />
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   )
 }
 
@@ -931,10 +1717,10 @@ export default function App() {
         <ProblemSection />
         <ProductSection />
         <WorkflowSection />
-        <InterfaceSection />
+        <InterfaceShowcaseSection />
         <ForWhomSection />
         <DifferentialsSection />
-        <PricingSection />
+        <PricingShowcaseSection />
         <FAQSection />
         <CTASection />
       </main>
