@@ -1,0 +1,18 @@
+export const T = {
+  teal: "#004741",
+  tealDark: "#003B36",
+  amber: "#D8D0BF",
+  green: "#2F7F68",
+  bg: "#020806",
+  bgSec: "#06110F",
+  card: "#081713",
+  cardElev: "#0B1D18",
+  border: "rgba(240,237,228,0.10)",
+  borderStrong: "rgba(240,237,228,0.18)",
+  text: "#F0EDE4",
+  muted: "rgba(240,237,228,0.68)",
+  faint: "rgba(240,237,228,0.45)",
+  glowGreen: "rgba(0,71,65,0.35)",
+  glowBeige: "rgba(240,237,228,0.08)",
+  accent: "#D8D0BF",
+}

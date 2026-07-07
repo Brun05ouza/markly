@@ -12,27 +12,11 @@ import marklyIcon from "../assets/icon-markly.png"
 import LaserFlow from "./components/LaserFlow/LaserFlow"
 import CardSwap, { Card } from "./components/ui/CardSwap"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./components/ui/accordion"
+import AuthPage from "./pages/AuthPage"
+import DevDashboard from "./pages/DevDashboard"
+import { T } from "./theme"
 
 gsap.registerPlugin(SplitText)
-
-const T = {
-  teal: "#004741",
-  tealDark: "#003B36",
-  amber: "#D8D0BF",
-  green: "#2F7F68",
-  bg: "#020806",
-  bgSec: "#06110F",
-  card: "#081713",
-  cardElev: "#0B1D18",
-  border: "rgba(240,237,228,0.10)",
-  borderStrong: "rgba(240,237,228,0.18)",
-  text: "#F0EDE4",
-  muted: "rgba(240,237,228,0.68)",
-  faint: "rgba(240,237,228,0.45)",
-  glowGreen: "rgba(0,71,65,0.35)",
-  glowBeige: "rgba(240,237,228,0.08)",
-  accent: "#D8D0BF",
-}
 
 function useFadeIn(threshold = 0.1) {
   const ref = useRef<HTMLDivElement>(null)
@@ -114,7 +98,7 @@ function LaptopMockup() {
         }}
       >
         <a
-          href="#"
+          href="#/painel"
           className="group absolute right-0 z-40 hidden items-center gap-2 md:flex"
           style={{ bottom: "100%", marginBottom: "0.625rem", color: "rgba(240,237,228,0.64)", fontSize: 15, fontWeight: 500 }}
         >
@@ -265,16 +249,25 @@ function Header() {
         </a>
         <nav className="hidden lg:flex items-center gap-7">
           {links.map(({ label, href }) => (
-            <a key={label} href={href} className="text-[13px] transition-colors duration-200" style={{ color: "rgba(240,237,228,0.58)" }}
-              onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = T.text)}
-              onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "rgba(240,237,228,0.58)")}>{label}</a>
+            <a
+              key={label}
+              href={href}
+              className="group relative px-1 py-1.5 text-[13px] transition-colors duration-300"
+              style={{ color: "rgba(240,237,228,0.58)" }}
+            >
+              <span className="relative z-10 transition-colors duration-300 group-hover:text-[#D8D0BF]">{label}</span>
+              <span
+                className="absolute left-0 bottom-0 h-[2px] w-0 transition-all duration-500 group-hover:w-full"
+                style={{ background: `linear-gradient(90deg, ${T.accent}, transparent)` }}
+              />
+            </a>
           ))}
         </nav>
         <div className="hidden lg:flex items-center gap-5">
-          <a href="#" className="text-[13px] transition-colors duration-200" style={{ color: "rgba(240,237,228,0.58)" }}
+          <a href="#/login" className="text-[13px] transition-colors duration-200" style={{ color: "rgba(240,237,228,0.58)" }}
             onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = T.text)}
             onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "rgba(240,237,228,0.58)")}>Entrar</a>
-          <a href="#precos" className="text-[13px] font-semibold px-4 py-2 rounded-full transition-all duration-200" style={{ background: T.text, color: T.bg }}
+          <a href="#/cadastro" className="text-[13px] font-semibold px-4 py-2 rounded-full transition-all duration-200" style={{ background: T.text, color: T.bg }}
             onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.transform = "translateY(-1px)"; (e.currentTarget as HTMLElement).style.boxShadow = `0 10px 28px rgba(240,237,228,0.16)` }}
             onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; (e.currentTarget as HTMLElement).style.boxShadow = "none" }}>
             Começar teste
@@ -288,8 +281,8 @@ function Header() {
         <div className="lg:hidden border-t px-6 py-6 flex flex-col gap-4" style={{ background: "rgba(3,4,5,0.97)", borderColor: T.border }}>
           {links.map(({ label, href }) => <a key={label} href={href} className="text-sm py-1" style={{ color: T.muted }} onClick={() => setOpen(false)}>{label}</a>)}
           <div className="flex flex-col gap-3 pt-4 border-t" style={{ borderColor: T.border }}>
-            <a href="#" className="text-sm text-center py-2" style={{ color: T.muted }}>Entrar</a>
-            <a href="#precos" className="text-sm font-semibold py-3 rounded-full text-center" style={{ background: T.text, color: T.bg }} onClick={() => setOpen(false)}>Começar teste</a>
+            <a href="#/login" className="text-sm text-center py-2" style={{ color: T.muted }} onClick={() => setOpen(false)}>Entrar</a>
+            <a href="#/cadastro" className="text-sm font-semibold py-3 rounded-full text-center" style={{ background: T.text, color: T.bg }} onClick={() => setOpen(false)}>Começar teste</a>
           </div>
         </div>
       )}
@@ -1761,7 +1754,21 @@ function Footer() {
 
 const NOISE_TEXTURE = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`
 
+function useHashRoute() {
+  const [hash, setHash] = useState(window.location.hash)
+  useEffect(() => {
+    const h = () => setHash(window.location.hash)
+    window.addEventListener("hashchange", h)
+    return () => window.removeEventListener("hashchange", h)
+  }, [])
+  return hash
+}
+
 export default function App() {
+  const hash = useHashRoute()
+  const authMode = hash.startsWith("#/cadastro") ? "cadastro" : hash.startsWith("#/login") ? "login" : null
+  const isDevDashboard = hash.startsWith("#/painel")
+
   return (
     <div style={{ fontFamily: "Poppins, sans-serif", background: T.bg, minHeight: "100vh" }}>
       <style>{`
@@ -1775,20 +1782,28 @@ export default function App() {
         className="pointer-events-none fixed inset-0 z-[80]"
         style={{ backgroundImage: NOISE_TEXTURE, opacity: 0.025, mixBlendMode: "overlay" }}
       />
-      <Header />
-      <main>
-        <HeroSection />
-        <ProblemSection />
-        <ProductSection />
-        <WorkflowSection />
-        <InterfaceShowcaseSection />
-        <ForWhomSection />
-        <DifferentialsSection />
-        <PricingShowcaseSection />
-        <FAQSection />
-        <CTASection />
-      </main>
-      <Footer />
+      {isDevDashboard ? (
+        <DevDashboard />
+      ) : authMode ? (
+        <AuthPage mode={authMode} />
+      ) : (
+        <>
+          <Header />
+          <main>
+            <HeroSection />
+            <ProblemSection />
+            <ProductSection />
+            <WorkflowSection />
+            <InterfaceShowcaseSection />
+            <ForWhomSection />
+            <DifferentialsSection />
+            <PricingShowcaseSection />
+            <FAQSection />
+            <CTASection />
+          </main>
+          <Footer />
+        </>
+      )}
     </div>
   )
 }

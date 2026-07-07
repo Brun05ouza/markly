@@ -1,0 +1,464 @@
+import { useEffect, useMemo, useState } from "react"
+import { AnimatePresence, motion } from "motion/react"
+import { ArrowLeft, ArrowRight, CheckCircle2, Clock, Sparkles } from "lucide-react"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select"
+import LottieCheckbox from "../LottieCheckbox"
+import { T } from "../../theme"
+import { type StudioProfile } from "../../utils/studioStorage"
+
+type StudioSetupModalProps = {
+  open: boolean
+  initialProfile: StudioProfile
+  onComplete: (profile: StudioProfile) => void
+}
+
+const studioTypes = ["Sou tatuador independente", "Tenho um studio pequeno", "Tenho um studio com equipe"]
+const teamSizes = ["Só eu", "2 a 3 pessoas", "4 a 6 pessoas", "Mais de 6 pessoas"]
+const contactChannels = ["WhatsApp", "Instagram", "Presencial", "Todos"]
+const depositOptions = ["Sim, cobro sinal", "Não cobro sinal", "Depende do orçamento"]
+const styleOptions = ["Fine line", "Blackwork", "Realismo", "Old school", "Floral", "Geométrico", "Anime/geek", "Minimalista", "Autoral", "Outro"]
+const timeOptions = Array.from({ length: 31 }, (_, index) => {
+  const totalMinutes = 7 * 60 + index * 30
+  const hours = Math.floor(totalMinutes / 60).toString().padStart(2, "0")
+  const minutes = (totalMinutes % 60).toString().padStart(2, "0")
+  return `${hours}:${minutes}`
+})
+
+function SelectField({
+  label,
+  placeholder,
+  value,
+  options,
+  onChange,
+}: {
+  label: string
+  placeholder: string
+  value: string
+  options: string[]
+  onChange: (value: string) => void
+}) {
+  return (
+    <div>
+      <p className="mb-2 text-[12px] font-semibold" style={{ color: T.text }}>{label}</p>
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger
+          className="min-h-[50px] rounded-[14px] border px-4 py-3 text-left text-[13px] font-semibold shadow-none data-[placeholder]:text-[rgba(240,237,228,0.42)]"
+          style={{
+            background: "linear-gradient(180deg, rgba(2,8,6,0.74), rgba(2,8,6,0.52))",
+            borderColor: value ? "rgba(240,237,228,0.22)" : T.border,
+            color: value ? T.text : T.faint,
+            boxShadow: value ? "inset 0 1px 0 rgba(240,237,228,0.06)" : "none",
+          }}
+        >
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
+        <SelectContent
+          className="z-[140] rounded-[14px] border bg-[#081713] p-1 text-[#F0EDE4] shadow-[0_24px_80px_rgba(0,0,0,0.55)]"
+          style={{ borderColor: "rgba(240,237,228,0.14)" }}
+        >
+          {options.map((option) => (
+            <SelectItem
+              key={option}
+              value={option}
+              className="rounded-[10px] px-3 py-2.5 text-[13px] text-[rgba(240,237,228,0.76)] focus:bg-[rgba(240,237,228,0.08)] focus:text-[#F0EDE4]"
+            >
+              {option}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  )
+}
+
+function TimeField({
+  label,
+  value,
+  onChange,
+  disabled,
+}: {
+  label: string
+  value: string
+  onChange: (value: string) => void
+  disabled?: boolean
+}) {
+  return (
+    <div
+      className="rounded-[14px] border p-3 transition-all duration-200"
+      style={{
+        background: disabled ? "rgba(2,8,6,0.28)" : "rgba(2,8,6,0.54)",
+        borderColor: disabled ? "rgba(240,237,228,0.07)" : "rgba(240,237,228,0.12)",
+        boxShadow: "inset 0 1px 0 rgba(240,237,228,0.04)",
+        opacity: disabled ? 0.55 : 1,
+      }}
+    >
+      <span className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: T.faint }}>
+        {label}
+      </span>
+      <Select value={value} onValueChange={onChange} disabled={disabled}>
+        <SelectTrigger
+          className="h-auto rounded-[10px] border-0 bg-transparent p-0 text-left text-[20px] font-semibold shadow-none ring-0 focus:ring-0 focus-visible:ring-0 disabled:cursor-not-allowed [&>svg]:opacity-50"
+          style={{ color: T.text }}
+        >
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent
+          className="z-[150] max-h-[240px] rounded-[14px] border bg-[#081713] p-1 text-[#F0EDE4] shadow-[0_24px_80px_rgba(0,0,0,0.58)]"
+          style={{ borderColor: "rgba(240,237,228,0.14)" }}
+        >
+          {timeOptions.map((option) => (
+            <SelectItem
+              key={option}
+              value={option}
+              className="rounded-[10px] px-3 py-2.5 text-[13px] font-semibold text-[rgba(240,237,228,0.78)] focus:bg-[rgba(240,237,228,0.08)] focus:text-[#F0EDE4]"
+            >
+              {option}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  )
+}
+
+function Chip({
+  label,
+  active,
+  onClick,
+}: {
+  label: string
+  active: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="rounded-full border px-3.5 py-2 text-[12px] font-semibold transition-all duration-200"
+      style={{
+        background: active ? T.text : "rgba(2,8,6,0.42)",
+        borderColor: active ? T.text : T.border,
+        color: active ? T.bg : T.muted,
+      }}
+    >
+      {label}
+    </button>
+  )
+}
+
+export default function StudioSetupModal({ open, initialProfile, onComplete }: StudioSetupModalProps) {
+  const [step, setStep] = useState(0)
+  const [profile, setProfile] = useState<StudioProfile>(initialProfile)
+  const [error, setError] = useState("")
+
+  const progress = useMemo(() => ((step + 1) / 5) * 100, [step])
+
+  useEffect(() => {
+    if (!open) return
+
+    const scrollY = window.scrollY
+    const body = document.body
+    const html = document.documentElement
+    const previousBodyOverflow = body.style.overflow
+    const previousBodyPosition = body.style.position
+    const previousBodyTop = body.style.top
+    const previousBodyWidth = body.style.width
+    const previousHtmlOverflow = html.style.overflow
+
+    body.style.overflow = "hidden"
+    html.style.overflow = "hidden"
+    body.style.position = "fixed"
+    body.style.top = `-${scrollY}px`
+    body.style.width = "100%"
+
+    return () => {
+      body.style.overflow = previousBodyOverflow
+      body.style.position = previousBodyPosition
+      body.style.top = previousBodyTop
+      body.style.width = previousBodyWidth
+      html.style.overflow = previousHtmlOverflow
+      window.scrollTo(0, scrollY)
+    }
+  }, [open])
+
+  if (!open) return null
+
+  const update = <Key extends keyof StudioProfile>(key: Key, value: StudioProfile[Key]) => {
+    setProfile((current) => ({ ...current, [key]: value }))
+    setError("")
+  }
+
+  const toggleStyle = (style: string) => {
+    setProfile((current) => {
+      const selected = current.mainStyles.includes(style)
+      return {
+        ...current,
+        mainStyles: selected ? current.mainStyles.filter((item) => item !== style) : [...current.mainStyles, style],
+      }
+    })
+  }
+
+  const validateStep = () => {
+    if (step === 1 && (!profile.studioName.trim() || !profile.studioType || !profile.teamSize)) {
+      setError("Preencha o nome, tipo e tamanho do studio para continuar.")
+      return false
+    }
+
+    if (step === 2 && (!profile.mainContactChannel || !profile.usesDeposit)) {
+      setError("Escolha o canal de atendimento e como você trabalha com sinal.")
+      return false
+    }
+
+    return true
+  }
+
+  const next = () => {
+    if (!validateStep()) return
+    setError("")
+    if (step < 4) {
+      setStep((current) => current + 1)
+      return
+    }
+    onComplete(profile)
+  }
+
+  const back = () => {
+    setError("")
+    setStep((current) => Math.max(0, current - 1))
+  }
+
+  const primaryLabel = step === 0 ? "Configurar meu studio" : step === 4 ? "Entrar no dashboard" : "Continuar"
+
+  return (
+    <div className="fixed inset-0 z-[120] flex items-center justify-center px-4 py-6" role="dialog" aria-modal="true" aria-label="Studio Setup">
+      <div className="absolute inset-0 bg-black/72 backdrop-blur-xl" />
+
+      <motion.div
+        className="relative flex max-h-[calc(100vh-48px)] w-full max-w-[720px] flex-col overflow-hidden rounded-[24px] border"
+        style={{
+          background: T.card,
+          borderColor: "rgba(240,237,228,0.12)",
+          boxShadow: "0 34px 120px rgba(0,0,0,0.62), inset 0 1px 0 rgba(240,237,228,0.06)",
+        }}
+        initial={{ opacity: 0, scale: 0.97, y: 16 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+      >
+        <div className="border-b px-5 py-4 sm:px-7" style={{ borderColor: T.border }}>
+          <div className="mb-3 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: T.faint }}>Studio Setup</p>
+              <p className="text-[13px] font-semibold" style={{ color: T.text }}>{step + 1} de 5</p>
+            </div>
+            <div className="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-semibold" style={{ borderColor: T.border, color: T.accent, background: "rgba(0,71,65,0.18)" }}>
+              <Clock size={13} /> Leva menos de 1 minuto
+            </div>
+          </div>
+          <div className="h-1 overflow-hidden rounded-full" style={{ background: "rgba(240,237,228,0.08)" }}>
+            <motion.div
+              className="h-full rounded-full"
+              style={{ background: T.text }}
+              animate={{ width: `${progress}%` }}
+              transition={{ duration: 0.24 }}
+            />
+          </div>
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-6 sm:px-7 sm:py-7">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={step}
+              initial={{ opacity: 0, x: 18 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -18 }}
+              transition={{ duration: 0.22 }}
+            >
+              {step === 0 && (
+                <div className="py-6 text-center">
+                  <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-[20px] border" style={{ background: "rgba(240,237,228,0.06)", borderColor: T.border }}>
+                    <Sparkles size={24} style={{ color: T.accent }} />
+                  </div>
+                  <h2 className="text-3xl font-semibold sm:text-4xl" style={{ color: T.text, fontFamily: "'Syne', sans-serif", letterSpacing: "-0.04em" }}>
+                    Bem-vindo ao Markly.
+                  </h2>
+                  <p className="mx-auto mt-4 max-w-[560px] text-sm leading-7 sm:text-[15px]" style={{ color: T.muted }}>
+                    Seu SaaS para organizar orçamentos, clientes, agenda e sessões do seu estúdio em um só lugar.
+                    Antes de começar, precisamos configurar algumas informações rápidas para deixar sua experiência mais personalizada.
+                  </p>
+                </div>
+              )}
+
+              {step === 1 && (
+                <div>
+                  <h2 className="text-2xl font-semibold" style={{ color: T.text, fontFamily: "'Syne', sans-serif" }}>Vamos conhecer seu studio.</h2>
+                  <div className="mt-6 grid gap-5">
+                    <label>
+                      <span className="mb-2 block text-[12px] font-semibold" style={{ color: T.text }}>Qual é o nome do seu studio?</span>
+                      <input
+                        value={profile.studioName}
+                        onChange={(event) => update("studioName", event.target.value)}
+                        placeholder="Ex: Black Rose Tattoo"
+                        className="w-full rounded-[12px] border px-4 py-3 text-sm outline-none"
+                        style={{ background: "rgba(2,8,6,0.58)", borderColor: T.border, color: T.text }}
+                      />
+                    </label>
+
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <SelectField
+                        label="Como você trabalha hoje?"
+                        placeholder="Selecione o formato"
+                        value={profile.studioType}
+                        options={studioTypes}
+                        onChange={(value) => update("studioType", value)}
+                      />
+
+                      <SelectField
+                        label="Quantas pessoas trabalham no studio?"
+                        placeholder="Selecione o tamanho"
+                        value={profile.teamSize}
+                        options={teamSizes}
+                        onChange={(value) => update("teamSize", value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {step === 2 && (
+                <div>
+                  <h2 className="text-2xl font-semibold" style={{ color: T.text, fontFamily: "'Syne', sans-serif" }}>Como seu studio funciona?</h2>
+                  <div className="mt-6 grid gap-5">
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <SelectField
+                        label="Como você costuma atender seus clientes?"
+                        placeholder="Escolha um canal"
+                        value={profile.mainContactChannel}
+                        options={contactChannels}
+                        onChange={(value) => update("mainContactChannel", value)}
+                      />
+
+                      <SelectField
+                        label="Você trabalha com sinal/reserva?"
+                        placeholder="Escolha uma opção"
+                        value={profile.usesDeposit}
+                        options={depositOptions}
+                        onChange={(value) => update("usesDeposit", value)}
+                      />
+                    </div>
+
+                    <div>
+                      <div className="mb-3 flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-[12px] font-semibold" style={{ color: T.text }}>Horário padrão de atendimento</p>
+                          <p className="mt-0.5 text-[11px]" style={{ color: T.faint }}>Usado para montar sua agenda inicial.</p>
+                        </div>
+                        <div className="hidden rounded-full border px-3 py-1.5 text-[11px] font-semibold sm:inline-flex" style={{ borderColor: T.border, color: T.accent, background: "rgba(0,71,65,0.16)" }}>
+                          {profile.flexibleHours ? "Flexível" : `${profile.businessHoursStart} - ${profile.businessHoursEnd}`}
+                        </div>
+                      </div>
+                      <div className="rounded-[18px] border p-3" style={{ background: "rgba(240,237,228,0.035)", borderColor: "rgba(240,237,228,0.12)" }}>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <TimeField
+                            label="Início"
+                            value={profile.businessHoursStart}
+                            onChange={(value) => update("businessHoursStart", value)}
+                            disabled={profile.flexibleHours}
+                          />
+                          <TimeField
+                            label="Fim"
+                            value={profile.businessHoursEnd}
+                            onChange={(value) => update("businessHoursEnd", value)}
+                            disabled={profile.flexibleHours}
+                          />
+                        </div>
+                        <div className="mt-3 flex items-center gap-2.5 rounded-[14px] border px-3 py-2.5" style={{ background: "rgba(2,8,6,0.36)", borderColor: T.border }}>
+                          <LottieCheckbox checked={profile.flexibleHours} onChange={(checked) => update("flexibleHours", checked)} />
+                          <button
+                            type="button"
+                            onClick={() => update("flexibleHours", !profile.flexibleHours)}
+                            className="text-left text-[12px] font-semibold leading-5"
+                            style={{ color: profile.flexibleHours ? T.text : T.muted }}
+                          >
+                            Meu horário é flexível
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {step === 3 && (
+                <div>
+                  <h2 className="text-2xl font-semibold" style={{ color: T.text, fontFamily: "'Syne', sans-serif" }}>Quais estilos você mais trabalha?</h2>
+                  <p className="mt-2 text-sm" style={{ color: T.muted }}>Selecione quantos quiser. Você pode ajustar isso depois.</p>
+                  <div className="mt-6 flex flex-wrap gap-2">
+                    {styleOptions.map((item) => (
+                      <Chip key={item} label={item} active={profile.mainStyles.includes(item)} onClick={() => toggleStyle(item)} />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {step === 4 && (
+                <div className="py-6 text-center">
+                  <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-[20px] border" style={{ background: "rgba(240,237,228,0.06)", borderColor: T.border }}>
+                    <CheckCircle2 size={26} style={{ color: T.accent }} />
+                  </div>
+                  <h2 className="text-3xl font-semibold sm:text-4xl" style={{ color: T.text, fontFamily: "'Syne', sans-serif", letterSpacing: "-0.04em" }}>
+                    Seu studio está pronto.
+                  </h2>
+                  <p className="mx-auto mt-4 max-w-[520px] text-sm leading-7 sm:text-[15px]" style={{ color: T.muted }}>
+                    Agora o Markly vai adaptar sua visão geral com base no funcionamento do seu studio.
+                    Você poderá alterar essas informações depois em Configurações.
+                  </p>
+                </div>
+              )}
+            </motion.div>
+          </AnimatePresence>
+
+          <AnimatePresence initial={false}>
+            {error && (
+              <motion.p
+                className="mt-5 rounded-[12px] border px-4 py-3 text-[12px] font-semibold"
+                style={{ background: "rgba(232,160,160,0.08)", borderColor: "rgba(232,160,160,0.20)", color: "#F0B7B7" }}
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+              >
+                {error}
+              </motion.p>
+            )}
+          </AnimatePresence>
+        </div>
+
+        <div className="flex items-center justify-between gap-3 border-t px-5 py-4 sm:px-7" style={{ borderColor: T.border }}>
+          <button
+            type="button"
+            onClick={back}
+            disabled={step === 0}
+            className="inline-flex items-center gap-2 rounded-[12px] border px-4 py-2.5 text-sm font-semibold disabled:pointer-events-none disabled:opacity-0"
+            style={{ borderColor: T.border, color: T.muted, background: "rgba(240,237,228,0.02)" }}
+          >
+            <ArrowLeft size={15} /> Voltar
+          </button>
+
+          <button
+            type="button"
+            onClick={next}
+            className="inline-flex items-center gap-2 rounded-[12px] px-5 py-2.5 text-sm font-semibold"
+            style={{ background: T.text, color: T.bg }}
+          >
+            {primaryLabel} <ArrowRight size={15} />
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  )
+}

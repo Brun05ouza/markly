@@ -19,6 +19,9 @@ function figmaAssetResolver() {
 export default defineConfig({
   server: {
     port: 3001,
+    watch: {
+      ignored: ['**/tmp-codex-screens/**', '**/dist/**'],
+    },
   },
   plugins: [
     figmaAssetResolver(),
