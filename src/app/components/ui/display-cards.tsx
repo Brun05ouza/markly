@@ -50,11 +50,11 @@ function DisplayCard({
   const justRose = isActive && prevActiveIndex !== index;
   const justFell = !isActive && prevActiveIndex === index;
   const {
-    icon = <Sparkles className="size-4 text-[#4FC5D4]" />,
+    icon = <Sparkles className="size-4 text-[#D8D0BF]" />,
     title = "Destaque",
     description = "Conteúdo em destaque",
     date = "Agora",
-    titleClassName = "text-[#4FC5D4]",
+    titleClassName = "text-[#D8D0BF]",
   } = card;
 
   const pos = isActive ? slot.active : slot.base;
@@ -73,9 +73,9 @@ function DisplayCard({
       style={{
         zIndex: isActive ? (isFront ? 30 : 12 + index) : 10 + index,
         transform: `translate(${pos.x}px, ${pos.y}px) skewY(-8deg)`,
-        background: isActive ? "#0E1D19" : "rgba(11,23,20,0.92)",
-        borderColor: isActive ? "rgba(79,197,212,0.35)" : "rgba(240,237,228,0.12)",
-        boxShadow: isActive ? "0 18px 60px rgba(0,0,0,0.45), 0 0 30px rgba(79,197,212,0.08)" : "none",
+        background: isActive ? "#0B1D18" : "rgba(8,23,19,0.92)",
+        borderColor: isActive ? "rgba(240,237,228,0.28)" : "rgba(240,237,228,0.12)",
+        boxShadow: isActive ? "0 18px 60px rgba(0,0,0,0.45), 0 0 30px rgba(0,71,65,0.25)" : "none",
         filter: isActive ? "none" : "grayscale(70%) brightness(0.88)",
         transition: [
           `transform ${moveMs}ms ${moveEase}`,
@@ -95,10 +95,10 @@ function DisplayCard({
         }}
       />
       <div className="relative z-10 flex flex-col gap-2.5">
-        <span className="inline-flex w-fit items-center justify-center rounded-full border border-[rgba(79,197,212,0.28)] bg-[rgba(79,197,212,0.12)] p-2">
+        <span className="inline-flex w-fit items-center justify-center rounded-full border border-[rgba(240,237,228,0.22)] bg-[rgba(0,71,65,0.32)] p-2">
           {icon}
         </span>
-        <p className={cn("text-lg font-semibold", titleClassName)} style={{ color: isActive ? "#4FC5D4" : "#BDFFFF" }}>
+        <p className={cn("text-lg font-semibold", titleClassName)} style={{ color: isActive ? "#D8D0BF" : "#F0EDE4" }}>
           {title}
         </p>
       </div>

@@ -8,7 +8,7 @@ import {
   Zap, ArrowRight, Menu, X, FileText, Bell,
   Layers, Filter, BarChart3, Inbox
 } from "lucide-react"
-import inkdeskIcon from "../assets/inkdesk-icon-friendly-urikana.svg"
+import marklyIcon from "../assets/icon-markly.png"
 import LaserFlow from "./components/LaserFlow/LaserFlow"
 import CardSwap, { Card } from "./components/ui/CardSwap"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./components/ui/accordion"
@@ -17,14 +17,21 @@ gsap.registerPlugin(SplitText)
 
 const T = {
   teal: "#004741",
-  amber: "#C8B99C",
+  tealDark: "#003B36",
+  amber: "#D8D0BF",
   green: "#2F7F68",
-  bg: "#020605",
-  bgSec: "#07110F",
-  card: "#0B1714",
-  border: "rgba(240,237,228,0.1)",
+  bg: "#020806",
+  bgSec: "#06110F",
+  card: "#081713",
+  cardElev: "#0B1D18",
+  border: "rgba(240,237,228,0.10)",
+  borderStrong: "rgba(240,237,228,0.18)",
   text: "#F0EDE4",
-  muted: "#A9A69C",
+  muted: "rgba(240,237,228,0.68)",
+  faint: "rgba(240,237,228,0.45)",
+  glowGreen: "rgba(0,71,65,0.35)",
+  glowBeige: "rgba(240,237,228,0.08)",
+  accent: "#D8D0BF",
 }
 
 function useFadeIn(threshold = 0.1) {
@@ -54,7 +61,7 @@ function fs(visible: boolean, delay = 0): CSSProperties {
 function BrandMark({ size = 24 }: { size?: number }) {
   return (
     <img
-      src={inkdeskIcon}
+      src={marklyIcon}
       alt=""
       className="inline-flex shrink-0 object-contain"
       style={{
@@ -90,9 +97,9 @@ function LaptopMockup() {
           verticalBeamOffset={-0.13}
           verticalSizing={3.0}
           horizontalSizing={0.42}
-          color="#4FC5D4"
-          fogIntensity={0.55}
-          wispIntensity={5}
+          color="#D8D0BF"
+          fogIntensity={0.4}
+          wispIntensity={3}
           flowSpeed={0.35}
           mouseTiltStrength={0.012}
           wispDensity={1.1}
@@ -129,7 +136,7 @@ function LaptopMockup() {
             className="flex-1 max-w-[200px] mx-auto rounded-md px-3 py-1 text-[10px] font-mono text-center"
             style={{ background: "rgba(240,237,228,0.04)", color: "rgba(240,237,228,0.24)" }}
           >
-            app.inkdesk.com.br
+            app.markly.com.br
           </div>
           <Bell size={11} style={{ color: "rgba(240,237,228,0.22)" }} />
         </div>
@@ -139,8 +146,8 @@ function LaptopMockup() {
             style={{ background: "#040608", borderColor: T.border }}
           >
             <div className="flex items-center gap-2 px-2 py-2.5 mb-1 text-[13px] font-bold" style={{ color: T.text }}>
-              <BrandMark size={14} />
-              InkDesk
+              <BrandMark size={20} />
+              Markly
             </div>
             {([
               { Icon: LayoutDashboard, label: "Visão geral", active: true, badge: 0 },
@@ -171,14 +178,14 @@ function LaptopMockup() {
           <div className="flex-1 p-4 flex flex-col gap-3 overflow-hidden">
             <div className="flex items-center justify-between">
               <span className="text-[12px] font-semibold" style={{ color: T.text }}>Visão geral</span>
-              <div className="text-[10px] px-2.5 py-1 rounded-full border" style={{ background: `${T.teal}10`, color: T.teal, borderColor: `${T.teal}20` }}>Julho 2026</div>
+              <div className="text-[10px] px-2.5 py-1 rounded-full border" style={{ background: "rgba(0,71,65,0.2)", color: T.accent, borderColor: "rgba(240,237,228,0.14)" }}>Julho 2026</div>
             </div>
             <div className="grid grid-cols-4 gap-2">
               {([
-                { label: "Novos pedidos", value: "18", Icon: Package, color: T.teal },
-                { label: "Ag. resposta", value: "7", Icon: Clock, color: T.amber },
-                { label: "Sessões fechadas", value: "12", Icon: CheckCircle2, color: T.green },
-                { label: "Valor estimado", value: "R$8.450", Icon: TrendingUp, color: T.teal },
+                { label: "Sessões no mês", value: "14", Icon: Calendar, color: T.accent },
+                { label: "Orçamentos enviados", value: "22", Icon: FileText, color: T.amber },
+                { label: "Taxa de fechamento", value: "68%", Icon: CheckCircle2, color: T.green },
+                { label: "Faturamento estimado", value: "R$8.450", Icon: TrendingUp, color: T.accent },
               ] as const).map(({ label, value, Icon, color }) => (
                 <div key={label} className="rounded-xl p-3 border" style={{ background: T.card, borderColor: T.border }}>
                   <div className="flex items-center justify-between mb-2">
@@ -191,14 +198,14 @@ function LaptopMockup() {
             </div>
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-medium" style={{ color: T.muted }}>Orçamentos recentes</span>
-              <span className="text-[9px]" style={{ color: T.teal }}>Ver todos →</span>
+              <span className="text-[9px]" style={{ color: T.accent }}>Ver todos →</span>
             </div>
             <div className="grid grid-cols-4 gap-2 flex-1">
               {[
-                { label: "Novo", dot: T.teal, cards: ["Flor oriental · R$800", "Lobo realista · R$1.200"] },
-                { label: "Respondido", dot: T.amber, cards: ["Dragão old school · R$950"] },
-                { label: "Ag. sinal", dot: "#6b7e89", cards: ["Fênix aquarela · R$1.400", "Tribal · R$600"] },
-                { label: "Fechado", dot: T.green, cards: ["Mandala P&B · R$700"] },
+                { label: "Novo", dot: T.accent, cards: ["Floral fine line · R$800", "Lobo realista · R$1.200"] },
+                { label: "Respondido", dot: T.amber, cards: ["Mandala geométrica · R$950"] },
+                { label: "Ag. sinal", dot: "#8a8577", cards: ["Blackwork braço · R$1.400", "Fine line costela · R$600"] },
+                { label: "Fechado", dot: T.green, cards: ["Floral P&B · R$700"] },
               ].map(({ label, dot, cards }) => (
                 <div key={label} className="flex flex-col gap-1.5">
                   <div className="flex items-center gap-1.5 mb-0.5">
@@ -228,7 +235,14 @@ function Header() {
     window.addEventListener("scroll", h, { passive: true })
     return () => window.removeEventListener("scroll", h)
   }, [])
-  const links = ["Produto", "Recursos", "Clientes", "Preços", "Novidades", "Contato"]
+  const links = [
+    { label: "Produto", href: "#produto" },
+    { label: "Recursos", href: "#recursos" },
+    { label: "Clientes", href: "#clientes" },
+    { label: "Preços", href: "#precos" },
+    { label: "FAQ", href: "#faq" },
+    { label: "Contato", href: "#contato" },
+  ]
   return (
     <header
       className="fixed top-0 left-0 right-0 z-50 transition-all duration-500"
@@ -246,24 +260,24 @@ function Header() {
             className="text-[22px] font-bold leading-none"
             style={{ fontFamily: "'Syne', sans-serif", letterSpacing: "-0.04em" }}
           >
-            InkDesk
+            Markly
           </span>
         </a>
         <nav className="hidden lg:flex items-center gap-7">
-          {links.map((l) => (
-            <a key={l} href="#" className="text-[13px] transition-colors duration-200" style={{ color: "rgba(240,237,228,0.58)" }}
+          {links.map(({ label, href }) => (
+            <a key={label} href={href} className="text-[13px] transition-colors duration-200" style={{ color: "rgba(240,237,228,0.58)" }}
               onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = T.text)}
-              onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "rgba(240,237,228,0.58)")}>{l}</a>
+              onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "rgba(240,237,228,0.58)")}>{label}</a>
           ))}
         </nav>
         <div className="hidden lg:flex items-center gap-5">
           <a href="#" className="text-[13px] transition-colors duration-200" style={{ color: "rgba(240,237,228,0.58)" }}
             onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = T.text)}
             onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "rgba(240,237,228,0.58)")}>Entrar</a>
-          <a href="#" className="text-[13px] font-semibold px-4 py-2 rounded-full transition-all duration-200" style={{ background: T.text, color: T.bg }}
+          <a href="#precos" className="text-[13px] font-semibold px-4 py-2 rounded-full transition-all duration-200" style={{ background: T.text, color: T.bg }}
             onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.transform = "translateY(-1px)"; (e.currentTarget as HTMLElement).style.boxShadow = `0 10px 28px rgba(240,237,228,0.16)` }}
             onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; (e.currentTarget as HTMLElement).style.boxShadow = "none" }}>
-            Começar
+            Começar teste
           </a>
         </div>
         <button className="lg:hidden p-2" style={{ color: T.muted }} onClick={() => setOpen(!open)}>
@@ -272,10 +286,10 @@ function Header() {
       </div>
       {open && (
         <div className="lg:hidden border-t px-6 py-6 flex flex-col gap-4" style={{ background: "rgba(3,4,5,0.97)", borderColor: T.border }}>
-          {links.map((l) => <a key={l} href="#" className="text-sm py-1" style={{ color: T.muted }}>{l}</a>)}
+          {links.map(({ label, href }) => <a key={label} href={href} className="text-sm py-1" style={{ color: T.muted }} onClick={() => setOpen(false)}>{label}</a>)}
           <div className="flex flex-col gap-3 pt-4 border-t" style={{ borderColor: T.border }}>
             <a href="#" className="text-sm text-center py-2" style={{ color: T.muted }}>Entrar</a>
-            <a href="#" className="text-sm font-semibold py-3 rounded-full text-center" style={{ background: T.text, color: T.bg }}>Começar</a>
+            <a href="#precos" className="text-sm font-semibold py-3 rounded-full text-center" style={{ background: T.text, color: T.bg }} onClick={() => setOpen(false)}>Começar teste</a>
           </div>
         </div>
       )}
@@ -291,10 +305,11 @@ function HeroHeadline() {
     if (!root) return
     const title = root.querySelector("[data-hero-title]")
     const sub = root.querySelector("[data-hero-sub]")
+    const trial = root.querySelector("[data-hero-trial]")
     if (!title || !sub) return
 
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      gsap.set([title, sub], { opacity: 1 })
+      gsap.set([title, sub, trial].filter(Boolean), { opacity: 1 })
       return
     }
 
@@ -303,7 +318,7 @@ function HeroHeadline() {
     // background-clip: text do pai quebra quando os chars ganham transform; aplica o gradiente char a char
     const gradChars = splitTitle.chars.filter((c) => (c as HTMLElement).closest("[data-grad]"))
     gsap.set(gradChars, {
-      backgroundImage: "linear-gradient(92deg, #4FC5D4 0%, #BDFFFF 55%, #4FC5D4 100%)",
+      backgroundImage: "linear-gradient(92deg, #D8D0BF 0%, #F0EDE4 55%, #D8D0BF 100%)",
       webkitBackgroundClip: "text",
       backgroundClip: "text",
       color: "transparent",
@@ -324,6 +339,10 @@ function HeroHeadline() {
       splitSub.lines,
       { opacity: 0, y: 22, filter: "blur(6px)", duration: 0.8, ease: "power3.out", stagger: 0.1 },
       "-=0.45",
+    ).from(
+      trial,
+      { opacity: 0, y: 12, duration: 0.6, ease: "power3.out" },
+      "-=0.35",
     )
 
     return () => {
@@ -344,7 +363,7 @@ function HeroHeadline() {
         <span
           data-grad
           style={{
-            background: "linear-gradient(92deg, #4FC5D4 0%, #BDFFFF 55%, #4FC5D4 100%)",
+            background: "linear-gradient(92deg, #D8D0BF 0%, #F0EDE4 55%, #D8D0BF 100%)",
             WebkitBackgroundClip: "text",
             backgroundClip: "text",
             color: "transparent",
@@ -360,13 +379,21 @@ function HeroHeadline() {
       >
         Orçamentos, agenda, clientes e portfólio em um único painel — menos WhatsApp, mais tatuagem.
       </p>
+      <p
+        className="mt-4 inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-[13px] font-medium opacity-0"
+        data-hero-trial
+        style={{ color: T.accent, borderColor: "rgba(240,237,228,0.18)", background: "rgba(0,71,65,0.22)" }}
+      >
+        <span className="h-1.5 w-1.5 rounded-full" style={{ background: T.accent }} />
+        Teste grátis por 5 dias
+      </p>
     </div>
   )
 }
 
 function HeroSection() {
   return (
-    <section className="relative flex min-h-[112vh] flex-col pt-[68px] px-5 md:px-8 overflow-hidden" style={{ background: "#020303" }}>
+    <section className="relative flex min-h-[112vh] flex-col pt-[68px] px-5 md:px-8 overflow-hidden" style={{ background: T.bg }}>
       <div className="absolute inset-0 pointer-events-none" style={{
         background: "linear-gradient(180deg, rgba(240,237,228,0.018) 0%, transparent 38%), radial-gradient(ellipse 70% 34% at 50% 102%, rgba(0,71,65,0.34) 0%, transparent 72%)"
       }} />
@@ -384,7 +411,7 @@ function HeroSection() {
 
 function ProblemSection() {
   const { ref, visible } = useFadeIn()
-  const accent = "#4FC5D4"
+  const accent = T.accent
   const problems = [
     { Icon: Inbox, title: "Orçamentos perdidos no WhatsApp", desc: "Pedidos importantes somem entre conversas, áudios e fotos sem organização." },
     { Icon: Users, title: "Clientes sem histórico organizado", desc: "Sem registro de sessões anteriores, estilos preferidos ou contato centralizado." },
@@ -395,11 +422,11 @@ function ProblemSection() {
     <section className="relative overflow-hidden py-28 px-6" style={{ background: T.bgSec }}>
       <div
         className="absolute inset-x-0 top-0 h-px"
-        style={{ background: "linear-gradient(90deg, transparent 0%, rgba(79,197,212,0.35) 50%, transparent 100%)" }}
+        style={{ background: "linear-gradient(90deg, transparent 0%, rgba(240,237,228,0.16) 50%, transparent 100%)" }}
       />
       <div
         className="pointer-events-none absolute -top-40 left-1/2 h-96 w-[900px] -translate-x-1/2 blur-3xl"
-        style={{ background: "radial-gradient(ellipse, rgba(79,197,212,0.06) 0%, transparent 70%)" }}
+        style={{ background: "radial-gradient(ellipse, rgba(0,71,65,0.22) 0%, transparent 70%)" }}
       />
       <div className="relative z-10 max-w-6xl mx-auto">
         <div ref={ref} className="mb-14 grid gap-8 md:mb-16 md:grid-cols-[1fr_minmax(0,400px)] md:items-end">
@@ -415,7 +442,7 @@ function ProblemSection() {
             </h2>
           </div>
           <p className="text-base leading-relaxed md:pb-2 md:text-lg" style={{ ...fs(visible, 140), color: T.muted }}>
-            Muitos tatuadores ainda controlam pedidos pelo WhatsApp, agenda por aplicativos separados, referências em pastas soltas e pagamentos em anotações manuais. O InkDesk centraliza tudo.
+            Muitos tatuadores ainda controlam pedidos pelo WhatsApp, agenda por aplicativos separados, referências em pastas soltas e pagamentos em anotações manuais. O Markly centraliza tudo.
           </p>
         </div>
         <div className="grid grid-cols-1 gap-px overflow-hidden rounded-2xl border sm:grid-cols-2 lg:grid-cols-4" style={{ background: T.border, borderColor: T.border }}>
@@ -424,7 +451,7 @@ function ProblemSection() {
               key={title}
               className="group relative flex min-h-[250px] flex-col p-7 transition-colors duration-300 cursor-default"
               style={{ ...fs(visible, 180 + i * 90), background: T.card }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "#0E1D19" }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = T.cardElev }}
               onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = T.card }}
             >
               <span
@@ -433,14 +460,14 @@ function ProblemSection() {
               />
               <div className="mb-12 flex items-start justify-between">
                 <span
-                  className="text-[38px] font-bold leading-none transition-colors duration-300 group-hover:text-[#4FC5D4]"
+                  className="text-[38px] font-bold leading-none transition-colors duration-300 group-hover:text-[#D8D0BF]"
                   style={{ fontFamily: "'Syne', sans-serif", color: "rgba(240,237,228,0.13)" }}
                 >
                   {String(i + 1).padStart(2, "0")}
                 </span>
                 <div
                   className="flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-300 group-hover:scale-105"
-                  style={{ background: "rgba(79,197,212,0.07)", borderColor: "rgba(79,197,212,0.14)" }}
+                  style={{ background: "rgba(0,71,65,0.25)", borderColor: "rgba(240,237,228,0.12)" }}
                 >
                   <Icon size={17} style={{ color: accent }} />
                 </div>
@@ -467,15 +494,15 @@ function ProductSection() {
     { Icon: MessageSquare, title: "Mensagens e follow-up", desc: "Veja quem precisa de resposta, quem confirmou sinal e quem merece um lembrete para fechar.", metric: "6 conversas quentes" },
   ]
   const kanbanCols = [
-    { label: "Novo", dot: T.text, cards: ["Flor oriental", "Lobo geométrico"] },
-    { label: "Respondido", dot: T.amber, cards: ["Dragão old school"] },
-    { label: "Ag. sinal", dot: T.muted, cards: ["Fênix aquarela"] },
-    { label: "Fechado", dot: T.green, cards: ["Mandala P&B"] },
+    { label: "Novo", dot: T.text, cards: ["Floral fine line", "Lobo geométrico"] },
+    { label: "Respondido", dot: T.amber, cards: ["Mandala geométrica"] },
+    { label: "Ag. sinal", dot: T.muted, cards: ["Blackwork braço"] },
+    { label: "Fechado", dot: T.green, cards: ["Floral P&B"] },
   ]
   const clientList = [
-    { name: "Ana Ferreira", sessions: 4, tag: "Fineline" },
-    { name: "Carlos Mendes", sessions: 2, tag: "Realismo" },
-    { name: "Juliana Costa", sessions: 7, tag: "Old School" },
+    { name: "Mariana Alves", sessions: 4, tag: "Fine line" },
+    { name: "Lucas Rocha", sessions: 2, tag: "Realismo" },
+    { name: "Carla Vieira", sessions: 7, tag: "Floral" },
   ]
 
   // Sincroniza o painel sticky com o item que cruza a faixa central da viewport.
@@ -501,17 +528,17 @@ function ProductSection() {
     return () => observer.disconnect()
   }, [])
 
-  const accent = "#4FC5D4"
+  const accent = T.accent
 
   return (
-    <section className="relative overflow-x-clip px-5 py-28 md:px-8 lg:py-32" style={{ background: T.bg }}>
+    <section id="produto" className="relative overflow-x-clip scroll-mt-[68px] px-5 py-28 md:px-8 lg:py-32" style={{ background: T.bg }}>
       <div
         className="pointer-events-none absolute inset-x-0 top-0 h-px"
-        style={{ background: "linear-gradient(90deg, transparent 0%, rgba(79,197,212,0.35) 50%, transparent 100%)" }}
+        style={{ background: "linear-gradient(90deg, transparent 0%, rgba(240,237,228,0.16) 50%, transparent 100%)" }}
       />
       <div
         className="pointer-events-none absolute right-[-18%] top-24 h-[520px] w-[520px] rounded-full blur-3xl"
-        style={{ background: "rgba(79,197,212,0.07)" }}
+        style={{ background: "rgba(0,71,65,0.24)" }}
       />
       <div className="relative z-10 mx-auto max-w-6xl">
         <div ref={ref} className="mb-16 grid gap-8 lg:grid-cols-[minmax(0,680px)_minmax(260px,360px)] lg:items-end">
@@ -538,8 +565,8 @@ function ProductSection() {
                 data-feature-index={i}
                 className="group relative cursor-pointer overflow-hidden rounded-[14px] border p-4 transition-colors duration-300 md:p-5"
                 style={{
-                  background: active === i ? "rgba(79,197,212,0.055)" : "rgba(240,237,228,0.018)",
-                  borderColor: active === i ? "rgba(79,197,212,0.28)" : "rgba(240,237,228,0.06)",
+                  background: active === i ? "rgba(0,71,65,0.16)" : "rgba(240,237,228,0.018)",
+                  borderColor: active === i ? "rgba(240,237,228,0.22)" : "rgba(240,237,228,0.06)",
                 }}
                 onClick={() => setActive(i)}
                 onMouseEnter={(e) => {
@@ -565,8 +592,8 @@ function ProductSection() {
                   <div
                     className="flex h-11 w-11 items-center justify-center rounded-[12px] border transition-all duration-300"
                     style={{
-                      background: active === i ? "rgba(79,197,212,0.14)" : "rgba(240,237,228,0.04)",
-                      borderColor: active === i ? "rgba(79,197,212,0.3)" : "rgba(240,237,228,0.1)",
+                      background: active === i ? "rgba(0,71,65,0.32)" : "rgba(240,237,228,0.04)",
+                      borderColor: active === i ? "rgba(240,237,228,0.24)" : "rgba(240,237,228,0.1)",
                     }}
                   >
                     <Icon size={17} style={{ color: active === i ? accent : T.text }} />
@@ -582,9 +609,9 @@ function ProductSection() {
                       <span
                         className="rounded-full border px-2.5 py-1 text-[10px] font-medium transition-colors duration-300"
                         style={{
-                          borderColor: active === i ? "rgba(79,197,212,0.3)" : "rgba(240,237,228,0.12)",
+                          borderColor: active === i ? "rgba(240,237,228,0.2)" : "rgba(240,237,228,0.12)",
                           color: active === i ? accent : T.muted,
-                          background: active === i ? "rgba(79,197,212,0.08)" : "transparent",
+                          background: active === i ? "rgba(0,71,65,0.22)" : "transparent",
                         }}
                       >
                         {metric}
@@ -602,13 +629,13 @@ function ProductSection() {
             ))}
           </div>
 
-          <div className="sticky top-28 overflow-hidden rounded-[18px] border" style={{ ...fs(visible, 260), background: T.card, borderColor: "rgba(79,197,212,0.16)", boxShadow: `0 28px 90px rgba(0,0,0,0.5), 0 0 60px rgba(79,197,212,0.05), 0 0 0 1px rgba(240,237,228,0.04)` }}>
+          <div className="sticky top-28 overflow-hidden rounded-[18px] border" style={{ ...fs(visible, 260), background: T.card, borderColor: "rgba(240,237,228,0.14)", boxShadow: `0 28px 90px rgba(0,0,0,0.5), 0 0 60px rgba(0,71,65,0.18), inset 0 1px 0 rgba(240,237,228,0.06)` }}>
             <div className="flex items-center justify-between border-b px-5 py-4" style={{ borderColor: T.border, background: "rgba(2,6,5,0.68)" }}>
               <div className="flex min-w-0 items-center gap-3">
-                <BrandMark size={18} />
+                <BrandMark size={24} />
                 <div className="min-w-0">
                   <span className="block truncate text-[12px] font-semibold" style={{ color: T.text }}>{features[active].title}</span>
-                  <span className="block text-[10px]" style={{ color: T.muted }}>InkDesk workspace</span>
+                  <span className="block text-[10px]" style={{ color: T.muted }}>Markly workspace</span>
                 </div>
               </div>
               <div className="flex items-center gap-1.5">
@@ -680,7 +707,7 @@ function ProductSection() {
               )}
               {active === 2 && (
                 <div className="flex flex-col gap-2">
-                  {[{ client: "Ana Ferreira", time: "10:00", paid: true }, { client: "Carlos Mendes", time: "14:00", paid: false }, { client: "Juliana Costa", time: "17:30", paid: true }].map(({ client, time, paid }) => (
+                  {[{ client: "Mariana Alves", time: "10:00", paid: true }, { client: "Lucas Rocha", time: "14:00", paid: false }, { client: "Carla Vieira", time: "17:30", paid: true }].map(({ client, time, paid }) => (
                     <div key={client} className="flex items-center gap-3 rounded-[12px] border p-3"
                       style={{ background: paid ? `${T.green}10` : `${T.teal}08`, borderColor: paid ? `${T.green}20` : `${T.teal}18` }}>
                       <div className="h-10 w-1 rounded-full" style={{ background: paid ? T.green : T.text }} />
@@ -699,13 +726,13 @@ function ProductSection() {
                     {Array.from({ length: 6 }).map((_, i) => <div key={i} className="aspect-square rounded-[12px] border" style={{ background: `linear-gradient(135deg, rgba(240,237,228,0.09) 0%, rgba(0,71,65,0.28) 100%)`, borderColor: T.border }} />)}
                   </div>
                   <div className="flex flex-wrap gap-1.5">
-                    {["Fineline", "Realismo", "Geométrico", "Old School", "Aquarela"].map((s) => <span key={s} className="rounded-full border px-2 py-0.5 text-[9px]" style={{ borderColor: T.border, color: T.muted }}>{s}</span>)}
+                    {["Fine line", "Realismo", "Floral", "Geométrico", "Blackwork"].map((s) => <span key={s} className="rounded-full border px-2 py-0.5 text-[9px]" style={{ borderColor: T.border, color: T.muted }}>{s}</span>)}
                   </div>
                 </div>
               )}
               {active === 4 && (
                 <div className="flex flex-col gap-2">
-                  {[{ from: "Ana Ferreira", preview: "Queria fazer uma flor no antebraço...", time: "10m", unread: true }, { from: "Carlos Mendes", preview: "Quando fica pronto o orçamento?", time: "1h", unread: true }, { from: "Juliana Costa", preview: "Confirmei o sinal!", time: "3h", unread: false }].map(({ from, preview, time, unread }) => (
+                  {[{ from: "Mariana Alves", preview: "Queria fazer uma flor no antebraço...", time: "10m", unread: true }, { from: "Lucas Rocha", preview: "Quando fica pronto o orçamento?", time: "1h", unread: true }, { from: "Carla Vieira", preview: "Confirmei o sinal!", time: "3h", unread: false }].map(({ from, preview, time, unread }) => (
                     <div key={from} className="flex items-center gap-3 rounded-[12px] border p-3"
                       style={{ background: unread ? `${T.teal}06` : T.bgSec, borderColor: unread ? `${T.teal}20` : T.border }}>
                       <div className="flex h-9 w-9 items-center justify-center rounded-full text-[11px] font-bold" style={{ background: unread ? T.text : "rgba(240,237,228,0.08)", color: unread ? T.teal : T.text }}>{from[0]}</div>
@@ -731,7 +758,7 @@ function ProductSection() {
 
 function WorkflowSection() {
   const { ref, visible } = useFadeIn(0.3)
-  const accent = "#4FC5D4"
+  const accent = T.accent
   const steps = [
     { n: "01", Icon: MessageSquare, title: "Cliente envia uma ideia", desc: "Referências, estilo, tamanho e localização chegam pelo seu canal." },
     { n: "02", Icon: FileText, title: "Você cria o orçamento", desc: "Registra valor, estilo, tempo estimado e envia o retorno." },
@@ -747,7 +774,7 @@ function WorkflowSection() {
     <section className="relative overflow-x-clip px-5 py-28 md:px-8 lg:py-32" style={{ background: T.bgSec }}>
       <div
         className="pointer-events-none absolute inset-x-0 top-0 h-px"
-        style={{ background: "linear-gradient(90deg, transparent 0%, rgba(79,197,212,0.35) 50%, transparent 100%)" }}
+        style={{ background: "linear-gradient(90deg, transparent 0%, rgba(240,237,228,0.16) 50%, transparent 100%)" }}
       />
       <div className="relative z-10 mx-auto max-w-6xl">
         <div ref={ref} className="mb-16 grid gap-6 md:grid-cols-[1fr_auto] md:items-end">
@@ -762,7 +789,7 @@ function WorkflowSection() {
           </div>
           <span
             className="hidden rounded-full border px-3.5 py-1.5 text-[11px] font-medium md:inline-flex"
-            style={{ ...fs(visible, 140), borderColor: "rgba(79,197,212,0.22)", color: accent, background: "rgba(79,197,212,0.06)" }}
+            style={{ ...fs(visible, 140), borderColor: "rgba(240,237,228,0.2)", color: accent, background: "rgba(0,71,65,0.2)" }}
           >
             5 passos · sem planilha
           </span>
@@ -775,7 +802,7 @@ function WorkflowSection() {
             style={{
               width: visible ? "100%" : "0%",
               background: `linear-gradient(90deg, ${accent}00, ${accent})`,
-              boxShadow: `0 0 12px rgba(79,197,212,0.45)`,
+              boxShadow: `0 0 10px rgba(216,208,191,0.28)`,
               transition: "width 2.4s cubic-bezier(0.3, 0.6, 0.3, 1) 0.3s",
             }}
           />
@@ -798,8 +825,8 @@ function WorkflowSection() {
                     className="relative z-10 mb-6 flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full border"
                     style={{
                       background: T.card,
-                      borderColor: visible ? "rgba(79,197,212,0.45)" : "rgba(240,237,228,0.1)",
-                      boxShadow: visible ? "0 0 22px rgba(79,197,212,0.16)" : "none",
+                      borderColor: visible ? "rgba(216,208,191,0.45)" : "rgba(240,237,228,0.1)",
+                      boxShadow: visible ? "0 0 18px rgba(0,71,65,0.35)" : "none",
                       transition: `border-color 0.5s ease ${d + 0.15}s, box-shadow 0.5s ease ${d + 0.15}s`,
                     }}
                   >
@@ -921,14 +948,14 @@ function InterfaceSection() {
 function InterfaceShowcaseSection() {
   const { ref, visible } = useFadeIn()
   const budgetRows = [
-    { status: "Novo", client: "Beatriz Almada", style: "Fineline", value: "R$800", dot: T.text },
-    { status: "Ag. sinal", client: "Pedro Ramos", style: "Realismo", value: "R$1.500", dot: T.amber },
-    { status: "Fechado", client: "Carla Neves", style: "Old School", value: "R$600", dot: T.green },
+    { status: "Novo", client: "Mariana Alves", style: "Fine line", value: "R$800", dot: T.text },
+    { status: "Ag. sinal", client: "Lucas Rocha", style: "Realismo", value: "R$1.500", dot: T.amber },
+    { status: "Fechado", client: "Rafael Mendes", style: "Blackwork", value: "R$600", dot: T.green },
   ]
   const stats = [
-    { label: "Pedidos", value: "18" },
-    { label: "Agenda", value: "09" },
-    { label: "Receita", value: "R$8.4k" },
+    { label: "Orçamentos enviados", value: "22" },
+    { label: "Sessões no mês", value: "14" },
+    { label: "Faturamento", value: "R$8.4k" },
   ]
   const summaryItems = [
     { label: "Tempo médio de resposta", value: "12 min", Icon: MessageSquare },
@@ -971,9 +998,9 @@ function InterfaceShowcaseSection() {
         >
           <div className="flex items-center justify-between border-b px-4 py-3 md:px-5" style={{ borderColor: T.border, background: "rgba(2,6,5,0.72)" }}>
             <div className="flex items-center gap-3">
-              <BrandMark size={18} />
+              <BrandMark size={24} />
               <div>
-                <div className="text-[12px] font-semibold" style={{ color: T.text }}>InkDesk Studio</div>
+                <div className="text-[12px] font-semibold" style={{ color: T.text }}>Markly Studio</div>
                 <div className="text-[10px]" style={{ color: T.muted }}>Operação de hoje</div>
               </div>
             </div>
@@ -1072,7 +1099,7 @@ function InterfaceShowcaseSection() {
                   ))}
                 </div>
                 <div className="flex flex-col gap-2">
-                  {[{ client: "Ana Ferreira", time: "10:00", paid: true }, { client: "Carlos Mendes", time: "14:00", paid: false }].map(({ client, time, paid }) => (
+                  {[{ client: "Mariana Alves", time: "10:00", paid: true }, { client: "Lucas Rocha", time: "14:00", paid: false }].map(({ client, time, paid }) => (
                     <div key={client} className="flex items-center gap-3 rounded-[12px] border p-2.5" style={{ background: paid ? `${T.green}10` : `${T.teal}08`, borderColor: paid ? `${T.green}20` : `${T.teal}18` }}>
                       <div className="h-7 w-1 rounded-full" style={{ background: paid ? T.green : T.text }} />
                       <div>
@@ -1084,27 +1111,30 @@ function InterfaceShowcaseSection() {
                 </div>
               </div>
 
-              <div className="p-4 md:p-5" style={{ background: T.card }}>
-                <div className="mb-4 flex items-center gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-full text-sm font-bold" style={{ background: T.text, color: T.teal }}>J</div>
-                  <div>
-                    <div className="text-sm font-semibold" style={{ color: T.text }}>Juliana Costa</div>
-                    <div className="text-[11px]" style={{ color: T.muted }}>7 sessões · Desde 2023</div>
+              <div className="p-4 md:p-5" style={{ background: T.text }}>
+                <div className="mb-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-full text-sm font-bold" style={{ background: T.teal, color: T.text }}>C</div>
+                    <div>
+                      <div className="text-sm font-semibold" style={{ color: "#0A1F1B" }}>Carla Vieira</div>
+                      <div className="text-[11px]" style={{ color: "rgba(2,8,6,0.52)" }}>7 sessões · Desde 2023</div>
+                    </div>
                   </div>
+                  <span className="rounded-full border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.1em]" style={{ borderColor: "rgba(0,71,65,0.25)", color: T.teal }}>Preview</span>
                 </div>
                 <div className="flex flex-col gap-2">
-                  {[{ label: "Estilo favorito", value: "Old School" }, { label: "Próxima sessão", value: "09/07 às 15:00" }, { label: "Valor total", value: "R$4.200" }].map(({ label, value }) => (
-                    <div key={label} className="flex items-center justify-between rounded-[10px] border p-2.5" style={{ background: T.bgSec, borderColor: T.border }}>
-                      <span className="text-[10px]" style={{ color: T.muted }}>{label}</span>
-                      <span className="text-[10px] font-semibold" style={{ color: T.text }}>{value}</span>
+                  {[{ label: "Estilo favorito", value: "Floral" }, { label: "Próxima sessão", value: "09/07 às 15:00" }, { label: "Valor total", value: "R$4.200" }].map(({ label, value }) => (
+                    <div key={label} className="flex items-center justify-between rounded-[10px] border p-2.5" style={{ background: "#FFFFFF", borderColor: "rgba(0,71,65,0.12)" }}>
+                      <span className="text-[10px]" style={{ color: "rgba(2,8,6,0.52)" }}>{label}</span>
+                      <span className="text-[10px] font-semibold" style={{ color: T.teal }}>{value}</span>
                     </div>
                   ))}
                 </div>
                 <div className="mt-4">
-                  <div className="mb-2 text-[10px] font-medium" style={{ color: T.muted }}>Referências</div>
+                  <div className="mb-2 text-[10px] font-medium" style={{ color: "rgba(2,8,6,0.52)" }}>Referências</div>
                   <div className="grid grid-cols-4 gap-2">
                     {Array.from({ length: 4 }).map((_, i) => (
-                      <div key={i} className="aspect-square rounded-[10px] border" style={{ background: `linear-gradient(135deg, rgba(240,237,228,0.08), rgba(0,71,65,0.22))`, borderColor: T.border }} />
+                      <div key={i} className="aspect-square rounded-[10px] border" style={{ background: `linear-gradient(135deg, rgba(0,71,65,0.10), rgba(0,71,65,0.30))`, borderColor: "rgba(0,71,65,0.12)" }} />
                     ))}
                   </div>
                 </div>
@@ -1137,7 +1167,7 @@ function ForWhomSection() {
     { title: "Artista em crescimento", tag: "Escala", desc: "Estrutura profissional para vender melhor, acompanhar leads e manter qualidade no atendimento.", fit: "Para quem está aumentando demanda e quer parecer mais premium.", metric: "+ demanda", Icon: TrendingUp },
   ]
   return (
-    <section className="relative overflow-hidden px-5 py-28 md:px-8 lg:py-32" style={{ background: T.bgSec }}>
+    <section id="clientes" className="relative overflow-hidden scroll-mt-[68px] px-5 py-28 md:px-8 lg:py-32" style={{ background: T.bgSec }}>
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px" style={{ background: `linear-gradient(90deg, transparent, ${T.text}22, transparent)` }} />
       <div className="pointer-events-none absolute -left-40 top-20 h-[520px] w-[520px] rounded-full blur-3xl" style={{ background: "rgba(0,71,65,0.32)" }} />
 
@@ -1153,7 +1183,7 @@ function ForWhomSection() {
             </h2>
           </div>
           <p className="max-w-[520px] text-sm leading-7 md:text-base" style={{ ...fs(visible, 130), color: T.muted }}>
-            O InkDesk se adapta ao tamanho do seu estúdio: começa simples para o artista solo e continua útil quando a demanda cresce.
+            O Markly se adapta ao tamanho do seu estúdio: começa simples para o artista solo e continua útil quando a demanda cresce.
           </p>
         </div>
 
@@ -1210,7 +1240,7 @@ function ForWhomSection() {
 
 function DifferentialsSection() {
   const { ref, visible } = useFadeIn()
-  const accent = "#4FC5D4"
+  const accent = T.accent
   const diffs = [
     { Icon: Layers, title: "Painel limpo e direto", desc: "Sem menus escondidos. Tudo que você precisa na primeira tela." },
     { Icon: BarChart3, title: "Controle por status", desc: "Orçamentos, sessões e clientes sempre com situação clara." },
@@ -1240,10 +1270,10 @@ function DifferentialsSection() {
     },
   ]
   return (
-    <section className="relative overflow-x-clip px-5 py-28 md:px-8 lg:py-32" style={{ background: T.bg }}>
+    <section id="recursos" className="relative overflow-x-clip scroll-mt-[68px] px-5 py-28 md:px-8 lg:py-32" style={{ background: T.bg }}>
       <div
         className="pointer-events-none absolute inset-x-0 top-0 h-px"
-        style={{ background: "linear-gradient(90deg, transparent 0%, rgba(79,197,212,0.35) 50%, transparent 100%)" }}
+        style={{ background: "linear-gradient(90deg, transparent 0%, rgba(240,237,228,0.16) 50%, transparent 100%)" }}
       />
       <div className="relative z-10 mx-auto max-w-6xl">
         <div ref={ref} className="mb-16">
@@ -1266,7 +1296,7 @@ function DifferentialsSection() {
                 key={title}
                 className="group relative flex flex-col gap-4 p-6 transition-colors duration-300 cursor-default"
                 style={{ ...fs(visible, 160 + i * 70), background: T.card }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "#0E1D19" }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = T.cardElev }}
                 onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = T.card }}
               >
                 <span
@@ -1275,13 +1305,13 @@ function DifferentialsSection() {
                 />
                 <div className="flex items-center justify-between">
                   <div
-                    className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[12px] border transition-all duration-300 group-hover:scale-105 group-hover:border-[rgba(79,197,212,0.35)]"
-                    style={{ background: "rgba(79,197,212,0.07)", borderColor: "rgba(79,197,212,0.14)" }}
+                    className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[12px] border transition-all duration-300 group-hover:scale-105 group-hover:border-[rgba(240,237,228,0.28)]"
+                    style={{ background: "rgba(0,71,65,0.25)", borderColor: "rgba(240,237,228,0.12)" }}
                   >
                     <Icon size={16} style={{ color: accent }} />
                   </div>
                   <span
-                    className="text-[11px] font-bold tracking-[0.08em] transition-colors duration-300 group-hover:text-[#4FC5D4]"
+                    className="text-[11px] font-bold tracking-[0.08em] transition-colors duration-300 group-hover:text-[#D8D0BF]"
                     style={{ fontFamily: "'Syne', sans-serif", color: "rgba(240,237,228,0.18)" }}
                   >
                     {String(i + 1).padStart(2, "0")}
@@ -1302,21 +1332,21 @@ function DifferentialsSection() {
                 height={176}
                 cardDistance={56}
                 verticalDistance={44}
-                delay={4000}
+                delay={2600}
                 pauseOnHover
                 skewAmount={8}
               >
                 {stackCards.map(({ icon, title, description, date }) => (
-                  <Card key={title} customClass="inkdesk-swap-card">
+                  <Card key={title} customClass="markly-swap-card">
                     <div className="flex h-full flex-col justify-between px-5 py-4">
                       <div className="flex flex-col gap-2.5">
-                        <span className="inline-flex w-fit items-center justify-center rounded-full border border-[rgba(79,197,212,0.28)] bg-[rgba(79,197,212,0.12)] p-2">
+                        <span className="inline-flex w-fit items-center justify-center rounded-full border border-[rgba(240,237,228,0.22)] bg-[rgba(0,71,65,0.32)] p-2">
                           {icon}
                         </span>
-                        <p className="text-lg font-semibold text-[#BDFFFF]">{title}</p>
+                        <p className="text-lg font-semibold text-[#F0EDE4]">{title}</p>
                       </div>
                       <p className="whitespace-nowrap text-base font-medium text-[#F0EDE4]">{description}</p>
-                      <p className="text-sm text-[#A9A69C]">{date}</p>
+                      <p className="text-sm text-[rgba(240,237,228,0.55)]">{date}</p>
                     </div>
                   </Card>
                 ))}
@@ -1345,7 +1375,7 @@ function PricingSection() {
             <div className="relative">
               <div className="flex items-start justify-between mb-6">
                 <div>
-                  <p className="text-sm font-medium mb-1" style={{ color: T.teal }}>InkDesk Starter</p>
+                  <p className="text-sm font-medium mb-1" style={{ color: T.teal }}>Markly Starter</p>
                   <div className="flex items-baseline gap-1">
                     <span className="text-5xl font-bold" style={{ color: T.text }}>R$49</span>
                     <span className="text-base" style={{ color: T.muted }}>/mês</span>
@@ -1389,12 +1419,13 @@ function PricingShowcaseSection() {
   const plans = [
     {
       name: "Mensal",
-      eyebrow: "Flexível",
+      eyebrow: "Comece agora",
       price: "R$49",
       period: "/mês",
-      note: "Para testar o InkDesk sem compromisso anual.",
-      badge: "Beta",
-      highlight: false,
+      note: "Teste grátis por 5 dias. Depois, cobrança mensal — cancele quando quiser.",
+      badge: "5 dias grátis",
+      highlight: true,
+      cta: "Iniciar teste de 5 dias",
     },
     {
       name: "Anual",
@@ -1403,12 +1434,13 @@ function PricingShowcaseSection() {
       period: "/mês",
       note: "Cobrado anualmente. Desconto aproximado de 20% sobre o mensal.",
       badge: "Economize 20%",
-      highlight: true,
+      highlight: false,
+      cta: "Assinar anual",
     },
   ]
 
   return (
-    <section className="relative overflow-hidden px-5 py-28 md:px-8 lg:py-32" style={{ background: T.bgSec }}>
+    <section id="precos" className="relative overflow-hidden scroll-mt-[68px] px-5 py-28 md:px-8 lg:py-32" style={{ background: T.bgSec }}>
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px" style={{ background: `linear-gradient(90deg, transparent, ${T.text}24, transparent)` }} />
       <div className="pointer-events-none absolute left-1/2 top-24 h-[560px] w-[760px] -translate-x-1/2 blur-3xl" style={{ background: "radial-gradient(ellipse, rgba(0,71,65,0.34) 0%, transparent 70%)" }} />
 
@@ -1424,13 +1456,33 @@ function PricingShowcaseSection() {
             </h2>
           </div>
           <p className="max-w-[360px] text-sm leading-7 md:text-base lg:pb-1" style={{ ...fs(visible, 140), color: T.muted }}>
-            Valores iniciais para validar o produto. O anual entra como opção com desconto para quem já quer travar o acesso.
+            Comece com <strong style={{ color: T.text, fontWeight: 600 }}>5 dias de teste grátis</strong>. Depois escolha o plano que faz sentido para o seu estúdio.
           </p>
+        </div>
+
+        <div
+          className="mb-6 flex flex-col gap-3 rounded-[20px] border px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
+          style={{ ...fs(visible, 160), background: "rgba(0,71,65,0.18)", borderColor: "rgba(240,237,228,0.16)" }}
+        >
+          <div className="flex items-center gap-3">
+            <span className="flex h-10 w-10 items-center justify-center rounded-full border text-lg font-bold" style={{ borderColor: "rgba(240,237,228,0.2)", color: T.accent, background: "rgba(0,71,65,0.35)" }}>5</span>
+            <div>
+              <p className="text-sm font-semibold" style={{ color: T.text }}>Teste de 5 dias grátis</p>
+              <p className="text-[13px]" style={{ color: T.muted }}>Acesso completo ao Markly. Sem compromisso no período de teste.</p>
+            </div>
+          </div>
+          <a
+            href="#"
+            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition-all duration-200"
+            style={{ background: T.text, color: T.teal }}
+          >
+            Iniciar teste <ArrowRight size={15} />
+          </a>
         </div>
 
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-stretch">
           <div className="grid h-full gap-5 md:grid-cols-2 md:items-stretch" style={fs(visible, 190)}>
-            {plans.map(({ name, eyebrow, price, period, note, badge, highlight }) => (
+            {plans.map(({ name, eyebrow, price, period, note, badge, highlight, cta }) => (
               <div
                 key={name}
                 className="relative flex h-full flex-col justify-center overflow-hidden rounded-[24px] border p-7"
@@ -1445,7 +1497,7 @@ function PricingShowcaseSection() {
                   <div className="mb-7 flex items-start justify-between gap-4">
                     <div>
                       <p className="mb-1 text-[12px] font-semibold uppercase tracking-[0.16em]" style={{ color: highlight ? T.text : T.muted }}>{eyebrow}</p>
-                      <h3 className="text-xl font-semibold" style={{ color: T.text }}>InkDesk {name}</h3>
+                      <h3 className="text-xl font-semibold" style={{ color: T.text }}>Markly {name}</h3>
                     </div>
                     <span className="rounded-full border px-3 py-1 text-[10px] font-semibold" style={{ background: highlight ? T.text : "transparent", borderColor: highlight ? T.text : T.border, color: highlight ? T.teal : T.muted }}>
                       {badge}
@@ -1465,7 +1517,7 @@ function PricingShowcaseSection() {
                     onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.transform = "translateY(-1px)" }}
                     onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.transform = "translateY(0)" }}
                   >
-                    Entrar na lista <ArrowRight size={16} />
+                    {cta} <ArrowRight size={16} />
                   </a>
                 </div>
               </div>
@@ -1491,7 +1543,7 @@ function PricingShowcaseSection() {
             <div className="mt-6 rounded-[16px] border p-4" style={{ background: "rgba(240,237,228,0.035)", borderColor: T.border }}>
               <div className="text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: T.muted }}>Observação</div>
               <p className="mt-2 text-[13px] leading-6" style={{ color: T.muted }}>
-                Preços e recursos podem mudar durante a fase beta. O anual é uma sugestão inicial com desconto.
+                O teste de 5 dias é gratuito. Após o período, os planos mensal e anual entram em vigor conforme a escolha.
               </p>
             </div>
           </div>
@@ -1504,14 +1556,14 @@ function PricingShowcaseSection() {
 function FAQSection() {
   const { ref, visible } = useFadeIn()
   const faqs = [
-    { q: "O InkDesk é para tatuador autônomo?", a: "Sim. Ele foi pensado para tatuadores independentes e pequenos estúdios que querem organizar pedidos, clientes e agenda." },
-    { q: "Preciso instalar alguma coisa?", a: "Não. O InkDesk funciona online, direto pelo navegador, sem necessidade de instalação." },
+    { q: "O Markly é para tatuador autônomo?", a: "Sim. Ele foi pensado para tatuadores independentes e pequenos estúdios que querem organizar pedidos, clientes e agenda." },
+    { q: "Preciso instalar alguma coisa?", a: "Não. O Markly funciona online, direto pelo navegador, sem necessidade de instalação." },
     { q: "Posso usar para controlar orçamentos do WhatsApp?", a: "Sim. A ideia é trazer os pedidos para um painel organizado, evitando que conversas importantes se percam." },
     { q: "Vai ter controle financeiro?", a: "A versão inicial foca em orçamentos, clientes e agenda. Recursos financeiros podem entrar nas próximas versões." },
     { q: "Posso cadastrar meu portfólio?", a: "Sim. O portfólio faz parte da organização do artista dentro do sistema, conectado a estilos, clientes e orçamentos." },
   ]
   return (
-    <section className="py-28 px-6" style={{ background: T.bg }}>
+    <section id="faq" className="scroll-mt-[68px] py-28 px-6" style={{ background: T.bg }}>
       <div className="max-w-3xl mx-auto">
         <div ref={ref} className="text-center mb-14">
           <h2 className="text-3xl md:text-5xl font-bold" style={{ ...fs(visible), color: T.text }}>Perguntas frequentes</h2>
@@ -1526,17 +1578,17 @@ function FAQSection() {
             <AccordionItem
               key={q}
               value={`faq-${i}`}
-              className="rounded-md border overflow-hidden border-b-0 transition-colors duration-200 data-[state=open]:bg-[rgba(0,71,65,0.06)] data-[state=closed]:bg-[#0B1714] data-[state=open]:border-[rgba(0,71,65,0.15)] data-[state=closed]:border-[rgba(240,237,228,0.1)]"
+              className="rounded-md border overflow-hidden border-b-0 transition-colors duration-200 data-[state=open]:bg-[rgba(0,71,65,0.08)] data-[state=closed]:bg-[#081713] data-[state=open]:border-[rgba(240,237,228,0.16)] data-[state=closed]:border-[rgba(240,237,228,0.1)]"
             >
               <AccordionTrigger
-                className="px-6 py-5 hover:no-underline [&>svg]:text-[#A9A69C]"
+                className="px-6 py-5 hover:no-underline [&>svg]:text-[rgba(240,237,228,0.55)]"
                 style={{ color: T.text }}
               >
                 {q}
               </AccordionTrigger>
               <AccordionContent
                 keepRendered
-                className="px-6 pb-5 text-sm leading-relaxed text-[#A9A69C]"
+                className="px-6 pb-5 text-sm leading-relaxed text-[rgba(240,237,228,0.68)]"
               >
                 {a}
               </AccordionContent>
@@ -1569,23 +1621,23 @@ function CTASection() {
           <div className="mx-auto mb-8 flex h-24 w-24 items-center justify-center rounded-full border md:h-32 md:w-32" style={{ borderColor: T.border, background: "rgba(2,6,5,0.42)", boxShadow: "0 22px 70px rgba(0,0,0,0.32)" }}>
             <BrandMark size={96} />
           </div>
-          <p className="mb-5 text-[12px] font-semibold uppercase tracking-[0.22em]" style={{ color: T.muted }}>InkDesk beta</p>
+          <p className="mb-5 text-[12px] font-semibold uppercase tracking-[0.22em]" style={{ color: T.muted }}>Markly beta</p>
           <h2 className="mx-auto max-w-[760px] text-4xl font-semibold leading-[1.04] md:text-6xl" style={{ color: T.text }}>
             Organize seu estúdio com a calma de quem tem tudo no lugar.
           </h2>
           <p className="mx-auto mt-6 max-w-[600px] text-base leading-7 md:text-lg" style={{ color: T.muted }}>
-            Pedidos, agenda e clientes em uma experiência simples, elegante e feita para tatuadores.
+            Pedidos, clientes, agenda, portfólio e orçamentos em uma bancada digital feita para tatuadores.
           </p>
 
           <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <a
-              href="#"
+              href="#precos"
               className="inline-flex w-full items-center justify-center gap-2 rounded-full px-7 py-3.5 text-sm font-semibold transition-all duration-200 sm:w-auto"
               style={{ background: T.text, color: T.teal }}
               onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)" }}
               onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.transform = "translateY(0)" }}
             >
-              Começar agora <ArrowRight size={16} />
+              Iniciar teste de 5 dias <ArrowRight size={16} />
             </a>
             <a
               href="#"
@@ -1604,17 +1656,17 @@ function CTASection() {
 function Footer() {
   const [supportOpen, setSupportOpen] = useState(false)
   const [supportMessage, setSupportMessage] = useState("")
-  const supportEmail = "suporteinkdesk@gmail.com.br"
-  const supportHref = `mailto:${supportEmail}?subject=${encodeURIComponent("Suporte InkDesk")}&body=${encodeURIComponent(supportMessage || "Olá, preciso de suporte com o InkDesk.")}`
+  const supportEmail = "suportemarkly@gmail.com.br"
+  const supportHref = `mailto:${supportEmail}?subject=${encodeURIComponent("Suporte Markly")}&body=${encodeURIComponent(supportMessage || "Olá, preciso de suporte com o Markly.")}`
 
   return (
     <>
-      <footer className="border-t px-5 py-12 md:px-8" style={{ background: T.bg, borderColor: T.border }}>
+      <footer id="contato" className="scroll-mt-[68px] border-t px-5 py-12 md:px-8" style={{ background: T.bg, borderColor: T.border }}>
         <div className="mx-auto grid max-w-6xl gap-10 md:grid-cols-[1.3fr_1fr_1fr] md:items-start">
           <div>
             <div className="mb-3 flex items-center gap-3">
               <BrandMark size={28} />
-              <span className="text-xl font-semibold" style={{ color: T.text }}>InkDesk</span>
+              <span className="text-xl font-semibold" style={{ color: T.text }}>Markly</span>
             </div>
             <p className="max-w-[280px] text-sm leading-6" style={{ color: T.muted }}>Sua bancada digital para organizar pedidos, clientes e agenda.</p>
           </div>
@@ -1622,10 +1674,15 @@ function Footer() {
           <div>
             <div className="mb-4 text-[12px] font-semibold" style={{ color: T.text }}>Navegação</div>
             <nav className="flex flex-wrap gap-x-5 gap-y-3">
-              {["Produto", "Recursos", "Preços", "FAQ"].map((l) => (
-                <a key={l} href="#" className="text-sm transition-colors duration-200" style={{ color: T.muted }}
+              {[
+                { label: "Produto", href: "#produto" },
+                { label: "Recursos", href: "#recursos" },
+                { label: "Preços", href: "#precos" },
+                { label: "FAQ", href: "#faq" },
+              ].map(({ label, href }) => (
+                <a key={label} href={href} className="text-sm transition-colors duration-200" style={{ color: T.muted }}
                   onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = T.text)}
-                  onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = T.muted)}>{l}</a>
+                  onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = T.muted)}>{label}</a>
               ))}
             </nav>
           </div>
@@ -1649,13 +1706,13 @@ function Footer() {
           </div>
         </div>
         <div className="mx-auto mt-10 flex max-w-6xl flex-col gap-3 border-t pt-6 text-[12px] md:flex-row md:items-center md:justify-between" style={{ borderColor: T.border, color: "rgba(240,237,228,0.42)" }}>
-          <span>© 2026 InkDesk. Todos os direitos reservados.</span>
+          <span>© 2026 Markly. Todos os direitos reservados.</span>
           <a href="https://brunosouza.dev.br" target="_blank" rel="noreferrer" className="transition-colors duration-200 hover:text-[#F0EDE4]">brunosouza.dev.br</a>
         </div>
       </footer>
 
       {supportOpen && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center px-5" role="dialog" aria-modal="true" aria-label="SAC InkDesk">
+        <div className="fixed inset-0 z-[80] flex items-center justify-center px-5" role="dialog" aria-modal="true" aria-label="SAC Markly">
           <button
             type="button"
             className="absolute inset-0"
@@ -1668,7 +1725,7 @@ function Footer() {
               <div>
                 <div className="mb-2 flex items-center gap-3">
                   <BrandMark size={22} />
-                  <h3 className="text-lg font-semibold" style={{ color: T.text }}>SAC InkDesk</h3>
+                  <h3 className="text-lg font-semibold" style={{ color: T.text }}>SAC Markly</h3>
                 </div>
                 <p className="text-sm leading-6" style={{ color: T.muted }}>Descreva sua dúvida ou problema. O botão abre seu email com a mensagem pronta para envio.</p>
               </div>
@@ -1702,6 +1759,8 @@ function Footer() {
   )
 }
 
+const NOISE_TEXTURE = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`
+
 export default function App() {
   return (
     <div style={{ fontFamily: "Poppins, sans-serif", background: T.bg, minHeight: "100vh" }}>
@@ -1711,6 +1770,11 @@ export default function App() {
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: rgba(0,71,65,0.45); border-radius: 3px; }
       `}</style>
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 z-[80]"
+        style={{ backgroundImage: NOISE_TEXTURE, opacity: 0.025, mixBlendMode: "overlay" }}
+      />
       <Header />
       <main>
         <HeroSection />
