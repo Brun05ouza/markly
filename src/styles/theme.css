@@ -41,6 +41,46 @@
   --sidebar-ring: oklch(0.708 0 0);
 }
 
+:root,
+html[data-markly-theme="dark"] {
+  --markly-teal: #004741;
+  --markly-teal-dark: #003b36;
+  --markly-amber: #d8d0bf;
+  --markly-green: #2f7f68;
+  --markly-bg: #020806;
+  --markly-bg-sec: #06110f;
+  --markly-card: #081713;
+  --markly-card-elev: #0b1d18;
+  --markly-border: rgba(240, 237, 228, 0.10);
+  --markly-border-strong: rgba(240, 237, 228, 0.18);
+  --markly-text: #f0ede4;
+  --markly-muted: rgba(240, 237, 228, 0.68);
+  --markly-faint: rgba(240, 237, 228, 0.45);
+  --markly-glow-green: rgba(0, 71, 65, 0.35);
+  --markly-glow-beige: rgba(240, 237, 228, 0.08);
+  --markly-accent: #d8d0bf;
+}
+
+html[data-markly-theme="light"],
+[data-markly-theme="light"] {
+  --markly-teal: #0d5c53;
+  --markly-teal-dark: #0a4942;
+  --markly-amber: #756b5b;
+  --markly-green: #2f7f68;
+  --markly-bg: #f4efe5;
+  --markly-bg-sec: #fffaf2;
+  --markly-card: #fffaf2;
+  --markly-card-elev: #f8f1e6;
+  --markly-border: rgba(23, 35, 30, 0.14);
+  --markly-border-strong: rgba(23, 35, 30, 0.24);
+  --markly-text: #17231e;
+  --markly-muted: rgba(23, 35, 30, 0.68);
+  --markly-faint: rgba(23, 35, 30, 0.46);
+  --markly-glow-green: rgba(13, 92, 83, 0.14);
+  --markly-glow-beige: rgba(23, 35, 30, 0.06);
+  --markly-accent: #0d5c53;
+}
+
 .dark {
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
@@ -177,5 +217,195 @@
     font-size: var(--text-base);
     font-weight: var(--font-weight-normal);
     line-height: 1.5;
+  }
+}
+
+/*
+  After Tailwind text-* utilities (which bake in a tight line-height).
+  Syne needs extra leading so descenders (g, j, p, q, y) are not cropped.
+*/
+@layer utilities {
+  .font-display {
+    font-family: "Syne", sans-serif;
+    line-height: 1.4 !important;
+    overflow: visible;
+  }
+
+  .markly-square-surfaces :where(div, section, article, span, li, input) {
+    border-radius: 0 !important;
+  }
+
+  html[data-markly-theme="light"] body,
+  [data-markly-theme="light"] {
+    background: var(--markly-bg) !important;
+    color: var(--markly-text) !important;
+  }
+
+  [data-markly-theme="light"] :where([data-slot="sidebar-inset"], main.markly-square-surfaces) {
+    background:
+      radial-gradient(circle at 18% 0%, rgba(216, 208, 191, 0.28), transparent 30%),
+      radial-gradient(circle at 80% 12%, rgba(13, 92, 83, 0.07), transparent 28%),
+      linear-gradient(180deg, #f8f4ec 0%, #f1eadc 52%, #ebe2d2 100%) !important;
+    color: var(--markly-text) !important;
+  }
+
+  [data-markly-theme="light"] header {
+    background: rgba(250, 247, 240, 0.9) !important;
+    border-color: var(--markly-border) !important;
+    box-shadow: 0 16px 44px rgba(23, 35, 30, 0.08) !important;
+  }
+
+  [data-markly-theme="light"] [data-sidebar="sidebar"] {
+    background:
+      radial-gradient(circle at 18% 4%, rgba(0, 71, 65, 0.10), transparent 28%),
+      linear-gradient(180deg, rgba(250, 247, 239, 0.98), rgba(241, 234, 220, 0.98)) !important;
+    color: var(--markly-text) !important;
+  }
+
+  [data-markly-theme="light"] [data-sidebar="sidebar"] > [aria-hidden="true"]:first-child {
+    background:
+      radial-gradient(circle at 18% 4%, rgba(13, 92, 83, 0.10), transparent 28%),
+      radial-gradient(circle at 78% 34%, rgba(216, 208, 191, 0.34), transparent 34%),
+      linear-gradient(180deg, rgba(255, 252, 245, 0.98), rgba(241, 234, 220, 0.98) 58%, rgba(235, 226, 210, 0.98)) !important;
+  }
+
+  [data-markly-theme="light"] :where(
+    [style*="background: #020806"],
+    [style*="background: #06110F"],
+    [style*="background: #081713"],
+    [style*="background: #0B1D18"],
+    [style*="background: rgb(2, 8, 6"],
+    [style*="background: rgb(6, 17, 15"],
+    [style*="background: rgb(8, 23, 19"],
+    [style*="background: rgb(11, 29, 24"],
+    [style*="background: rgba(2,8,6"],
+    [style*="background: rgba(4,9,7"],
+    [style*="background: rgba(5,14,12"],
+    [style*="background: rgba(6,17,15"],
+    [style*="background: rgba(2, 8, 6"],
+    [style*="background: rgba(4, 9, 7"],
+    [style*="background: rgba(5, 14, 12"],
+    [style*="background: rgba(6, 17, 15"]
+  ) {
+    background: var(--markly-card) !important;
+  }
+
+  [data-markly-theme="light"] :where(div, section, article, button, input, span, li) {
+    border-color: var(--markly-border) !important;
+  }
+
+  [data-markly-theme="light"] :where(input, textarea, select) {
+    background: rgba(255, 252, 245, 0.80) !important;
+    color: var(--markly-text) !important;
+  }
+
+  [data-markly-theme="light"] input::placeholder,
+  [data-markly-theme="light"] textarea::placeholder {
+    color: rgba(23, 35, 30, 0.42) !important;
+  }
+
+  [data-markly-theme="light"] :where(
+    [class*="bg-[#020806]"],
+    [class*="bg-[#06110f]"],
+    [class*="bg-[#081713]"],
+    [class*="bg-[rgba(2,8,6"],
+    [class*="bg-[rgba(6,17,15"],
+    [class*="bg-[rgba(8,23,19"]
+  ) {
+    background: var(--markly-card) !important;
+  }
+
+  [data-markly-theme="light"] :where(
+    [class*="text-[#F0EDE4]"],
+    [class*="text-[#D8D0BF]"],
+    [class*="text-[rgba(240"]
+  ) {
+    color: var(--markly-muted) !important;
+  }
+
+  [data-markly-theme="light"] :where(
+    [class*="hover:text-[#F0EDE4]"]:hover,
+    [class*="focus:text-[#F0EDE4]"]:focus,
+    [class*="data-[active=true]:text-[#F0EDE4]"][data-active="true"]
+  ) {
+    color: var(--markly-text) !important;
+  }
+
+  [data-markly-theme="light"] :where(svg) {
+    color: currentColor !important;
+  }
+
+  [data-markly-theme="light"] [data-sidebar="menu-button"] {
+    color: rgba(23, 35, 30, 0.70) !important;
+  }
+
+  [data-markly-theme="light"] [data-sidebar="menu-button"]:hover,
+  [data-markly-theme="light"] [data-sidebar="menu-button"][data-active="true"] {
+    color: var(--markly-text) !important;
+  }
+
+  [data-markly-theme="light"] [data-sidebar="menu-badge"] {
+    background: #17231e !important;
+    border-color: rgba(23, 35, 30, 0.16) !important;
+    color: #fffaf2 !important;
+    box-shadow: 0 10px 24px rgba(23, 35, 30, 0.12) !important;
+  }
+
+  [data-markly-theme="light"] .markly-date-filter-menu {
+    background: rgba(255, 252, 245, 0.96) !important;
+    color: var(--markly-text) !important;
+    box-shadow: 0 28px 74px rgba(23, 35, 30, 0.16) !important;
+  }
+
+  [data-markly-theme="light"] .markly-date-calendar-panel {
+    background:
+      radial-gradient(circle at 50% 0%, rgba(13, 92, 83, 0.08), transparent 46%),
+      linear-gradient(180deg, rgba(255, 252, 245, 0.96), rgba(244, 239, 229, 0.92)) !important;
+  }
+
+  [data-markly-theme="light"] .markly-date-calendar-panel :where([class*="text-[#F0EDE4]"]) {
+    color: var(--markly-text) !important;
+  }
+
+  [data-markly-theme="light"] .markly-date-calendar-panel :where([class*="text-[#D8D0BF]"]) {
+    color: var(--markly-accent) !important;
+  }
+
+  [data-markly-theme="light"] .markly-date-calendar-panel :where([class*="text-[rgba(240"]) {
+    color: var(--markly-muted) !important;
+  }
+
+  [data-markly-theme="light"] .markly-date-calendar-panel :where(
+    [class*="bg-[rgba(2,8,6"],
+    [class*="bg-[rgba(216,208,191"]
+  ) {
+    background: rgba(23, 35, 30, 0.05) !important;
+  }
+
+  [data-markly-theme="light"] .markly-date-calendar-panel :where([class*="hover:bg-[rgba(216,208,191"]):hover {
+    background: rgba(13, 92, 83, 0.08) !important;
+  }
+
+  [data-markly-theme="light"] .markly-date-calendar-panel :where([class*="bg-[#F0EDE4]"]) {
+    background: var(--markly-text) !important;
+    color: #fffaf2 !important;
+  }
+
+  [data-markly-theme="light"] .markly-theme-toggle {
+    background: rgba(23, 35, 30, 0.07) !important;
+    border-color: rgba(23, 35, 30, 0.16) !important;
+    color: var(--markly-text) !important;
+  }
+
+  [data-markly-theme="light"] .markly-theme-toggle-thumb {
+    background: var(--markly-text) !important;
+    color: #f8f4ec !important;
+  }
+
+  [data-markly-theme="light"] .markly-status-chip {
+    background: linear-gradient(90deg, rgba(0, 71, 65, 0.12), rgba(216, 208, 191, 0.42), rgba(0, 71, 65, 0.06)) !important;
+    border-color: rgba(0, 71, 65, 0.24) !important;
+    color: var(--markly-text) !important;
+    box-shadow: 0 14px 34px rgba(23, 35, 30, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.62) !important;
   }
 }

@@ -241,8 +241,8 @@ function Header() {
         <a href="#" className="flex items-center gap-3.5" style={{ color: T.text }}>
           <BrandMark size={36} />
           <span
-            className="text-[22px] font-bold leading-none"
-            style={{ fontFamily: "'Syne', sans-serif", letterSpacing: "-0.04em" }}
+            className="font-display text-[22px] font-bold"
+            style={{ letterSpacing: "-0.04em" }}
           >
             Markly
           </span>
@@ -349,7 +349,7 @@ function HeroHeadline() {
     <div ref={rootRef} className="relative z-10 flex w-full max-w-[680px] flex-col items-start px-2 text-left">
       <h1
         data-hero-title
-        className="text-[44px] font-semibold leading-[1.02] tracking-tight opacity-0 md:text-[60px] lg:text-[72px]"
+        className="text-[44px] font-semibold leading-tight tracking-tight opacity-0 md:text-[60px] lg:text-[72px]"
         style={{ color: T.text, fontFamily: "Poppins, sans-serif", perspective: 800 }}
       >
         Sua arte no corpo.{" "}
@@ -428,7 +428,7 @@ function ProblemSection() {
               <span className="h-px w-9" style={{ background: accent }} />
               O problema
             </p>
-            <h2 className="text-3xl md:text-5xl font-bold leading-[1.08]" style={{ ...fs(visible, 60), color: T.text }}>
+            <h2 className="text-3xl md:text-5xl font-bold leading-tight" style={{ ...fs(visible, 60), color: T.text }}>
               Seu trabalho é arte.
               <br />
               <span style={{ color: T.muted }}>A bagunça da gestão não precisa fazer parte.</span>
@@ -540,7 +540,7 @@ function ProductSection() {
               <span className="h-px w-9" style={{ background: accent }} />
               Produto
             </p>
-            <h2 className="max-w-[680px] text-3xl font-semibold leading-[1.04] md:text-5xl" style={{ ...fs(visible, 80), color: T.text }}>
+            <h2 className="max-w-[680px] text-3xl font-semibold leading-tight md:text-5xl" style={{ ...fs(visible, 80), color: T.text }}>
               Um painel para vender melhor <span style={{ color: T.muted }}>sem perder o controle do estúdio.</span>
             </h2>
           </div>
@@ -776,7 +776,7 @@ function WorkflowSection() {
               <span className="h-px w-9" style={{ background: accent }} />
               Como funciona
             </p>
-            <h2 className="max-w-[640px] text-3xl font-bold leading-[1.08] md:text-5xl" style={{ ...fs(visible, 60), color: T.text }}>
+            <h2 className="max-w-[640px] text-3xl font-bold leading-tight md:text-5xl" style={{ ...fs(visible, 60), color: T.text }}>
               Do primeiro contato <span style={{ color: T.muted }}>até a sessão fechada.</span>
             </h2>
           </div>
@@ -971,7 +971,7 @@ function InterfaceShowcaseSection() {
               <span className="h-px w-9" style={{ background: T.text }} />
               Interface
             </p>
-            <h2 className="max-w-[680px] text-3xl font-semibold leading-[1.04] md:text-5xl" style={{ ...fs(visible, 80), color: T.text }}>
+            <h2 className="max-w-[680px] text-3xl font-semibold leading-tight md:text-5xl" style={{ ...fs(visible, 80), color: T.text }}>
               Uma tela limpa para decidir rápido e atender melhor.
             </h2>
           </div>
@@ -1171,7 +1171,7 @@ function ForWhomSection() {
               <span className="h-px w-9" style={{ background: T.text }} />
               Para quem é
             </p>
-            <h2 className="text-3xl font-semibold leading-[1.04] md:text-5xl" style={{ ...fs(visible, 70), color: T.text }}>
+            <h2 className="text-3xl font-semibold leading-tight md:text-5xl" style={{ ...fs(visible, 70), color: T.text }}>
               Feito para quem vive da própria arte.
             </h2>
           </div>
@@ -1274,7 +1274,7 @@ function DifferentialsSection() {
             <span className="h-px w-9" style={{ background: accent }} />
             Diferenciais
           </p>
-          <h2 className="max-w-[620px] text-3xl font-bold leading-[1.08] md:text-5xl" style={{ ...fs(visible, 60), color: T.text }}>
+          <h2 className="max-w-[620px] text-3xl font-bold leading-tight md:text-5xl" style={{ ...fs(visible, 60), color: T.text }}>
             Gestão com estética, <span style={{ color: T.muted }}>velocidade e clareza.</span>
           </h2>
         </div>
@@ -1444,7 +1444,7 @@ function PricingShowcaseSection() {
               <span className="h-px w-9" style={{ background: T.text }} />
               Planos
             </p>
-            <h2 className="text-3xl font-semibold leading-[1.04] md:text-5xl" style={{ ...fs(visible, 80), color: T.text }}>
+            <h2 className="text-3xl font-semibold leading-tight md:text-5xl" style={{ ...fs(visible, 80), color: T.text }}>
               Comece simples. Evolua conforme seu estúdio cresce.
             </h2>
           </div>
@@ -1498,7 +1498,7 @@ function PricingShowcaseSection() {
                   </div>
 
                   <div className="mb-5 flex items-end gap-2">
-                    <span className="text-5xl font-semibold leading-none md:text-6xl" style={{ color: T.text }}>{price}</span>
+                    <span className="text-5xl font-semibold leading-tight md:text-6xl" style={{ color: T.text }}>{price}</span>
                     <span className="pb-1 text-sm" style={{ color: T.muted }}>{period}</span>
                   </div>
                   <p className="mb-8 min-h-[48px] text-sm leading-6" style={{ color: T.muted }}>{note}</p>
@@ -1615,7 +1615,7 @@ function CTASection() {
             <BrandMark size={96} />
           </div>
           <p className="mb-5 text-[12px] font-semibold uppercase tracking-[0.22em]" style={{ color: T.muted }}>Markly beta</p>
-          <h2 className="mx-auto max-w-[760px] text-4xl font-semibold leading-[1.04] md:text-6xl" style={{ color: T.text }}>
+          <h2 className="mx-auto max-w-[760px] text-4xl font-semibold leading-tight md:text-6xl" style={{ color: T.text }}>
             Organize seu estúdio com a calma de quem tem tudo no lugar.
           </h2>
           <p className="mx-auto mt-6 max-w-[600px] text-base leading-7 md:text-lg" style={{ color: T.muted }}>

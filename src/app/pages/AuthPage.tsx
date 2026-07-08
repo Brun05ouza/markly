@@ -2,11 +2,23 @@ import { useEffect, useMemo, useState, FormEvent } from "react"
 import { AnimatePresence, motion } from "motion/react"
 import { ArrowRight, Eye, EyeOff, Lock, Mail, User } from "lucide-react"
 import marklyIcon from "../../assets/icon-markly.png"
+import DarkVeil from "../components/DarkVeil/DarkVeil"
 import LottieCheckbox from "../components/LottieCheckbox"
 import { startDevSession, validateDevAccess } from "../devAccess"
 import { T } from "../theme"
 
 type AuthMode = "login" | "cadastro"
+
+function GoogleIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47a5.57 5.57 0 0 1-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z" />
+      <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3c-1.08.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96H1.29v3.09A11.99 11.99 0 0 0 12 24z" />
+      <path fill="#FBBC05" d="M5.27 14.29A7.16 7.16 0 0 1 4.9 12c0-.8.14-1.57.37-2.29V6.62H1.29a12 12 0 0 0 0 10.76l3.98-3.09z" />
+      <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.69 1.29 6.62l3.98 3.09C6.22 6.86 8.87 4.75 12 4.75z" />
+    </svg>
+  )
+}
 
 function Brand() {
   return (
@@ -21,7 +33,7 @@ function Brand() {
       >
         <img src={marklyIcon} alt="" className="h-8 w-8 object-contain" aria-hidden="true" />
       </span>
-      <span className="text-[26px] font-bold leading-none" style={{ fontFamily: "'Syne', sans-serif", letterSpacing: "-0.04em" }}>
+      <span className="font-display text-[26px] font-bold" style={{ letterSpacing: "-0.04em" }}>
         Markly
       </span>
     </a>
@@ -195,14 +207,24 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
 
   return (
     <main className="relative min-h-screen overflow-hidden px-4 py-8" style={{ background: T.bg, fontFamily: "Poppins, sans-serif" }}>
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            "radial-gradient(ellipse 520px 360px at 50% 0%, rgba(0,71,65,0.34), transparent 70%), linear-gradient(180deg, rgba(240,237,228,0.025), transparent 42%)",
-        }}
-      />
+      <div aria-hidden className="pointer-events-none absolute inset-0">
+        <DarkVeil
+          hueShift={175}
+          noiseIntensity={0.02}
+          speed={1.05}
+          warpAmount={0.22}
+          resolutionScale={1}
+        />
+        {/* Força o véu para o teal do projeto e elimina faixas avermelhadas do shader */}
+        <div className="absolute inset-0" style={{ background: "#004741", mixBlendMode: "color", opacity: 0.92 }} />
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse 70% 55% at 50% 40%, transparent 0%, rgba(2,8,6,0.58) 70%, rgba(2,8,6,0.92) 100%), linear-gradient(180deg, rgba(0,71,65,0.28), transparent 45%, rgba(2,8,6,0.62) 100%)",
+          }}
+        />
+      </div>
 
       <section className="relative z-10 mx-auto flex min-h-[calc(100vh-64px)] w-full max-w-[440px] flex-col justify-center">
         <Brand />
@@ -231,7 +253,7 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
               transition={{ duration: 0.2 }}
             >
               <div className="mb-5 mt-5 text-center">
-                <h1 className="text-[28px] font-semibold leading-tight" style={{ color: T.text, fontFamily: "'Syne', sans-serif", letterSpacing: "-0.035em" }}>
+                <h1 className="font-display text-[28px] font-semibold" style={{ color: T.text, letterSpacing: "-0.035em" }}>
                   {copy.title}
                 </h1>
                 <p className="mx-auto mt-2 max-w-[320px] text-[13px] leading-6" style={{ color: T.muted }}>
@@ -295,6 +317,29 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
                 >
                   {sent ? (isSignup ? "Conta criada!" : "Bem-vindo!") : isSignup ? "Criar conta" : "Entrar"}
                   {!sent && <ArrowRight size={15} />}
+                </motion.button>
+
+                <div className="my-1 flex items-center gap-3">
+                  <span className="h-px flex-1" style={{ background: "rgba(240,237,228,0.12)" }} />
+                  <span className="text-[11px]" style={{ color: T.faint }}>
+                    Ou {isSignup ? "cadastre-se" : "entre"} com
+                  </span>
+                  <span className="h-px flex-1" style={{ background: "rgba(240,237,228,0.12)" }} />
+                </div>
+
+                <motion.button
+                  type="button"
+                  className="flex w-full items-center justify-center gap-2.5 rounded-[12px] border py-3 text-[13px] font-semibold"
+                  style={{
+                    background: "rgba(240,237,228,0.04)",
+                    borderColor: "rgba(240,237,228,0.14)",
+                    color: T.text,
+                  }}
+                  whileHover={{ y: -1, backgroundColor: "rgba(240,237,228,0.07)" }}
+                  whileTap={{ scale: 0.99 }}
+                >
+                  <GoogleIcon />
+                  {isSignup ? "Cadastrar com Google" : "Entrar com Google"}
                 </motion.button>
               </form>
 

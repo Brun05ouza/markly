@@ -8,6 +8,8 @@ export type StudioProfile = {
   businessHoursEnd: string
   flexibleHours: boolean
   mainStyles: string[]
+  studioIcon: string
+  studioLogoDataUrl: string
 }
 
 export const defaultStudioProfile: StudioProfile = {
@@ -20,6 +22,8 @@ export const defaultStudioProfile: StudioProfile = {
   businessHoursEnd: "18:00",
   flexibleHours: false,
   mainStyles: [],
+  studioIcon: "sparkles",
+  studioLogoDataUrl: "",
 }
 
 const completedKey = "markly_studio_setup_completed"

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import { AnimatePresence, motion } from "motion/react"
-import { ArrowLeft, ArrowRight, CheckCircle2, Clock, Sparkles } from "lucide-react"
+import { ArrowLeft, ArrowRight, CheckCircle2, Clock, Sparkles, Upload, X } from "lucide-react"
 import {
   Select,
   SelectContent,
@@ -11,6 +11,12 @@ import {
 import LottieCheckbox from "../LottieCheckbox"
 import { T } from "../../theme"
 import { type StudioProfile } from "../../utils/studioStorage"
+import {
+  formatLogoSizeLimit,
+  getStudioBrandIcon,
+  studioBrandIconOptions,
+  studioLogoMaxBytes,
+} from "../../utils/studioBrand"
 
 type StudioSetupModalProps = {
   open: boolean
@@ -29,6 +35,8 @@ const timeOptions = Array.from({ length: 31 }, (_, index) => {
   const minutes = (totalMinutes % 60).toString().padStart(2, "0")
   return `${hours}:${minutes}`
 })
+
+const acceptedLogoTypes = ["image/png", "image/jpeg", "image/webp", "image/x-icon", "image/vnd.microsoft.icon"]
 
 function SelectField({
   label,
@@ -204,6 +212,27 @@ export default function StudioSetupModal({ open, initialProfile, onComplete }: S
     })
   }
 
+  const handleLogoUpload = (file?: File) => {
+    if (!file) return
+
+    if (!acceptedLogoTypes.includes(file.type)) {
+      setError("Use uma logo em PNG, JPG, WEBP ou ICO.")
+      return
+    }
+
+    if (file.size > studioLogoMaxBytes) {
+      setError(`Use uma logo leve, com no máximo ${formatLogoSizeLimit()}.`)
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = () => {
+      update("studioLogoDataUrl", String(reader.result || ""))
+    }
+    reader.onerror = () => setError("Não foi possível carregar essa logo.")
+    reader.readAsDataURL(file)
+  }
+
   const validateStep = () => {
     if (step === 1 && (!profile.studioName.trim() || !profile.studioType || !profile.teamSize)) {
       setError("Preencha o nome, tipo e tamanho do studio para continuar.")
@@ -284,7 +313,7 @@ export default function StudioSetupModal({ open, initialProfile, onComplete }: S
                   <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-[20px] border" style={{ background: "rgba(240,237,228,0.06)", borderColor: T.border }}>
                     <Sparkles size={24} style={{ color: T.accent }} />
                   </div>
-                  <h2 className="text-3xl font-semibold sm:text-4xl" style={{ color: T.text, fontFamily: "'Syne', sans-serif", letterSpacing: "-0.04em" }}>
+                  <h2 className="font-display text-3xl font-semibold sm:text-4xl" style={{ color: T.text, letterSpacing: "-0.04em" }}>
                     Bem-vindo ao Markly.
                   </h2>
                   <p className="mx-auto mt-4 max-w-[560px] text-sm leading-7 sm:text-[15px]" style={{ color: T.muted }}>
@@ -296,7 +325,7 @@ export default function StudioSetupModal({ open, initialProfile, onComplete }: S
 
               {step === 1 && (
                 <div>
-                  <h2 className="text-2xl font-semibold" style={{ color: T.text, fontFamily: "'Syne', sans-serif" }}>Vamos conhecer seu studio.</h2>
+                  <h2 className="font-display text-2xl font-semibold" style={{ color: T.text }}>Vamos conhecer seu studio.</h2>
                   <div className="mt-6 grid gap-5">
                     <label>
                       <span className="mb-2 block text-[12px] font-semibold" style={{ color: T.text }}>Qual é o nome do seu studio?</span>
@@ -308,6 +337,80 @@ export default function StudioSetupModal({ open, initialProfile, onComplete }: S
                         style={{ background: "rgba(2,8,6,0.58)", borderColor: T.border, color: T.text }}
                       />
                     </label>
+
+                    <div className="rounded-[18px] border p-4" style={{ background: "rgba(240,237,228,0.03)", borderColor: T.border }}>
+                      <div className="mb-4 flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-[12px] font-semibold" style={{ color: T.text }}>Identidade do studio</p>
+                          <p className="mt-0.5 text-[11px]" style={{ color: T.faint }}>Escolha um ícone ou suba uma logo leve.</p>
+                        </div>
+                        <div className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-[15px] border" style={{ background: "rgba(2,8,6,0.42)", borderColor: T.borderStrong }}>
+                          {profile.studioLogoDataUrl ? (
+                            <img src={profile.studioLogoDataUrl} alt="" className="size-full object-cover" aria-hidden="true" />
+                          ) : (
+                            (() => {
+                              const BrandIcon = getStudioBrandIcon(profile.studioIcon)
+                              return <BrandIcon size={21} strokeWidth={1.8} style={{ color: T.accent }} />
+                            })()
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="grid gap-4 lg:grid-cols-[1fr_190px]">
+                        <div>
+                          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: T.faint }}>Ícone Lucide</p>
+                          <div className="grid grid-cols-7 gap-2">
+                            {studioBrandIconOptions.map((item) => {
+                              const Icon = item.icon
+                              const active = profile.studioIcon === item.id && !profile.studioLogoDataUrl
+                              return (
+                                <button
+                                  key={item.id}
+                                  type="button"
+                                  title={item.label}
+                                  onClick={() => update("studioIcon", item.id)}
+                                  className="flex aspect-square items-center justify-center rounded-[12px] border transition duration-200 hover:border-[rgba(216,208,191,0.28)]"
+                                  style={{
+                                    background: active ? "rgba(216,208,191,0.11)" : "rgba(2,8,6,0.36)",
+                                    borderColor: active ? "rgba(216,208,191,0.30)" : T.border,
+                                    color: active ? T.accent : T.muted,
+                                  }}
+                                >
+                                  <Icon size={17} strokeWidth={1.8} />
+                                </button>
+                              )
+                            })}
+                          </div>
+                        </div>
+
+                        <div>
+                          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: T.faint }}>Logo opcional</p>
+                          <label className="flex min-h-[44px] cursor-pointer items-center justify-center gap-2 rounded-[12px] border px-3 text-[12px] font-semibold transition duration-200 hover:border-[rgba(216,208,191,0.28)]" style={{ background: "rgba(2,8,6,0.36)", borderColor: T.border, color: T.muted }}>
+                            <Upload size={15} />
+                            Subir logo
+                            <input
+                              type="file"
+                              accept=".png,.jpg,.jpeg,.webp,.ico,image/png,image/jpeg,image/webp,image/x-icon"
+                              className="sr-only"
+                              onChange={(event) => handleLogoUpload(event.target.files?.[0])}
+                            />
+                          </label>
+                          <p className="mt-2 text-[10.5px] leading-4" style={{ color: T.faint }}>
+                            PNG, JPG, WEBP ou ICO até {formatLogoSizeLimit()}.
+                          </p>
+                          {profile.studioLogoDataUrl && (
+                            <button
+                              type="button"
+                              onClick={() => update("studioLogoDataUrl", "")}
+                              className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-semibold"
+                              style={{ color: T.accent }}
+                            >
+                              <X size={13} /> Remover logo
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
 
                     <div className="grid gap-4 sm:grid-cols-2">
                       <SelectField
@@ -332,7 +435,7 @@ export default function StudioSetupModal({ open, initialProfile, onComplete }: S
 
               {step === 2 && (
                 <div>
-                  <h2 className="text-2xl font-semibold" style={{ color: T.text, fontFamily: "'Syne', sans-serif" }}>Como seu studio funciona?</h2>
+                  <h2 className="font-display text-2xl font-semibold" style={{ color: T.text }}>Como seu studio funciona?</h2>
                   <div className="mt-6 grid gap-5">
                     <div className="grid gap-4 sm:grid-cols-2">
                       <SelectField
@@ -396,7 +499,7 @@ export default function StudioSetupModal({ open, initialProfile, onComplete }: S
 
               {step === 3 && (
                 <div>
-                  <h2 className="text-2xl font-semibold" style={{ color: T.text, fontFamily: "'Syne', sans-serif" }}>Quais estilos você mais trabalha?</h2>
+                  <h2 className="font-display text-2xl font-semibold" style={{ color: T.text }}>Quais estilos você mais trabalha?</h2>
                   <p className="mt-2 text-sm" style={{ color: T.muted }}>Selecione quantos quiser. Você pode ajustar isso depois.</p>
                   <div className="mt-6 flex flex-wrap gap-2">
                     {styleOptions.map((item) => (
@@ -411,7 +514,7 @@ export default function StudioSetupModal({ open, initialProfile, onComplete }: S
                   <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-[20px] border" style={{ background: "rgba(240,237,228,0.06)", borderColor: T.border }}>
                     <CheckCircle2 size={26} style={{ color: T.accent }} />
                   </div>
-                  <h2 className="text-3xl font-semibold sm:text-4xl" style={{ color: T.text, fontFamily: "'Syne', sans-serif", letterSpacing: "-0.04em" }}>
+                  <h2 className="font-display text-3xl font-semibold sm:text-4xl" style={{ color: T.text, letterSpacing: "-0.04em" }}>
                     Seu studio está pronto.
                   </h2>
                   <p className="mx-auto mt-4 max-w-[520px] text-sm leading-7 sm:text-[15px]" style={{ color: T.muted }}>
