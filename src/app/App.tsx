@@ -791,12 +791,13 @@ function WorkflowSection() {
         <div className="relative">
           <div className="absolute left-0 right-0 top-[22px] hidden h-px lg:block" style={{ background: "rgba(240,237,228,0.08)" }} />
           <div
-            className="absolute left-0 top-[22px] hidden h-px lg:block"
+            className="absolute left-0 right-0 top-[22px] hidden h-px lg:block"
             style={{
-              width: visible ? "100%" : "0%",
               background: `linear-gradient(90deg, ${accent}00, ${accent})`,
               boxShadow: `0 0 10px rgba(216,208,191,0.28)`,
-              transition: "width 2.4s cubic-bezier(0.3, 0.6, 0.3, 1) 0.3s",
+              transform: visible ? "scaleX(1)" : "scaleX(0)",
+              transformOrigin: "left",
+              transition: "transform 2.4s cubic-bezier(0.3, 0.6, 0.3, 1) 0.3s",
             }}
           />
 
