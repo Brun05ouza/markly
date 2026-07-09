@@ -79,7 +79,7 @@ import {
   SelectValue,
 } from "../components/ui/select"
 import { Calendar as DatePickerCalendar } from "../components/ui/calendar"
-import { clearDevSession, readDevSession } from "../devAccess"
+import { clearDevSession, devIdentity, readDevSession } from "../devAccess"
 import StudioSetupModal from "../components/onboarding/StudioSetupModal"
 import LottieCheckbox from "../components/LottieCheckbox"
 import { useStudioSetup } from "../hooks/useStudioSetup"
@@ -96,11 +96,23 @@ import {
 type SectionId = "overview" | "budgets" | "clients" | "calendar" | "portfolio" | "messages" | "finance" | "anamnesis" | "settings"
 type SidebarLayoutMode = "expanded" | "hover" | "collapsed"
 type AppearanceMode = "dark" | "light"
+type CardStyleMode = "rounded" | "square"
+type FontSizeMode = "small" | "medium" | "large"
+type UserProfile = {
+  name: string
+  role: string
+  email: string
+  phone: string
+  whatsapp: string
+  instagram: string
+  avatarDataUrl: string
+}
 type DateFilterRange = {
   start: string
   end: string
 }
 type FinanceTransaction = {
+  id: string
   date: string
   description: string
   category: string
@@ -313,6 +325,25 @@ type NewPortfolioDraft = {
 const SIDEBAR_LAYOUT_KEY = "markly_sidebar_layout_mode"
 const SIDEBAR_HOVER_LEAVE_MS = 220
 const APPEARANCE_MODE_KEY = "markly_appearance_mode"
+const CARD_STYLE_KEY = "markly_card_style"
+const FONT_SIZE_KEY = "markly_font_size"
+const USER_PROFILE_KEY = "markly_user_profile"
+
+const fontSizeZoomScale: Record<FontSizeMode, number> = {
+  small: 0.92,
+  medium: 1,
+  large: 1.12,
+}
+
+const defaultUserProfile: UserProfile = {
+  name: devIdentity.name,
+  role: devIdentity.role,
+  email: devIdentity.email,
+  phone: "",
+  whatsapp: "",
+  instagram: "",
+  avatarDataUrl: "",
+}
 
 const sidebarLayoutModes: {
   id: SidebarLayoutMode
@@ -360,6 +391,44 @@ function readAppearanceMode(): AppearanceMode {
 function persistAppearanceMode(mode: AppearanceMode) {
   if (typeof window === "undefined") return
   window.localStorage.setItem(APPEARANCE_MODE_KEY, mode)
+}
+
+function readCardStyleMode(): CardStyleMode {
+  if (typeof window === "undefined") return "rounded"
+  return window.localStorage.getItem(CARD_STYLE_KEY) === "square" ? "square" : "rounded"
+}
+
+function persistCardStyleMode(mode: CardStyleMode) {
+  if (typeof window === "undefined") return
+  window.localStorage.setItem(CARD_STYLE_KEY, mode)
+}
+
+function readFontSizeMode(): FontSizeMode {
+  if (typeof window === "undefined") return "medium"
+  const raw = window.localStorage.getItem(FONT_SIZE_KEY)
+  if (raw === "small" || raw === "medium" || raw === "large") return raw
+  return "medium"
+}
+
+function persistFontSizeMode(mode: FontSizeMode) {
+  if (typeof window === "undefined") return
+  window.localStorage.setItem(FONT_SIZE_KEY, mode)
+}
+
+function readUserProfile(): UserProfile {
+  if (typeof window === "undefined") return defaultUserProfile
+  const raw = window.localStorage.getItem(USER_PROFILE_KEY)
+  if (!raw) return defaultUserProfile
+  try {
+    return { ...defaultUserProfile, ...JSON.parse(raw) }
+  } catch {
+    return defaultUserProfile
+  }
+}
+
+function persistUserProfile(profile: UserProfile) {
+  if (typeof window === "undefined") return
+  window.localStorage.setItem(USER_PROFILE_KEY, JSON.stringify(profile))
 }
 
 const sections = [
@@ -431,62 +500,15 @@ const overviewMock = {
 }
 
 const financeMock = {
-  summary: {
-    monthlyRevenue: 8450,
-    receivedDeposits: 2780,
-    pendingAmount: 1240,
-    expenses: 680,
-  },
-  pendingPayments: [
-    {
-      client: "Lucas Rocha",
-      service: "Realismo · Ombro",
-      amount: 420,
-      status: "Sinal pendente",
-      dueDate: "Hoje",
-      action: "Marcar como pago",
-    },
-    {
-      client: "Mariana Alves",
-      service: "Fine line · Antebraço",
-      amount: 300,
-      status: "Restante da sessão",
-      dueDate: "02/07",
-      action: "Confirmar pagamento",
-    },
-    {
-      client: "Rafael Nunes",
-      service: "Blackwork · Braço",
-      amount: 520,
-      status: "Aguardando sinal",
-      dueDate: "03/07",
-      action: "Enviar lembrete",
-    },
-  ],
-  statusSummary: [
-    { label: "Pago", value: 6530, tone: "#8DCEC0" },
-    { label: "Pendente", value: 1240, tone: T.accent },
-    { label: "Aguardando sinal", value: 680, tone: "#A9B9B2" },
-    { label: "Cancelado", value: 0, tone: "color-mix(in srgb, var(--markly-text) 34%, transparent)" },
-  ],
   transactions: [
-    { date: "02/07", description: "Sessão floral P&B", category: "Júlia Martins", method: "Pix", status: "Pago", amount: 680, type: "income" },
-    { date: "02/07", description: "Sinal fine line", category: "Mariana Alves", method: "Pix", status: "Pago", amount: 200, type: "income" },
-    { date: "01/07", description: "Compra de agulhas", category: "Material", method: "Cartão", status: "Pago", amount: 180, type: "expense" },
-    { date: "01/07", description: "Sinal blackwork", category: "Rafael Nunes", method: "Dinheiro", status: "Pendente", amount: 300, type: "income" },
-    { date: "30/06", description: "Tinta preta", category: "Material", method: "Pix", status: "Pago", amount: 120, type: "expense" },
+    { id: "txn-001", date: "02/07", description: "Sessão floral P&B", category: "Júlia Martins", method: "Pix", status: "Pago", amount: 680, type: "income" },
+    { id: "txn-002", date: "02/07", description: "Sinal fine line", category: "Mariana Alves", method: "Pix", status: "Pago", amount: 200, type: "income" },
+    { id: "txn-003", date: "01/07", description: "Compra de agulhas", category: "Material", method: "Cartão", status: "Pago", amount: 180, type: "expense" },
+    { id: "txn-004", date: "01/07", description: "Sinal blackwork", category: "Rafael Nunes", method: "Dinheiro", status: "Pendente", amount: 300, type: "income" },
+    { id: "txn-005", date: "30/06", description: "Tinta preta", category: "Material", method: "Pix", status: "Pago", amount: 120, type: "expense" },
+    { id: "txn-006", date: formatTodayDate().slice(0, 5), description: "Restante sessão realismo", category: "Lucas Rocha", method: "Pix", status: "Pendente", amount: 420, type: "income" },
+    { id: "txn-007", date: "02/07", description: "Restante da sessão fine line", category: "Mariana Alves", method: "Cartão", status: "Pendente", amount: 300, type: "income" },
   ] satisfies FinanceTransaction[],
-  paymentMethods: [
-    { label: "Pix", value: 5420 },
-    { label: "Dinheiro", value: 1200 },
-    { label: "Cartão", value: 1830 },
-  ],
-  indicators: [
-    { label: "Ticket médio", value: "R$ 620", description: "últimos 30 dias" },
-    { label: "Maior orçamento", value: "R$ 1.800", description: "Blackwork braço" },
-    { label: "Sessões pagas", value: "14", description: "no mês atual" },
-    { label: "Taxa de sinal", value: "72%", description: "orçamentos confirmados" },
-  ],
 }
 
 const financeLaunchTypes = ["Entrada", "Saída", "Sinal recebido", "Pagamento de sessão", "Despesa do studio"]
@@ -1305,6 +1327,34 @@ function isExpenseLaunch(type: string) {
   return type === "Saída" || type === "Despesa do studio"
 }
 
+function financeStatusTone(status: string) {
+  if (status === "Pago") return T.green
+  if (status === "Pendente") return T.amber
+  return T.faint
+}
+
+function parseFinanceDateToDate(value: string): Date | null {
+  const [day, month] = value.split("/").map(Number)
+  if (!day || !month) return null
+  const now = new Date()
+  const date = new Date(now.getFullYear(), month - 1, day)
+  if (date.getTime() > now.getTime() + 1000 * 60 * 60 * 24) date.setFullYear(now.getFullYear() - 1)
+  return date
+}
+
+function matchesFinancePeriod(value: string, period: string) {
+  if (period === "Todos os períodos") return true
+  const date = parseFinanceDateToDate(value)
+  if (!date) return true
+  const now = new Date()
+  if (period === "Este mês") return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth()
+  const dayMs = 1000 * 60 * 60 * 24
+  const daysAgo = Math.round((now.setHours(0, 0, 0, 0) - date.setHours(0, 0, 0, 0)) / dayMs)
+  if (period === "Últimos 7 dias") return daysAgo >= 0 && daysAgo <= 7
+  if (period === "Últimos 30 dias") return daysAgo >= 0 && daysAgo <= 30
+  return true
+}
+
 function allBudgetItems(columns: BudgetColumn[]) {
   return columns.flatMap((column) => column.items)
 }
@@ -1611,6 +1661,15 @@ function applyClientAction(client: ClientItem, action: string): { client: Client
     return {
       client: { ...client, anamnesis: "Pendente", flags: { ...client.flags, pendingAnamnesis: true } },
       message: `Anamnese enviada para ${client.name}.`,
+    }
+  }
+  if (action === "Marcar anamnese preenchida") {
+    if (client.anamnesis === "Preenchida") {
+      return { client, message: `Anamnese de ${client.name} já está preenchida.` }
+    }
+    return {
+      client: { ...client, anamnesis: "Preenchida", flags: { ...client.flags, pendingAnamnesis: false } },
+      message: `Anamnese de ${client.name} marcada como preenchida.`,
     }
   }
   return { client, message: `"${action}" ainda não está disponível nesta versão.` }
@@ -4863,6 +4922,250 @@ function AccessView() {
   )
 }
 
+const cardStyleOptions: { id: CardStyleMode; label: string; radius: number }[] = [
+  { id: "rounded", label: "Arredondado", radius: 14 },
+  { id: "square", label: "Quadrado", radius: 0 },
+]
+
+const fontSizeOptions: { id: FontSizeMode; label: string; sample: number }[] = [
+  { id: "small", label: "Pequena", sample: 12 },
+  { id: "medium", label: "Média", sample: 15 },
+  { id: "large", label: "Grande", sample: 18 },
+]
+
+function AppearanceSettingsCard({
+  cardStyle,
+  onCardStyleChange,
+  fontSize,
+  onFontSizeChange,
+}: {
+  cardStyle: CardStyleMode
+  onCardStyleChange: (mode: CardStyleMode) => void
+  fontSize: FontSizeMode
+  onFontSizeChange: (mode: FontSizeMode) => void
+}) {
+  return (
+    <Panel title="Aparência" action="Ajustes visuais">
+      <div className="grid gap-5">
+        <div>
+          <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: T.faint }}>Bordas dos cards</p>
+          <div className="grid grid-cols-2 gap-2.5">
+            {cardStyleOptions.map((option) => {
+              const active = cardStyle === option.id
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => onCardStyleChange(option.id)}
+                  className="flex items-center gap-2.5 border px-3 py-2.5 text-left text-[12px] font-semibold transition duration-200 hover:-translate-y-0.5"
+                  style={{
+                    borderRadius: 12,
+                    borderColor: active ? T.accent : T.border,
+                    color: active ? T.accent : T.muted,
+                    background: active ? "color-mix(in srgb, var(--markly-accent) 10%, transparent)" : "transparent",
+                  }}
+                >
+                  <span
+                    className="size-6 shrink-0 border-2"
+                    style={{ borderRadius: option.radius, borderColor: active ? T.accent : T.faint }}
+                  />
+                  {option.label}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        <div>
+          <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: T.faint }}>Tamanho da fonte</p>
+          <div className="grid grid-cols-3 gap-2.5">
+            {fontSizeOptions.map((option) => {
+              const active = fontSize === option.id
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => onFontSizeChange(option.id)}
+                  className="flex flex-col items-center gap-1.5 rounded-[12px] border px-3 py-2.5 text-[12px] font-semibold transition duration-200 hover:-translate-y-0.5"
+                  style={{
+                    borderColor: active ? T.accent : T.border,
+                    color: active ? T.accent : T.muted,
+                    background: active ? "color-mix(in srgb, var(--markly-accent) 10%, transparent)" : "transparent",
+                  }}
+                >
+                  <span style={{ fontSize: option.sample }}>Aa</span>
+                  {option.label}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+    </Panel>
+  )
+}
+
+function ProfileAvatarInitial(name: string) {
+  return name.trim().charAt(0).toUpperCase() || "?"
+}
+
+function ProfileSettingsCard({
+  profile,
+  onSave,
+}: {
+  profile: UserProfile
+  onSave: (profile: UserProfile) => void
+}) {
+  const [draft, setDraft] = useState<UserProfile>(profile)
+  const [error, setError] = useState("")
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    setDraft(profile)
+  }, [profile])
+
+  const update = (key: keyof UserProfile, value: string) => {
+    setDraft((current) => ({ ...current, [key]: value }))
+    setError("")
+  }
+
+  const handleAvatarPick = () => fileInputRef.current?.click()
+
+  const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    event.target.value = ""
+    if (!file) return
+    if (!acceptedLogoTypes.includes(file.type)) {
+      setError("Envie uma imagem PNG, JPG ou WEBP.")
+      return
+    }
+    if (file.size > studioLogoMaxBytes) {
+      setError(`Use uma foto leve, com no máximo ${formatLogoSizeLimit()}.`)
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = () => {
+      if (typeof reader.result === "string") update("avatarDataUrl", reader.result)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const hasChanges = JSON.stringify(draft) !== JSON.stringify(profile)
+
+  const handleSave = () => {
+    if (!draft.name.trim() || !draft.email.trim()) {
+      setError("Preencha ao menos nome e e-mail para salvar o perfil.")
+      return
+    }
+    onSave({ ...draft, name: draft.name.trim(), email: draft.email.trim() })
+  }
+
+  return (
+    <Panel title="Meu perfil" action="Informações pessoais">
+      <div className="flex items-center gap-4">
+        <button
+          type="button"
+          onClick={handleAvatarPick}
+          className="relative flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-full border"
+          style={{ borderColor: T.border, background: T.bgSec }}
+          aria-label="Alterar foto de perfil"
+        >
+          {draft.avatarDataUrl ? (
+            <img src={draft.avatarDataUrl} alt="" className="size-full object-cover" />
+          ) : (
+            <span className="text-lg font-bold" style={{ color: T.accent }}>{ProfileAvatarInitial(draft.name)}</span>
+          )}
+        </button>
+        <div className="min-w-0">
+          <button
+            type="button"
+            onClick={handleAvatarPick}
+            className="inline-flex items-center gap-1.5 rounded-[10px] border px-3 py-2 text-[12px] font-semibold transition duration-200 hover:-translate-y-0.5"
+            style={{ borderColor: T.border, color: T.text }}
+          >
+            <Upload size={13} />
+            Alterar foto
+          </button>
+          <p className="mt-1.5 text-[11px]" style={{ color: T.faint }}>PNG, JPG ou WEBP até {formatLogoSizeLimit()}</p>
+        </div>
+        <input ref={fileInputRef} type="file" accept={acceptedLogoTypes.join(",")} className="sr-only" onChange={handleAvatarChange} />
+      </div>
+
+      <div className="mt-5 grid gap-3 sm:grid-cols-2">
+        <label className="grid gap-1.5">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: T.faint }}>Nome</span>
+          <input
+            value={draft.name}
+            onChange={(event) => update("name", event.target.value)}
+            className="h-11 rounded-[12px] border bg-transparent px-3.5 text-sm font-semibold outline-none"
+            style={{ background: "rgba(2,8,6,0.52)", borderColor: T.border, color: T.text }}
+          />
+        </label>
+        <label className="grid gap-1.5">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: T.faint }}>E-mail</span>
+          <input
+            type="email"
+            value={draft.email}
+            onChange={(event) => update("email", event.target.value)}
+            className="h-11 rounded-[12px] border bg-transparent px-3.5 text-sm font-semibold outline-none"
+            style={{ background: "rgba(2,8,6,0.52)", borderColor: T.border, color: T.text }}
+          />
+        </label>
+        <label className="grid gap-1.5">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: T.faint }}>Telefone</span>
+          <input
+            value={draft.phone}
+            onChange={(event) => update("phone", event.target.value)}
+            placeholder="(11) 90000-0000"
+            className="h-11 rounded-[12px] border bg-transparent px-3.5 text-sm font-semibold outline-none placeholder:text-[color-mix(in srgb, var(--markly-text) 38%, transparent)]"
+            style={{ background: "rgba(2,8,6,0.52)", borderColor: T.border, color: T.text }}
+          />
+        </label>
+        <label className="grid gap-1.5">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: T.faint }}>WhatsApp</span>
+          <input
+            value={draft.whatsapp}
+            onChange={(event) => update("whatsapp", event.target.value)}
+            placeholder="(11) 90000-0000"
+            className="h-11 rounded-[12px] border bg-transparent px-3.5 text-sm font-semibold outline-none placeholder:text-[color-mix(in srgb, var(--markly-text) 38%, transparent)]"
+            style={{ background: "rgba(2,8,6,0.52)", borderColor: T.border, color: T.text }}
+          />
+        </label>
+        <label className="grid gap-1.5 sm:col-span-2">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: T.faint }}>Instagram</span>
+          <input
+            value={draft.instagram}
+            onChange={(event) => update("instagram", event.target.value)}
+            placeholder="@seu.estudio"
+            className="h-11 rounded-[12px] border bg-transparent px-3.5 text-sm font-semibold outline-none placeholder:text-[color-mix(in srgb, var(--markly-text) 38%, transparent)]"
+            style={{ background: "rgba(2,8,6,0.52)", borderColor: T.border, color: T.text }}
+          />
+        </label>
+      </div>
+
+      {error && (
+        <div className="mt-4 rounded-[14px] border px-4 py-3 text-sm font-semibold" style={{ background: "rgba(163,80,64,0.12)", borderColor: "rgba(245,141,122,0.28)", color: "#F6B6A8" }}>
+          {error}
+        </div>
+      )}
+
+      <div className="mt-5 flex justify-end">
+        <button
+          type="button"
+          disabled={!hasChanges}
+          onClick={handleSave}
+          className="rounded-[12px] px-4 py-2.5 text-sm font-semibold transition duration-200 disabled:cursor-not-allowed disabled:opacity-40"
+          style={{ background: T.text, color: T.bg }}
+        >
+          Salvar alterações
+        </button>
+      </div>
+    </Panel>
+  )
+}
+
 function ManageSelectField({
   label,
   value,
@@ -5682,68 +5985,75 @@ function FinanceMetricCard({
   )
 }
 
-function FinancePendingPayments() {
-  const [resolved, setResolved] = useState<string[]>([])
-  const payments = financeMock.pendingPayments.filter((payment) => !resolved.includes(`${payment.client}-${payment.service}`))
+function FinancePendingPayments({
+  transactions,
+  onMarkPaid,
+}: {
+  transactions: FinanceTransaction[]
+  onMarkPaid: (transaction: FinanceTransaction) => void
+}) {
+  const payments = transactions.filter((transaction) => transaction.status === "Pendente")
 
   return (
-    <Panel title="Pagamentos pendentes" action="Clientes com sinal ou valor restante em aberto">
+    <Panel title="Pagamentos pendentes" action="Lançamentos com status pendente">
       {payments.length === 0 ? (
         <p className="px-1 text-sm" style={{ color: T.faint }}>Nenhum pagamento pendente por aqui.</p>
       ) : (
         <div className="grid gap-2">
-          {payments.map((payment) => {
-            const key = `${payment.client}-${payment.service}`
-            return (
-              <button
-                key={key}
-                type="button"
-                onClick={() => {
-                  setResolved((current) => [...current, key])
-                  toast(`Pagamento de ${payment.client} marcado como recebido.`)
-                }}
-                className="flex flex-col gap-3 border px-4 py-3 text-left transition duration-200 hover:-translate-y-0.5 hover:border-[color-mix(in srgb, var(--markly-text) 22%, transparent)] hover:bg-[color-mix(in srgb, var(--markly-text) 3.5%, transparent)] sm:flex-row sm:items-center sm:justify-between"
-                style={{ background: T.bgSec, borderColor: T.border }}
-              >
-                <span className="min-w-0">
-                  <span className="block text-sm font-semibold" style={{ color: T.text }}>{payment.client}</span>
-                  <span className="mt-1 block text-[12px]" style={{ color: T.faint }}>{payment.service}</span>
+          {payments.map((transaction) => (
+            <button
+              key={transaction.id}
+              type="button"
+              onClick={() => onMarkPaid(transaction)}
+              className="flex flex-col gap-3 border px-4 py-3 text-left transition duration-200 hover:-translate-y-0.5 hover:border-[color-mix(in srgb, var(--markly-text) 22%, transparent)] hover:bg-[color-mix(in srgb, var(--markly-text) 3.5%, transparent)] sm:flex-row sm:items-center sm:justify-between"
+              style={{ background: T.bgSec, borderColor: T.border }}
+            >
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold" style={{ color: T.text }}>{transaction.category}</span>
+                <span className="mt-1 block text-[12px]" style={{ color: T.faint }}>{transaction.description}</span>
+              </span>
+              <span className="flex flex-wrap items-center gap-2 sm:justify-end">
+                <span className="border px-2.5 py-1 text-[11px] font-semibold" style={{ borderColor: T.border, color: T.accent }}>
+                  {transaction.status}
                 </span>
-                <span className="flex flex-wrap items-center gap-2 sm:justify-end">
-                  <span className="border px-2.5 py-1 text-[11px] font-semibold" style={{ borderColor: T.border, color: T.accent }}>
-                    {payment.status}
-                  </span>
-                  <span className="border px-2.5 py-1 text-[11px] font-semibold" style={{ borderColor: T.border, color: T.faint }}>
-                    {payment.dueDate}
-                  </span>
-                  <span className="min-w-[82px] text-right text-sm font-semibold" style={{ color: T.text }}>
-                    {formatCurrency(payment.amount)}
-                  </span>
-                  <span className="inline-flex items-center gap-1 rounded-[10px] border px-3 py-2 text-[12px] font-semibold" style={{ borderColor: T.border, color: T.muted }}>
-                    {payment.action}
-                    <ChevronRight size={13} />
-                  </span>
+                <span className="border px-2.5 py-1 text-[11px] font-semibold" style={{ borderColor: T.border, color: T.faint }}>
+                  {transaction.date}
                 </span>
-              </button>
-            )
-          })}
+                <span className="min-w-[82px] text-right text-sm font-semibold" style={{ color: T.text }}>
+                  {formatCurrency(transaction.amount)}
+                </span>
+                <span className="inline-flex items-center gap-1 rounded-[10px] border px-3 py-2 text-[12px] font-semibold" style={{ borderColor: T.border, color: T.muted }}>
+                  Marcar como pago
+                  <ChevronRight size={13} />
+                </span>
+              </span>
+            </button>
+          ))}
         </div>
       )}
     </Panel>
   )
 }
 
-function FinanceStatusSummary() {
+function FinanceStatusSummary({ transactions }: { transactions: FinanceTransaction[] }) {
+  const statusTotals = useMemo(() => {
+    const totals: Record<string, number> = { Pago: 0, Pendente: 0, Cancelado: 0 }
+    transactions.forEach((transaction) => {
+      totals[transaction.status] = (totals[transaction.status] ?? 0) + transaction.amount
+    })
+    return totals
+  }, [transactions])
+
   return (
     <Panel title="Resumo por status" action="Valores atuais">
       <div className="grid gap-2">
-        {financeMock.statusSummary.map((status) => (
-          <div key={status.label} className="flex items-center justify-between border px-3 py-3" style={{ background: T.bgSec, borderColor: T.border }}>
+        {Object.entries(statusTotals).map(([label, value]) => (
+          <div key={label} className="flex items-center justify-between border px-3 py-3" style={{ background: T.bgSec, borderColor: T.border }}>
             <span className="flex min-w-0 items-center gap-2">
-              <span className="size-2 shrink-0 rounded-full" style={{ background: status.tone }} />
-              <span className="truncate text-[13px] font-semibold" style={{ color: T.muted }}>{status.label}</span>
+              <span className="size-2 shrink-0 rounded-full" style={{ background: financeStatusTone(label) }} />
+              <span className="truncate text-[13px] font-semibold" style={{ color: T.muted }}>{label}</span>
             </span>
-            <span className="text-sm font-semibold" style={{ color: T.text }}>{formatCurrency(status.value)}</span>
+            <span className="text-sm font-semibold" style={{ color: T.text }}>{formatCurrency(value)}</span>
           </div>
         ))}
       </div>
@@ -5787,7 +6097,7 @@ function FinanceFlow({
         </div>
         {transactions.map((transaction) => (
           <div
-            key={`${transaction.date}-${transaction.description}-${transaction.amount}-${transaction.category}`}
+            key={transaction.id}
             className="grid grid-cols-[0.55fr_1.35fr_1fr_0.75fr_0.75fr_0.85fr] items-center gap-3 border-b px-4 py-3 last:border-b-0"
             style={{ borderColor: T.border, color: T.muted }}
           >
@@ -5807,7 +6117,7 @@ function FinanceFlow({
 
       <div className="grid gap-2 md:hidden">
         {transactions.map((transaction) => (
-          <div key={`${transaction.date}-${transaction.description}-${transaction.amount}-mobile`} className="border p-3" style={{ background: T.bgSec, borderColor: T.border }}>
+          <div key={`${transaction.id}-mobile`} className="border p-3" style={{ background: T.bgSec, borderColor: T.border }}>
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold" style={{ color: T.text }}>{transaction.description}</p>
@@ -5828,33 +6138,59 @@ function FinanceFlow({
   )
 }
 
-function FinancePaymentMethods() {
-  const maxMethodValue = Math.max(...financeMock.paymentMethods.map((method) => method.value))
+function FinancePaymentMethods({ transactions }: { transactions: FinanceTransaction[] }) {
+  const methods = useMemo(() => {
+    const totals = new Map<string, number>()
+    transactions.forEach((transaction) => {
+      totals.set(transaction.method, (totals.get(transaction.method) ?? 0) + transaction.amount)
+    })
+    return Array.from(totals.entries())
+      .map(([label, value]) => ({ label, value }))
+      .sort((a, b) => b.value - a.value)
+  }, [transactions])
+  const maxMethodValue = Math.max(1, ...methods.map((method) => method.value))
 
   return (
     <Panel title="Métodos de pagamento" action="Distribuição">
-      <div className="grid gap-4">
-        {financeMock.paymentMethods.map((method) => (
-          <div key={method.label}>
-            <div className="mb-2 flex items-center justify-between text-sm">
-              <span className="font-semibold" style={{ color: T.text }}>{method.label}</span>
-              <span style={{ color: T.muted }}>{formatCurrency(method.value)}</span>
+      {methods.length === 0 ? (
+        <p className="px-1 text-sm" style={{ color: T.faint }}>Nenhum lançamento registrado ainda.</p>
+      ) : (
+        <div className="grid gap-4">
+          {methods.map((method) => (
+            <div key={method.label}>
+              <div className="mb-2 flex items-center justify-between text-sm">
+                <span className="font-semibold" style={{ color: T.text }}>{method.label}</span>
+                <span style={{ color: T.muted }}>{formatCurrency(method.value)}</span>
+              </div>
+              <div className="h-2 border" style={{ background: "color-mix(in srgb, var(--markly-text) 3.5%, transparent)", borderColor: T.border }}>
+                <div className="h-full" style={{ width: `${(method.value / maxMethodValue) * 100}%`, background: "linear-gradient(90deg, color-mix(in srgb, var(--markly-accent) 85%, transparent), rgba(141,206,192,0.56))" }} />
+              </div>
             </div>
-            <div className="h-2 border" style={{ background: "color-mix(in srgb, var(--markly-text) 3.5%, transparent)", borderColor: T.border }}>
-              <div className="h-full" style={{ width: `${(method.value / maxMethodValue) * 100}%`, background: "linear-gradient(90deg, color-mix(in srgb, var(--markly-accent) 85%, transparent), rgba(141,206,192,0.56))" }} />
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </Panel>
   )
 }
 
-function FinanceIndicators() {
+function FinanceIndicators({ transactions }: { transactions: FinanceTransaction[] }) {
+  const paid = transactions.filter((transaction) => transaction.status === "Pago")
+  const paidIncome = paid.filter((transaction) => transaction.type === "income")
+  const averageTicket = paidIncome.length ? paidIncome.reduce((sum, t) => sum + t.amount, 0) / paidIncome.length : 0
+  const largest = transactions.reduce<FinanceTransaction | null>((max, t) => (!max || t.amount > max.amount ? t : max), null)
+  const completionRate = transactions.length ? Math.round((paid.length / transactions.length) * 100) : 0
+
+  const indicators = [
+    { label: "Ticket médio", value: formatCurrency(Math.round(averageTicket)), description: "lançamentos pagos" },
+    { label: "Maior lançamento", value: largest ? formatCurrency(largest.amount) : "R$ 0", description: largest?.description ?? "sem lançamentos" },
+    { label: "Lançamentos pagos", value: String(paid.length), description: `de ${transactions.length} no total` },
+    { label: "Taxa de conclusão", value: `${completionRate}%`, description: "lançamentos com status pago" },
+  ]
+
   return (
-    <Panel title="Indicadores do studio" action="Mês atual">
+    <Panel title="Indicadores do studio" action="Calculado a partir do ledger">
       <div className="grid gap-3 sm:grid-cols-2">
-        {financeMock.indicators.map((indicator) => (
+        {indicators.map((indicator) => (
           <div key={indicator.label} className="border p-3" style={{ background: T.bgSec, borderColor: T.border }}>
             <p className="text-[12px]" style={{ color: T.faint }}>{indicator.label}</p>
             <p className="mt-2 text-xl font-semibold" style={{ color: T.text }}>{indicator.value}</p>
@@ -5869,23 +6205,36 @@ function FinanceIndicators() {
 function FinanceView({
   transactions,
   onNewLaunch,
+  onMarkPaid,
 }: {
   transactions: FinanceTransaction[]
   onNewLaunch: () => void
+  onMarkPaid: (transaction: FinanceTransaction) => void
 }) {
-  const [period, setPeriod] = useState("Este mês")
+  const [period, setPeriod] = useState("Todos os períodos")
   const [status, setStatus] = useState("Todos")
   const [method, setMethod] = useState("Todos")
   const filteredTransactions = transactions.filter((transaction) => {
+    const periodMatch = matchesFinancePeriod(transaction.date, period)
     const statusMatch = status === "Todos" || transaction.status === status
     const methodMatch = method === "Todos" || transaction.method === method
-    return statusMatch && methodMatch
+    return periodMatch && statusMatch && methodMatch
   })
+
+  const paidIncome = transactions.filter((transaction) => transaction.type === "income" && transaction.status === "Pago")
+  const deposits = paidIncome.filter((transaction) => /sinal/i.test(transaction.description))
+  const pending = transactions.filter((transaction) => transaction.status === "Pendente")
+  const expenseTransactions = transactions.filter((transaction) => transaction.type === "expense")
+  const monthlyRevenue = paidIncome.reduce((sum, t) => sum + t.amount, 0)
+  const receivedDeposits = deposits.reduce((sum, t) => sum + t.amount, 0)
+  const pendingAmount = pending.reduce((sum, t) => sum + t.amount, 0)
+  const expenses = expenseTransactions.reduce((sum, t) => sum + t.amount, 0)
+
   const metrics = [
-    { title: "Faturamento do mês", value: formatCurrency(financeMock.summary.monthlyRevenue), description: "18 sessões agendadas", icon: TrendingUp },
-    { title: "Sinais recebidos", value: formatCurrency(financeMock.summary.receivedDeposits), description: "9 confirmações", icon: WalletCards },
-    { title: "Valores pendentes", value: formatCurrency(financeMock.summary.pendingAmount), description: "4 aguardando pagamento", icon: Clock },
-    { title: "Despesas", value: formatCurrency(financeMock.summary.expenses), description: "materiais e studio", icon: FileText },
+    { title: "Faturamento do mês", value: formatCurrency(monthlyRevenue), description: `${paidIncome.length} lançamento(s) pago(s)`, icon: TrendingUp },
+    { title: "Sinais recebidos", value: formatCurrency(receivedDeposits), description: `${deposits.length} confirmação(ões)`, icon: WalletCards },
+    { title: "Valores pendentes", value: formatCurrency(pendingAmount), description: `${pending.length} aguardando pagamento`, icon: Clock },
+    { title: "Despesas", value: formatCurrency(expenses), description: `${expenseTransactions.length} lançamento(s)`, icon: FileText },
   ]
 
   return (
@@ -5893,10 +6242,10 @@ function FinanceView({
       <div className="flex flex-col gap-3 border p-4 lg:flex-row lg:items-end lg:justify-between" style={{ background: T.card, borderColor: T.border }}>
         <div>
           <p className="text-sm font-semibold" style={{ color: T.text }}>Filtros financeiros</p>
-          <p className="mt-1 text-[12px]" style={{ color: T.faint }}>Use para validar os estados locais antes da integração real.</p>
+          <p className="mt-1 text-[12px]" style={{ color: T.faint }}>Acompanhe entradas, sinais, pagamentos e despesas do seu studio.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <FinanceSelectField label="Período" value={period} options={["Este mês", "Últimos 7 dias", "Últimos 30 dias"]} onChange={setPeriod} />
+          <FinanceSelectField label="Período" value={period} options={["Todos os períodos", "Este mês", "Últimos 7 dias", "Últimos 30 dias"]} onChange={setPeriod} />
           <FinanceSelectField label="Status" value={status} options={["Todos", "Pago", "Pendente", "Cancelado"]} onChange={setStatus} />
           <FinanceSelectField label="Método" value={method} options={["Todos", "Pix", "Dinheiro", "Cartão", "Transferência", "Outro"]} onChange={setMethod} />
         </div>
@@ -5909,43 +6258,119 @@ function FinanceView({
       </div>
 
       <div className="grid gap-5 xl:grid-cols-[1.35fr_0.65fr]">
-        <FinancePendingPayments />
-        <FinanceStatusSummary />
+        <FinancePendingPayments transactions={transactions} onMarkPaid={onMarkPaid} />
+        <FinanceStatusSummary transactions={transactions} />
       </div>
 
       <FinanceFlow transactions={filteredTransactions} onNewLaunch={onNewLaunch} />
 
       <div className="grid gap-5 xl:grid-cols-[0.8fr_1.2fr]">
-        <FinancePaymentMethods />
-        <FinanceIndicators />
+        <FinancePaymentMethods transactions={transactions} />
+        <FinanceIndicators transactions={transactions} />
       </div>
     </div>
   )
 }
 
-function AnamnesisView() {
+function AnamnesisView({
+  clients,
+  onAction,
+  onOpenClient,
+}: {
+  clients: ClientItem[]
+  onAction: (client: ClientItem, action: string) => void
+  onOpenClient: (client: ClientItem) => void
+}) {
+  const notSent = clients.filter((client) => client.anamnesis === "Não enviada")
+  const pending = clients.filter((client) => client.anamnesis === "Pendente")
+  const filled = clients.filter((client) => client.anamnesis === "Preenchida")
+  const needsAttention = [...notSent, ...pending]
+
+  const stats = [
+    { label: "Não enviadas", value: notSent.length, hint: "aguardando primeiro envio" },
+    { label: "Pendentes", value: pending.length, hint: "aguardando preenchimento" },
+    { label: "Preenchidas", value: filled.length, hint: "prontas para a sessão" },
+  ]
+
   return (
-    <Panel title="Anamnese" action="Mock inicial">
+    <div className="grid gap-5">
       <div className="grid gap-3 md:grid-cols-3">
-        {[
-          ["Pendentes", "4", "aguardando preenchimento"],
-          ["Enviadas hoje", "7", "links por WhatsApp"],
-          ["Concluídas", "18", "mês atual"],
-        ].map(([label, value, hint]) => (
-          <div key={label} className="border p-4" style={{ background: T.bgSec, borderColor: T.border }}>
-            <p className="text-[12px]" style={{ color: T.faint }}>{label}</p>
-            <p className="mt-3 text-2xl font-semibold" style={{ color: T.text }}>{value}</p>
-            <p className="mt-1 text-[11px]" style={{ color: T.muted }}>{hint}</p>
+        {stats.map((stat) => (
+          <div key={stat.label} className="border p-4" style={{ background: T.bgSec, borderColor: T.border }}>
+            <p className="text-[12px]" style={{ color: T.faint }}>{stat.label}</p>
+            <p className="mt-3 text-2xl font-semibold" style={{ color: T.text }}>{stat.value}</p>
+            <p className="mt-1 text-[11px]" style={{ color: T.muted }}>{stat.hint}</p>
           </div>
         ))}
       </div>
-      <div className="mt-4 border px-4 py-3" style={{ background: "color-mix(in srgb, var(--markly-text) 2.5%, transparent)", borderColor: T.border }}>
-        <p className="text-sm font-semibold" style={{ color: T.text }}>Próximo passo</p>
-        <p className="mt-1 text-[12px] leading-5" style={{ color: T.faint }}>
-          A tela de Anamnese fica preparada para receber formulário, envio de link e status por cliente.
-        </p>
-      </div>
-    </Panel>
+
+      <Panel title="Precisa de atenção" action={`${needsAttention.length} cliente(s)`}>
+        {needsAttention.length === 0 ? (
+          <p className="px-1 text-sm" style={{ color: T.faint }}>Todas as anamneses estão em dia.</p>
+        ) : (
+          <div className="grid gap-2">
+            {needsAttention.map((client) => (
+              <div
+                key={client.id}
+                className="flex flex-col gap-3 border px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+                style={{ background: T.bgSec, borderColor: T.border }}
+              >
+                <button type="button" onClick={() => onOpenClient(client)} className="min-w-0 text-left transition duration-200 hover:-translate-y-0.5">
+                  <span className="block text-sm font-semibold" style={{ color: T.text }}>{client.name}</span>
+                  <span className="mt-1 block text-[12px]" style={{ color: T.faint }}>{client.interest}</span>
+                </button>
+                <div className="flex flex-wrap items-center gap-2">
+                  <ClientBadge style={clientAnamnesisStyle(client.anamnesis)}>{client.anamnesis}</ClientBadge>
+                  {client.anamnesis === "Não enviada" ? (
+                    <button
+                      type="button"
+                      onClick={() => onAction(client, "Enviar anamnese")}
+                      className="rounded-[10px] border px-3 py-2 text-[12px] font-semibold transition duration-200 hover:-translate-y-0.5"
+                      style={{ borderColor: T.border, color: T.text }}
+                    >
+                      Enviar anamnese
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => onAction(client, "Marcar anamnese preenchida")}
+                      className="rounded-[10px] border px-3 py-2 text-[12px] font-semibold transition duration-200 hover:-translate-y-0.5"
+                      style={{ borderColor: T.border, color: T.text }}
+                    >
+                      Marcar como preenchida
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Panel>
+
+      <Panel title="Preenchidas" action={`${filled.length} cliente(s) prontos`}>
+        {filled.length === 0 ? (
+          <p className="px-1 text-sm" style={{ color: T.faint }}>Nenhuma anamnese preenchida ainda.</p>
+        ) : (
+          <div className="grid gap-2 sm:grid-cols-2">
+            {filled.map((client) => (
+              <button
+                key={client.id}
+                type="button"
+                onClick={() => onOpenClient(client)}
+                className="flex items-center justify-between gap-3 border px-4 py-3 text-left transition duration-200 hover:-translate-y-0.5"
+                style={{ background: T.bgSec, borderColor: T.border }}
+              >
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-semibold" style={{ color: T.text }}>{client.name}</span>
+                  <span className="mt-1 block text-[12px]" style={{ color: T.faint }}>{client.interest}</span>
+                </span>
+                <ClientBadge style={clientAnamnesisStyle(client.anamnesis)}>Preenchida</ClientBadge>
+              </button>
+            ))}
+          </div>
+        )}
+      </Panel>
+    </div>
   )
 }
 
@@ -5956,6 +6381,7 @@ function SectionContent({
   onManageStudio,
   financeTransactions,
   onNewFinanceLaunch,
+  onMarkFinancePaid,
   budgetColumns,
   budgetFilters,
   onOpenBudget,
@@ -5964,10 +6390,17 @@ function SectionContent({
   clientFilters,
   onOpenClient,
   onNewClient,
+  onAnamnesisAction,
   portfolioItems,
   portfolioFilters,
   onOpenPortfolioItem,
   onNewPortfolioItem,
+  cardStyle,
+  onCardStyleChange,
+  fontSize,
+  onFontSizeChange,
+  userProfile,
+  onSaveUserProfile,
 }: {
   section: SectionId
   studioProfile: StudioProfile
@@ -5975,6 +6408,7 @@ function SectionContent({
   onManageStudio: () => void
   financeTransactions: FinanceTransaction[]
   onNewFinanceLaunch: () => void
+  onMarkFinancePaid: (transaction: FinanceTransaction) => void
   budgetColumns: BudgetColumn[]
   budgetFilters: BudgetFilterState
   onOpenBudget: (item: BudgetItem) => void
@@ -5983,23 +6417,36 @@ function SectionContent({
   clientFilters: ClientFilterState
   onOpenClient: (client: ClientItem) => void
   onNewClient: () => void
+  onAnamnesisAction: (client: ClientItem, action: string) => void
   portfolioItems: PortfolioItem[]
   portfolioFilters: PortfolioFilterState
   onOpenPortfolioItem: (item: PortfolioItem) => void
   onNewPortfolioItem: () => void
+  cardStyle: CardStyleMode
+  onCardStyleChange: (mode: CardStyleMode) => void
+  fontSize: FontSizeMode
+  onFontSizeChange: (mode: FontSizeMode) => void
+  userProfile: UserProfile
+  onSaveUserProfile: (profile: UserProfile) => void
 }) {
   if (section === "budgets") return <BudgetBoard columns={budgetColumns} filters={budgetFilters} onOpenBudget={onOpenBudget} onNewBudget={onNewBudget} />
   if (section === "clients") return <ClientsView clients={clients} filters={clientFilters} onOpenClient={onOpenClient} onNewClient={onNewClient} />
   if (section === "calendar") return <CalendarView clients={clients} onOpenClient={onOpenClient} />
   if (section === "portfolio") return <PortfolioView items={portfolioItems} filters={portfolioFilters} onOpenItem={onOpenPortfolioItem} onNewItem={onNewPortfolioItem} />
-  if (section === "finance") return <FinanceView transactions={financeTransactions} onNewLaunch={onNewFinanceLaunch} />
-  if (section === "anamnesis") return <AnamnesisView />
+  if (section === "finance") return <FinanceView transactions={financeTransactions} onNewLaunch={onNewFinanceLaunch} onMarkPaid={onMarkFinancePaid} />
+  if (section === "anamnesis") return <AnamnesisView clients={clients} onAction={onAnamnesisAction} onOpenClient={onOpenClient} />
   if (section === "messages") return <MessagesView />
   if (section === "settings") {
     return (
       <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
-        <StudioSummary profile={studioProfile} setupCompleted={setupCompleted} onManage={onManageStudio} />
-        <AccessView />
+        <div className="grid gap-5">
+          <ProfileSettingsCard profile={userProfile} onSave={onSaveUserProfile} />
+          <StudioSummary profile={studioProfile} setupCompleted={setupCompleted} onManage={onManageStudio} />
+        </div>
+        <div className="grid gap-5">
+          <AppearanceSettingsCard cardStyle={cardStyle} onCardStyleChange={onCardStyleChange} fontSize={fontSize} onFontSizeChange={onFontSizeChange} />
+          <AccessView />
+        </div>
       </div>
     )
   }
@@ -6073,8 +6520,13 @@ function FinanceLaunchModal({
       setError("Preencha descrição, valor e data para salvar o lançamento.")
       return
     }
+    if (!/^\d{1,2}\/\d{1,2}$/.test(draft.date.trim())) {
+      setError("Use o formato DD/MM para a data, por exemplo 08/07.")
+      return
+    }
 
     const transaction: FinanceTransaction = {
+      id: `txn-${Date.now()}`,
       date: draft.date.trim(),
       description: draft.description.trim(),
       category: draft.client,
@@ -6574,6 +7026,9 @@ export default function DevDashboard() {
   const [selectedPortfolioItem, setSelectedPortfolioItem] = useState<PortfolioItem | null>(null)
   const [sidebarMode, setSidebarMode] = useState<SidebarLayoutMode>(() => readSidebarLayoutMode())
   const [appearanceMode, setAppearanceMode] = useState<AppearanceMode>(() => readAppearanceMode())
+  const [cardStyle, setCardStyle] = useState<CardStyleMode>(() => readCardStyleMode())
+  const [fontSize, setFontSize] = useState<FontSizeMode>(() => readFontSizeMode())
+  const [userProfile, setUserProfile] = useState<UserProfile>(() => readUserProfile())
   const [railHover, setRailHover] = useState(false)
   const {
     studioProfile,
@@ -6593,6 +7048,24 @@ export default function DevDashboard() {
     const nextMode: AppearanceMode = appearanceMode === "dark" ? "light" : "dark"
     setAppearanceMode(nextMode)
     persistAppearanceMode(nextMode)
+  }
+
+  const handleCardStyleChange = (mode: CardStyleMode) => {
+    setCardStyle(mode)
+    persistCardStyleMode(mode)
+    toast(mode === "rounded" ? "Cards arredondados ativados." : "Cards quadrados ativados.")
+  }
+
+  const handleFontSizeChange = (mode: FontSizeMode) => {
+    setFontSize(mode)
+    persistFontSizeMode(mode)
+    toast(`Tamanho de fonte: ${mode === "small" ? "pequena" : mode === "large" ? "grande" : "média"}.`)
+  }
+
+  const handleSaveUserProfile = (next: UserProfile) => {
+    setUserProfile(next)
+    persistUserProfile(next)
+    toast("Perfil atualizado.")
   }
 
   const sidebarVars = useMemo(
@@ -6712,6 +7185,16 @@ export default function DevDashboard() {
     const { item, message } = applyPortfolioAction(selectedPortfolioItem, action)
     setPortfolioItems((current) => current.map((portfolioItem) => (portfolioItem.id === item.id ? item : portfolioItem)))
     setSelectedPortfolioItem(item)
+    toast(message)
+  }
+  const handleMarkFinancePaid = (transaction: FinanceTransaction) => {
+    setFinanceTransactions((current) => current.map((item) => (item.id === transaction.id ? { ...item, status: "Pago" } : item)))
+    toast(`Pagamento de ${transaction.category} marcado como recebido.`)
+  }
+  const handleAnamnesisAction = (client: ClientItem, action: string) => {
+    const { client: updated, message } = applyClientAction(client, action)
+    setClientsData((current) => current.map((item) => (item.id === updated.id ? updated : item)))
+    if (selectedClient?.id === updated.id) setSelectedClient(updated)
     toast(message)
   }
   const handleCreateNavigate = (section: SectionId, label: string) => {
@@ -6894,7 +7377,13 @@ export default function DevDashboard() {
           </div>
         </header>
 
-        <main className="markly-square-surfaces min-h-[calc(100vh-64px)] min-w-0 p-4 md:p-7">
+        <main
+          className={cn(
+            "markly-dashboard-main min-h-[calc(100vh-64px)] min-w-0 p-4 md:p-7",
+            cardStyle === "square" ? "markly-square-surfaces" : "markly-round-surfaces",
+          )}
+          style={{ zoom: fontSizeZoomScale[fontSize] }}
+        >
           <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div className="min-w-0">
               <motion.div
@@ -7010,6 +7499,7 @@ export default function DevDashboard() {
                 onManageStudio={() => setStudioManageOpen(true)}
                 financeTransactions={financeTransactions}
                 onNewFinanceLaunch={() => setFinanceLaunchOpen(true)}
+                onMarkFinancePaid={handleMarkFinancePaid}
                 budgetColumns={budgetColumns}
                 budgetFilters={budgetFilters}
                 onOpenBudget={setSelectedBudget}
@@ -7018,10 +7508,17 @@ export default function DevDashboard() {
                 clientFilters={clientFilters}
                 onOpenClient={setSelectedClient}
                 onNewClient={() => setClientCreateOpen(true)}
+                onAnamnesisAction={handleAnamnesisAction}
                 portfolioItems={portfolioItems}
                 portfolioFilters={portfolioFilters}
                 onOpenPortfolioItem={setSelectedPortfolioItem}
                 onNewPortfolioItem={() => setPortfolioCreateOpen(true)}
+                cardStyle={cardStyle}
+                onCardStyleChange={handleCardStyleChange}
+                fontSize={fontSize}
+                onFontSizeChange={handleFontSizeChange}
+                userProfile={userProfile}
+                onSaveUserProfile={handleSaveUserProfile}
               />
             </motion.div>
           </AnimatePresence>
