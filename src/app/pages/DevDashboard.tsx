@@ -2992,7 +2992,7 @@ function NewBudgetModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="max-h-[90vh] overflow-hidden rounded-[24px] border p-0 sm:max-w-[860px] [&>button]:right-5 [&>button]:top-5 [&>button]:rounded-full [&>button]:text-[color-mix(in srgb, var(--markly-text) 58%, transparent)] [&>button:hover]:text-[color-mix(in_srgb,var(--markly-text)_90%,transparent)]"
+        className="grid max-h-[90vh] grid-rows-[auto_1fr_auto] overflow-hidden rounded-[24px] border p-0 sm:max-w-[860px] [&>button]:right-5 [&>button]:top-5 [&>button]:rounded-full [&>button]:text-[color-mix(in srgb, var(--markly-text) 58%, transparent)] [&>button:hover]:text-[color-mix(in_srgb,var(--markly-text)_90%,transparent)]"
         style={{ background: T.card, borderColor: T.borderStrong, color: T.text, boxShadow: "0 30px 100px rgba(0,0,0,0.62)" }}
       >
         <DialogHeader className="border-b px-6 py-5 pr-14" style={{ borderColor: T.border }}>
@@ -3007,7 +3007,7 @@ function NewBudgetModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="max-h-[calc(90vh-190px)] overflow-y-auto px-6 py-5">
+        <div className="min-h-0 overflow-y-auto px-6 py-5">
           <div className="grid gap-4 md:grid-cols-2">
             <FinanceSelectField label="Cliente" value={draft.client || "Selecionar ou criar cliente"} options={["Selecionar ou criar cliente", ...budgetClients]} onChange={(value) => update("client", value === "Selecionar ou criar cliente" ? "" : value)} />
             <label className="grid gap-1.5">
@@ -3620,7 +3620,7 @@ function NewClientModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="max-h-[90vh] overflow-hidden rounded-[24px] border p-0 sm:max-w-[860px] [&>button]:right-5 [&>button]:top-5 [&>button]:rounded-full [&>button]:text-[color-mix(in srgb, var(--markly-text) 58%, transparent)] [&>button:hover]:text-[#F0EDE4]"
+        className="grid max-h-[90vh] grid-rows-[auto_1fr_auto] overflow-hidden rounded-[24px] border p-0 sm:max-w-[860px] [&>button]:right-5 [&>button]:top-5 [&>button]:rounded-full [&>button]:text-[color-mix(in srgb, var(--markly-text) 58%, transparent)] [&>button:hover]:text-[#F0EDE4]"
         style={{ background: "rgba(5,14,12,0.98)", borderColor: T.borderStrong, color: T.text, boxShadow: "0 30px 100px rgba(0,0,0,0.62)" }}
       >
         <DialogHeader className="border-b px-6 py-5 pr-14" style={{ borderColor: T.border }}>
@@ -3635,7 +3635,7 @@ function NewClientModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="max-h-[calc(90vh-190px)] overflow-y-auto px-6 py-5">
+        <div className="min-h-0 overflow-y-auto px-6 py-5">
           <div className="grid gap-4 md:grid-cols-2">
             <label className="grid gap-1.5">
               <span className="text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: T.faint }}>Nome completo</span>
@@ -4718,7 +4718,7 @@ function NewPortfolioModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="max-h-[90vh] overflow-hidden rounded-[24px] border p-0 sm:max-w-[860px] [&>button]:right-5 [&>button]:top-5 [&>button]:rounded-full [&>button]:text-[color-mix(in srgb, var(--markly-text) 58%, transparent)] [&>button:hover]:text-[var(--markly-text)]"
+        className="grid max-h-[90vh] grid-rows-[auto_1fr_auto] overflow-hidden rounded-[24px] border p-0 sm:max-w-[860px] [&>button]:right-5 [&>button]:top-5 [&>button]:rounded-full [&>button]:text-[color-mix(in srgb, var(--markly-text) 58%, transparent)] [&>button:hover]:text-[var(--markly-text)]"
         style={{ background: "color-mix(in srgb, var(--markly-bg-sec) 98%, black)", borderColor: T.borderStrong, color: T.text, boxShadow: "0 30px 100px rgba(0,0,0,0.62)" }}
       >
         <DialogHeader className="border-b px-6 py-5 pr-14" style={{ borderColor: T.border }}>
@@ -4733,7 +4733,7 @@ function NewPortfolioModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="max-h-[calc(90vh-190px)] overflow-y-auto px-6 py-5">
+        <div className="min-h-0 overflow-y-auto px-6 py-5">
           <div className="grid gap-4 md:grid-cols-[0.8fr_1.2fr]">
             <div className="border p-4" style={{ background: "color-mix(in srgb, var(--markly-text) 2.5%, transparent)", borderColor: T.border }}>
               <PortfolioCover item={createPortfolioFromDraft({ ...draft, title: draft.title || "Prévia do trabalho", style: draft.style || verticalConfig.styleOptions[0], bodyPlacement: draft.bodyPlacement || "A definir" })} compact />
@@ -5443,7 +5443,7 @@ function StudioManageModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="max-h-[88vh] gap-0 overflow-hidden rounded-[24px] border p-0 sm:max-w-[860px] [&>button]:right-5 [&>button]:top-5 [&>button]:rounded-full [&>button]:text-[color-mix(in srgb, var(--markly-text) 58%, transparent)] [&>button:hover]:text-[#F0EDE4]"
+        className="grid max-h-[88vh] grid-rows-[auto_1fr_auto] gap-0 overflow-hidden rounded-[24px] border p-0 sm:max-w-[860px] [&>button]:right-5 [&>button]:top-5 [&>button]:rounded-full [&>button]:text-[color-mix(in srgb, var(--markly-text) 58%, transparent)] [&>button:hover]:text-[#F0EDE4]"
         style={{ background: "rgba(5,14,12,0.98)", borderColor: T.borderStrong, color: T.text, boxShadow: "0 30px 100px rgba(0,0,0,0.62)" }}
       >
         <DialogHeader className="border-b px-6 py-5 pr-14" style={{ borderColor: T.border }}>
@@ -5458,7 +5458,7 @@ function StudioManageModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="max-h-[calc(88vh-154px)] overflow-y-auto px-6 py-5">
+        <div className="min-h-0 overflow-y-auto px-6 py-5">
           <div className="mb-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
             {studioManageSections.map((section, index) => {
               const active = activeManageSection === section.id
@@ -6674,7 +6674,7 @@ function FinanceLaunchModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="max-h-[90vh] overflow-hidden rounded-[24px] border p-0 sm:max-w-[720px] [&>button]:right-5 [&>button]:top-5 [&>button]:rounded-full [&>button]:text-[color-mix(in srgb, var(--markly-text) 58%, transparent)] [&>button:hover]:text-[#F0EDE4]"
+        className="grid max-h-[90vh] grid-rows-[auto_1fr_auto] overflow-hidden rounded-[24px] border p-0 sm:max-w-[720px] [&>button]:right-5 [&>button]:top-5 [&>button]:rounded-full [&>button]:text-[color-mix(in srgb, var(--markly-text) 58%, transparent)] [&>button:hover]:text-[#F0EDE4]"
         style={{ background: "rgba(5,14,12,0.98)", borderColor: T.borderStrong, color: T.text, boxShadow: "0 30px 100px rgba(0,0,0,0.62)" }}
       >
         <DialogHeader className="border-b px-6 py-5 pr-14" style={{ borderColor: T.border }}>
@@ -6689,7 +6689,7 @@ function FinanceLaunchModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="max-h-[calc(90vh-190px)] overflow-y-auto px-6 py-5">
+        <div className="min-h-0 overflow-y-auto px-6 py-5">
           <div className="grid gap-4 md:grid-cols-2">
             <FinanceSelectField label="Tipo" value={draft.type} options={financeLaunchTypes} onChange={(value) => update("type", value)} />
             <FinanceSelectField label="Status" value={draft.status} options={financeStatuses} onChange={(value) => update("status", value)} />
