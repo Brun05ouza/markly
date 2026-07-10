@@ -11,6 +11,7 @@ import {
 import LottieCheckbox from "../LottieCheckbox"
 import { T } from "../../theme"
 import { type StudioProfile } from "../../utils/studioStorage"
+import { getVerticalConfig, studioVerticals, type VerticalConfig } from "../../utils/studioVertical"
 import {
   formatLogoSizeLimit,
   getStudioBrandIcon,
@@ -22,13 +23,14 @@ type StudioSetupModalProps = {
   open: boolean
   initialProfile: StudioProfile
   onComplete: (profile: StudioProfile) => void
+  onCancel?: () => void
 }
 
-const studioTypes = ["Sou tatuador independente", "Tenho um studio pequeno", "Tenho um studio com equipe"]
+const studioTypes = ["Trabalho sozinho(a)", "Tenho um studio pequeno", "Tenho um studio com equipe"]
 const teamSizes = ["Só eu", "2 a 3 pessoas", "4 a 6 pessoas", "Mais de 6 pessoas"]
 const contactChannels = ["WhatsApp", "Instagram", "Presencial", "Todos"]
 const depositOptions = ["Sim, cobro sinal", "Não cobro sinal", "Depende do orçamento"]
-const styleOptions = ["Fine line", "Blackwork", "Realismo", "Old school", "Floral", "Geométrico", "Anime/geek", "Minimalista", "Autoral", "Outro"]
+const totalSteps = 6
 const timeOptions = Array.from({ length: 31 }, (_, index) => {
   const totalMinutes = 7 * 60 + index * 30
   const hours = Math.floor(totalMinutes / 60).toString().padStart(2, "0")
@@ -160,12 +162,61 @@ function Chip({
   )
 }
 
-export default function StudioSetupModal({ open, initialProfile, onComplete }: StudioSetupModalProps) {
+function VerticalOptionCard({
+  config,
+  active,
+  onClick,
+}: {
+  config: VerticalConfig
+  active: boolean
+  onClick: () => void
+}) {
+  const Icon = config.icon
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className="flex items-start gap-3 rounded-[16px] border p-4 text-left transition-all duration-200 hover:-translate-y-0.5"
+      style={{
+        background: active ? "rgba(216,208,191,0.08)" : "rgba(2,8,6,0.36)",
+        borderColor: active ? "rgba(216,208,191,0.32)" : T.border,
+      }}
+    >
+      <span
+        className="flex size-10 shrink-0 items-center justify-center rounded-[12px] border"
+        style={{
+          background: active ? "rgba(216,208,191,0.12)" : "rgba(2,8,6,0.42)",
+          borderColor: active ? "rgba(216,208,191,0.30)" : T.border,
+          color: active ? T.accent : T.muted,
+        }}
+      >
+        <Icon size={18} strokeWidth={1.8} />
+      </span>
+      <span className="min-w-0">
+        <span className="block text-[13px] font-semibold" style={{ color: T.text }}>{config.label}</span>
+        <span className="mt-1 block text-[11px] leading-4" style={{ color: T.faint }}>{config.onboardingDescription}</span>
+      </span>
+    </button>
+  )
+}
+
+export default function StudioSetupModal({ open, initialProfile, onComplete, onCancel }: StudioSetupModalProps) {
   const [step, setStep] = useState(0)
   const [profile, setProfile] = useState<StudioProfile>(initialProfile)
   const [error, setError] = useState("")
 
-  const progress = useMemo(() => ((step + 1) / 5) * 100, [step])
+  const progress = useMemo(() => ((step + 1) / totalSteps) * 100, [step])
+  const verticalConfig = useMemo(() => getVerticalConfig(profile.vertical), [profile.vertical])
+
+  useEffect(() => {
+    if (open) {
+      setStep(0)
+      setProfile(initialProfile)
+      setError("")
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
 
   useEffect(() => {
     if (!open) return
@@ -234,12 +285,12 @@ export default function StudioSetupModal({ open, initialProfile, onComplete }: S
   }
 
   const validateStep = () => {
-    if (step === 1 && (!profile.studioName.trim() || !profile.studioType || !profile.teamSize)) {
+    if (step === 2 && (!profile.studioName.trim() || !profile.studioType || !profile.teamSize)) {
       setError("Preencha o nome, tipo e tamanho do studio para continuar.")
       return false
     }
 
-    if (step === 2 && (!profile.mainContactChannel || !profile.usesDeposit)) {
+    if (step === 3 && (!profile.mainContactChannel || !profile.usesDeposit)) {
       setError("Escolha o canal de atendimento e como você trabalha com sinal.")
       return false
     }
@@ -250,7 +301,7 @@ export default function StudioSetupModal({ open, initialProfile, onComplete }: S
   const next = () => {
     if (!validateStep()) return
     setError("")
-    if (step < 4) {
+    if (step < totalSteps - 1) {
       setStep((current) => current + 1)
       return
     }
@@ -262,7 +313,7 @@ export default function StudioSetupModal({ open, initialProfile, onComplete }: S
     setStep((current) => Math.max(0, current - 1))
   }
 
-  const primaryLabel = step === 0 ? "Configurar meu studio" : step === 4 ? "Entrar no dashboard" : "Continuar"
+  const primaryLabel = step === 0 ? "Configurar meu studio" : step === totalSteps - 1 ? "Entrar no dashboard" : "Continuar"
 
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center px-4 py-6" role="dialog" aria-modal="true" aria-label="Studio Setup">
@@ -283,10 +334,23 @@ export default function StudioSetupModal({ open, initialProfile, onComplete }: S
           <div className="mb-3 flex items-center justify-between gap-4">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: T.faint }}>Studio Setup</p>
-              <p className="text-[13px] font-semibold" style={{ color: T.text }}>{step + 1} de 5</p>
+              <p className="text-[13px] font-semibold" style={{ color: T.text }}>{step + 1} de {totalSteps}</p>
             </div>
-            <div className="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-semibold" style={{ borderColor: T.border, color: T.accent, background: "rgba(0,71,65,0.18)" }}>
-              <Clock size={13} /> Leva menos de 1 minuto
+            <div className="flex items-center gap-2">
+              <div className="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-semibold" style={{ borderColor: T.border, color: T.accent, background: "rgba(0,71,65,0.18)" }}>
+                <Clock size={13} /> Leva menos de 1 minuto
+              </div>
+              {onCancel && (
+                <button
+                  type="button"
+                  onClick={onCancel}
+                  aria-label="Cancelar"
+                  className="flex size-8 items-center justify-center rounded-full border transition duration-200 hover:-translate-y-0.5"
+                  style={{ borderColor: T.border, color: T.muted }}
+                >
+                  <X size={14} />
+                </button>
+              )}
             </div>
           </div>
           <div className="h-1 overflow-hidden rounded-full" style={{ background: "rgba(240,237,228,0.08)" }}>
@@ -325,6 +389,25 @@ export default function StudioSetupModal({ open, initialProfile, onComplete }: S
 
               {step === 1 && (
                 <div>
+                  <h2 className="font-display text-2xl font-semibold" style={{ color: T.text }}>Qual é o segmento do seu studio?</h2>
+                  <p className="mt-2 text-sm" style={{ color: T.muted }}>
+                    Isso ajusta os campos e termos usados no seu painel. Você pode mudar depois em Configurações.
+                  </p>
+                  <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                    {studioVerticals.map((item) => (
+                      <VerticalOptionCard
+                        key={item.id}
+                        config={item}
+                        active={profile.vertical === item.id}
+                        onClick={() => update("vertical", item.id)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {step === 2 && (
+                <div>
                   <h2 className="font-display text-2xl font-semibold" style={{ color: T.text }}>Vamos conhecer seu studio.</h2>
                   <div className="mt-6 grid gap-5">
                     <label>
@@ -332,7 +415,7 @@ export default function StudioSetupModal({ open, initialProfile, onComplete }: S
                       <input
                         value={profile.studioName}
                         onChange={(event) => update("studioName", event.target.value)}
-                        placeholder="Ex: Black Rose Tattoo"
+                        placeholder={verticalConfig.studioNamePlaceholder}
                         className="w-full rounded-[12px] border px-4 py-3 text-sm outline-none"
                         style={{ background: "rgba(2,8,6,0.58)", borderColor: T.border, color: T.text }}
                       />
@@ -433,7 +516,7 @@ export default function StudioSetupModal({ open, initialProfile, onComplete }: S
                 </div>
               )}
 
-              {step === 2 && (
+              {step === 3 && (
                 <div>
                   <h2 className="font-display text-2xl font-semibold" style={{ color: T.text }}>Como seu studio funciona?</h2>
                   <div className="mt-6 grid gap-5">
@@ -497,19 +580,19 @@ export default function StudioSetupModal({ open, initialProfile, onComplete }: S
                 </div>
               )}
 
-              {step === 3 && (
+              {step === 4 && (
                 <div>
-                  <h2 className="font-display text-2xl font-semibold" style={{ color: T.text }}>Quais estilos você mais trabalha?</h2>
+                  <h2 className="font-display text-2xl font-semibold" style={{ color: T.text }}>{verticalConfig.specialtiesQuestion}</h2>
                   <p className="mt-2 text-sm" style={{ color: T.muted }}>Selecione quantos quiser. Você pode ajustar isso depois.</p>
                   <div className="mt-6 flex flex-wrap gap-2">
-                    {styleOptions.map((item) => (
+                    {verticalConfig.styleOptions.map((item) => (
                       <Chip key={item} label={item} active={profile.mainStyles.includes(item)} onClick={() => toggleStyle(item)} />
                     ))}
                   </div>
                 </div>
               )}
 
-              {step === 4 && (
+              {step === 5 && (
                 <div className="py-6 text-center">
                   <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-[20px] border" style={{ background: "rgba(240,237,228,0.06)", borderColor: T.border }}>
                     <CheckCircle2 size={26} style={{ color: T.accent }} />

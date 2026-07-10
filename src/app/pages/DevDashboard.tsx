@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type Dispatch, type SetStateAction } from "react"
 import { AnimatePresence, motion } from "motion/react"
 import { toast, Toaster } from "sonner"
 import { ptBR } from "date-fns/locale/pt-BR"
@@ -82,9 +82,10 @@ import { Calendar as DatePickerCalendar } from "../components/ui/calendar"
 import { clearDevSession, devIdentity, readDevSession } from "../devAccess"
 import StudioSetupModal from "../components/onboarding/StudioSetupModal"
 import LottieCheckbox from "../components/LottieCheckbox"
-import { useStudioSetup } from "../hooks/useStudioSetup"
+import { useStudioManager } from "../hooks/useStudioManager"
 import { T } from "../theme"
-import { type StudioProfile } from "../utils/studioStorage"
+import { defaultStudioProfile, type StudioProfile, type StudioRecord } from "../utils/studioStorage"
+import { getVerticalConfig, studioVerticals, type VerticalConfig } from "../utils/studioVertical"
 import { cn } from "../components/ui/utils"
 import {
   formatLogoSizeLimit,
@@ -94,6 +95,18 @@ import {
 } from "../utils/studioBrand"
 
 type SectionId = "overview" | "budgets" | "clients" | "calendar" | "portfolio" | "messages" | "finance" | "anamnesis" | "settings"
+
+const VerticalConfigContext = createContext<VerticalConfig>(getVerticalConfig("tatuagem"))
+function useVerticalConfig() {
+  return useContext(VerticalConfigContext)
+}
+type StudioOperationalData = {
+  budgetColumns: BudgetColumn[]
+  clients: ClientItem[]
+  portfolioItems: PortfolioItem[]
+  financeTransactions: FinanceTransaction[]
+  calendarEvents: CalendarEvent[]
+}
 type SidebarLayoutMode = "expanded" | "hover" | "collapsed"
 type AppearanceMode = "dark" | "light"
 type CardStyleMode = "rounded" | "square"
@@ -756,7 +769,6 @@ const budgetMock: {
   ],
 }
 
-const budgetStyles = ["Todos", "Fine line", "Blackwork", "Realismo", "Old school", "Floral", "Geométrico", "Anime/geek", "Minimalista", "Autoral", "Oriental", "Lettering", "Outro"]
 const budgetSources = ["Todos", "WhatsApp", "Instagram", "Indicação", "Presencial", "Site", "Flash day", "Outro"]
 const budgetStatusOptions = ["Todos", "Novo", "Em análise", "Proposta enviada", "Sinal pendente", "Agendado", "Fechado", "Perdido"]
 const budgetPeriods = ["Todos", "Hoje", "Essa semana", "Mais de 2 dias"]
@@ -794,11 +806,10 @@ const initialBudgetDraft: NewBudgetDraft = {
   internalNotes: "",
 }
 
-const studioTypes = ["Sou tatuador independente", "Tenho um studio pequeno", "Tenho um studio com equipe"]
+const studioTypes = ["Trabalho sozinho(a)", "Tenho um studio pequeno", "Tenho um studio com equipe"]
 const teamSizes = ["Só eu", "2 a 3 pessoas", "4 a 6 pessoas", "Mais de 6 pessoas"]
 const contactChannels = ["WhatsApp", "Instagram", "Presencial", "Todos"]
 const depositOptions = ["Sim, cobro sinal", "Não cobro sinal", "Depende do orçamento"]
-const styleOptions = ["Fine line", "Blackwork", "Realismo", "Old school", "Floral", "Geométrico", "Anime/geek", "Minimalista", "Autoral", "Outro"]
 const timeOptions = Array.from({ length: 31 }, (_, index) => {
   const totalMinutes = 7 * 60 + index * 30
   const hours = Math.floor(totalMinutes / 60).toString().padStart(2, "0")
@@ -975,7 +986,6 @@ const clientsMock: {
 }
 
 const clientStatusOptions = ["Todos", "Novo cliente", "Orçamento aberto", "Proposta enviada", "Sinal pendente", "Sessão marcada", "Cliente recorrente", "Inativo"]
-const clientStyleOptions = ["Todos", "Fine line", "Blackwork", "Realismo", "Old school", "Floral", "Geométrico", "Anime/geek", "Minimalista", "Autoral", "Flash", "Outro"]
 const clientSourceOptions = ["Todos", "WhatsApp", "Instagram", "Indicação", "Presencial", "Site", "Flash day", "Outro"]
 const clientLastContactOptions = ["Todos", "Hoje", "Ontem", "2 dias", "3 dias ou mais"]
 const clientContactPreferences = ["WhatsApp", "Instagram", "E-mail", "Ligação"]
@@ -1210,7 +1220,6 @@ const portfolioMock: PortfolioItem[] = [
 ]
 
 const portfolioStatusOptions = ["Todos", "Publicado", "Em seleção", "Tratando foto", "Arquivado"]
-const portfolioStyleOptions = ["Todos", "Fine line", "Blackwork", "Realismo", "Old school", "Floral", "Geométrico", "Anime/geek", "Minimalista", "Autoral", "Flash", "Outro"]
 const portfolioSourceOptions = ["Todos", "Sessão finalizada", "Agenda", "Flash day", "Upload manual", "Cliente"]
 const portfolioVisibilityOptions = ["Todos", "Público", "Interno"]
 const portfolioUsageOptions = ["Instagram, site e proposta comercial", "Instagram", "Site", "Catálogo de flash", "Arquivo interno"]
@@ -1647,7 +1656,7 @@ function createClientFromDraft(draft: NewClientDraft): ClientItem {
   }
 }
 
-function applyClientAction(client: ClientItem, action: string): { client: ClientItem; message: string } {
+function applyClientAction(client: ClientItem, action: string, anamnesisLabel = "Anamnese"): { client: ClientItem; message: string } {
   if (action === "Agendar sessão") {
     return {
       client: { ...client, status: "Sessão marcada", flags: { ...client.flags, scheduledSession: true } },
@@ -1656,23 +1665,28 @@ function applyClientAction(client: ClientItem, action: string): { client: Client
   }
   if (action === "Enviar anamnese") {
     if (client.anamnesis !== "Não enviada") {
-      return { client, message: `Anamnese de ${client.name} já foi enviada.` }
+      return { client, message: `${anamnesisLabel} de ${client.name} já foi enviada.` }
     }
     return {
       client: { ...client, anamnesis: "Pendente", flags: { ...client.flags, pendingAnamnesis: true } },
-      message: `Anamnese enviada para ${client.name}.`,
+      message: `${anamnesisLabel} enviada para ${client.name}.`,
     }
   }
   if (action === "Marcar anamnese preenchida") {
     if (client.anamnesis === "Preenchida") {
-      return { client, message: `Anamnese de ${client.name} já está preenchida.` }
+      return { client, message: `${anamnesisLabel} de ${client.name} já está preenchida.` }
     }
     return {
       client: { ...client, anamnesis: "Preenchida", flags: { ...client.flags, pendingAnamnesis: false } },
-      message: `Anamnese de ${client.name} marcada como preenchida.`,
+      message: `${anamnesisLabel} de ${client.name} marcada como preenchida.`,
     }
   }
   return { client, message: `"${action}" ainda não está disponível nesta versão.` }
+}
+
+function anamnesisActionLabel(action: string, anamnesisLabel: string) {
+  if (action === "Enviar anamnese") return `Enviar ${anamnesisLabel.toLowerCase()}`
+  return action
 }
 
 function portfolioStatusStyle(status: PortfolioStatus) {
@@ -1805,7 +1819,7 @@ function StatCard({ item, index }: { item: (typeof overviewMock.stats)[number]; 
 
   return (
     <motion.div
-      className="rounded-[18px] border p-4 transition duration-200 hover:border-[color-mix(in srgb, var(--markly-text) 22%, transparent)]"
+      className="rounded-[18px] border p-4 transition duration-200 hover:border-[color-mix(in_srgb,var(--markly-text)_22%,transparent)]"
       style={{ background: T.card, borderColor: T.border, boxShadow: "0 18px 40px rgba(0,0,0,0.18)" }}
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
@@ -1853,7 +1867,7 @@ function AttentionList() {
                 setResolved((current) => [...current, item.name])
                 toast(`${item.action}: ${item.name}`)
               }}
-              className="group flex flex-col gap-3 rounded-[14px] border px-4 py-3 text-left transition duration-200 hover:-translate-y-0.5 hover:border-[color-mix(in srgb, var(--markly-text) 22%, transparent)] sm:flex-row sm:items-center"
+              className="group flex flex-col gap-3 rounded-[14px] border px-4 py-3 text-left transition duration-200 hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--markly-text)_22%,transparent)] sm:flex-row sm:items-center"
               style={{ background: "rgba(6,17,15,0.76)", borderColor: T.border }}
             >
               <span className="min-w-0 flex-1">
@@ -1897,7 +1911,7 @@ function TodaySchedule() {
         {overviewMock.todaySchedule.map((event) => {
           const statusStyle = scheduleStatusStyle(event.status)
           return (
-            <div key={event.time} className="flex flex-col gap-3 rounded-[14px] border p-3 transition duration-200 hover:border-[color-mix(in srgb, var(--markly-text) 22%, transparent)] sm:flex-row sm:items-center" style={{ background: T.bgSec, borderColor: T.border }}>
+            <div key={event.time} className="flex flex-col gap-3 rounded-[14px] border p-3 transition duration-200 hover:border-[color-mix(in_srgb,var(--markly-text)_22%,transparent)] sm:flex-row sm:items-center" style={{ background: T.bgSec, borderColor: T.border }}>
               <div className="flex h-10 w-14 shrink-0 items-center justify-center rounded-[12px] text-[12px] font-semibold" style={{ background: "color-mix(in srgb, var(--markly-text) 6%, transparent)", color: T.accent }}>
                 {event.time}
               </div>
@@ -2133,12 +2147,21 @@ function AddSessionPopover({ clients, onAdd }: { clients: ClientItem[]; onAdd: (
   )
 }
 
-function CalendarView({ clients, onOpenClient }: { clients: ClientItem[]; onOpenClient: (client: ClientItem) => void }) {
+function CalendarView({
+  clients,
+  events,
+  setEvents,
+  onOpenClient,
+}: {
+  clients: ClientItem[]
+  events: CalendarEvent[]
+  setEvents: Dispatch<SetStateAction<CalendarEvent[]>>
+  onOpenClient: (client: ClientItem) => void
+}) {
   const [viewDate, setViewDate] = useState(() => {
     const now = new Date()
     return new Date(now.getFullYear(), now.getMonth(), 1)
   })
-  const [events, setEvents] = useState<CalendarEvent[]>(() => buildCalendarMockEvents())
   const eventsByDate = useMemo(() => groupCalendarEventsByDate(events), [events])
   const days = useMemo(() => buildCalendarDays(viewDate), [viewDate])
   const todayKey = toDateValue(new Date())
@@ -2295,7 +2318,7 @@ function PipelineSummary() {
         {overviewMock.pipeline.map((stage) => (
           <div
             key={stage.label}
-            className="rounded-[14px] border p-4 transition duration-200 hover:-translate-y-0.5 hover:border-[color-mix(in srgb, var(--markly-text) 22%, transparent)]"
+            className="rounded-[14px] border p-4 transition duration-200 hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--markly-text)_22%,transparent)]"
             style={{ background: T.bgSec, borderColor: T.border }}
           >
             <div className="flex items-center justify-between gap-3">
@@ -2320,7 +2343,7 @@ function StudioPulse() {
         {overviewMock.studioPulse.map((metric, index) => {
           const MetricIcon = metric.icon
           return (
-            <div key={metric.label} className="rounded-[14px] border p-4 transition duration-200 hover:border-[color-mix(in srgb, var(--markly-text) 18%, transparent)]" style={{ background: T.bgSec, borderColor: T.border }}>
+            <div key={metric.label} className="rounded-[14px] border p-4 transition duration-200 hover:border-[color-mix(in_srgb,var(--markly-text)_18%,transparent)]" style={{ background: T.bgSec, borderColor: T.border }}>
               <MetricIcon size={16} style={{ color: statIconColor(index) }} />
               <p className="mt-4 text-xl font-semibold tracking-tight" style={{ color: T.text }}>{metric.value}</p>
               <p className="mt-1 text-[12px] font-medium" style={{ color: T.muted }}>{metric.label}</p>
@@ -2348,7 +2371,7 @@ function BudgetSummaryCard({
 }) {
   return (
     <motion.div
-      className="border p-4 transition duration-200 hover:border-[color-mix(in srgb, var(--markly-text) 22%, transparent)]"
+      className="border p-4 transition duration-200 hover:border-[color-mix(in_srgb,var(--markly-text)_22%,transparent)]"
       style={{ background: T.card, borderColor: T.border, boxShadow: "0 18px 40px rgba(0,0,0,0.18)" }}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
@@ -2392,7 +2415,7 @@ function BudgetFollowups() {
               setResolved((current) => [...current, followup])
               toast("Follow-up resolvido.")
             }}
-            className="group flex min-h-16 items-center justify-between gap-3 border px-3 py-2.5 text-left transition duration-200 hover:-translate-y-0.5 hover:border-[color-mix(in srgb, var(--markly-text) 22%, transparent)]"
+            className="group flex min-h-16 items-center justify-between gap-3 border px-3 py-2.5 text-left transition duration-200 hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--markly-text)_22%,transparent)]"
             style={{ background: "color-mix(in srgb, var(--markly-text) 2.5%, transparent)", borderColor: T.border }}
           >
             <span className="text-[12px] font-semibold leading-5" style={{ color: T.text }}>{followup}</span>
@@ -2407,11 +2430,13 @@ function BudgetFollowups() {
 }
 
 function BudgetKanbanCard({ item, onOpen }: { item: BudgetItem; onOpen: (item: BudgetItem) => void }) {
+  const verticalConfig = useVerticalConfig()
+  const cardMeta = [item.style, verticalConfig.placementFieldLabel ? item.bodyPlacement : null, item.size].filter(Boolean).join(" · ")
   return (
     <button
       type="button"
       onClick={() => onOpen(item)}
-      className="group w-full border p-3 text-left transition duration-200 hover:-translate-y-0.5 hover:border-[color-mix(in srgb, var(--markly-text) 24%, transparent)] hover:shadow-[0_18px_36px_rgba(0,0,0,0.18)]"
+      className="group w-full border p-3 text-left transition duration-200 hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--markly-text)_24%,transparent)] hover:shadow-[0_18px_36px_rgba(0,0,0,0.18)]"
       style={{ background: T.bgSec, borderColor: T.border }}
     >
       <div className="mb-2 flex items-start justify-between gap-3">
@@ -2422,7 +2447,7 @@ function BudgetKanbanCard({ item, onOpen }: { item: BudgetItem; onOpen: (item: B
         <MoreHorizontal size={15} className="shrink-0 opacity-60 transition group-hover:opacity-100" style={{ color: T.faint }} />
       </div>
       <p className="text-[11px] leading-5" style={{ color: T.muted }}>
-        {item.style} · {item.bodyPlacement} · {item.size}
+        {cardMeta}
       </p>
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <span className="border px-2 py-1 text-[11px] font-semibold" style={{ borderColor: T.border, color: T.text, background: "color-mix(in srgb, var(--markly-text) 3%, transparent)" }}>
@@ -2551,7 +2576,7 @@ function BudgetBoard({
               key={`quick-${column.id}`}
               type="button"
               onClick={() => columnRefs.current[column.id]?.scrollIntoView({ behavior: "smooth", block: "nearest" })}
-              className="flex items-center justify-between gap-2 border px-3 py-2 text-left transition duration-200 hover:border-[color-mix(in srgb, var(--markly-text) 22%, transparent)]"
+              className="flex items-center justify-between gap-2 border px-3 py-2 text-left transition duration-200 hover:border-[color-mix(in_srgb,var(--markly-text)_22%,transparent)]"
               style={{ background: "color-mix(in srgb, var(--markly-text) 1.8%, transparent)", borderColor: T.border }}
             >
               <span className="truncate text-[11px] font-semibold" style={{ color: T.muted }}>{column.title}</span>
@@ -2573,6 +2598,8 @@ function BudgetDetailPanel({
   onOpenChange: (open: boolean) => void
   onAction: (action: string) => void
 }) {
+  const verticalConfig = useVerticalConfig()
+
   if (!budget) return null
 
   const summaryRows = [
@@ -2585,8 +2612,8 @@ function BudgetDetailPanel({
     ["Tempo na etapa", budget.waitingTime],
   ]
   const tattooRows = [
-    ["Estilo", budget.style],
-    ["Local do corpo", budget.bodyPlacement],
+    [verticalConfig.styleFieldLabel, budget.style],
+    ...(verticalConfig.placementFieldLabel ? [[verticalConfig.placementFieldLabel, budget.bodyPlacement]] : []),
     ["Tamanho aproximado", budget.size],
     ["Número de sessões", budget.sessions],
   ]
@@ -2622,7 +2649,7 @@ function BudgetDetailPanel({
           </section>
 
           <section>
-            <h3 className="mb-3 text-sm font-semibold" style={{ color: T.text }}>Detalhes da tattoo</h3>
+            <h3 className="mb-3 text-sm font-semibold" style={{ color: T.text }}>{verticalConfig.detailsSectionLabel}</h3>
             <div className="grid gap-2 sm:grid-cols-2">
               {tattooRows.map(([label, value]) => (
                 <div key={label} className="border px-3 py-2.5" style={{ background: T.bgSec, borderColor: T.border }}>
@@ -2675,7 +2702,7 @@ function BudgetDetailPanel({
                   key={action}
                   type="button"
                   onClick={() => onAction(action)}
-                  className="rounded-[12px] border px-3 py-2.5 text-left text-[12px] font-semibold transition duration-200 hover:-translate-y-0.5 hover:border-[color-mix(in srgb, var(--markly-text) 22%, transparent)]"
+                  className="rounded-[12px] border px-3 py-2.5 text-left text-[12px] font-semibold transition duration-200 hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--markly-text)_22%,transparent)]"
                   style={{ background: "color-mix(in srgb, var(--markly-text) 2.5%, transparent)", borderColor: T.border, color: action === "Mover para perdido" ? "#F6B6A8" : T.text }}
                 >
                   {action}
@@ -2696,6 +2723,7 @@ function BudgetFilterMenu({
   value: BudgetFilterState
   onChange: (value: BudgetFilterState) => void
 }) {
+  const verticalConfig = useVerticalConfig()
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState<BudgetFilterState>(value)
   const activeCount = [value.status, value.style, value.source, value.period, value.valueRange].filter((item) => item !== "Todos").length + value.flags.length
@@ -2733,7 +2761,7 @@ function BudgetFilterMenu({
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="inline-flex items-center gap-2 rounded-[12px] border px-4 py-2.5 text-sm font-semibold transition duration-200 hover:-translate-y-0.5 hover:border-[color-mix(in srgb, var(--markly-text) 22%, transparent)]"
+          className="inline-flex items-center gap-2 rounded-[12px] border px-4 py-2.5 text-sm font-semibold transition duration-200 hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--markly-text)_22%,transparent)]"
           style={{ background: activeCount ? "color-mix(in srgb, var(--markly-accent) 9%, transparent)" : T.card, borderColor: activeCount ? "color-mix(in srgb, var(--markly-accent) 30%, transparent)" : T.border, color: activeCount ? T.text : T.muted }}
         >
           <Calendar size={15} />
@@ -2758,7 +2786,7 @@ function BudgetFilterMenu({
         <div className="grid gap-3 py-2">
           <div className="grid gap-2 sm:grid-cols-2">
             <FinanceSelectField label="Status" value={draft.status} options={budgetStatusOptions} onChange={(status) => setDraft((current) => ({ ...current, status }))} />
-            <FinanceSelectField label="Estilo" value={draft.style} options={budgetStyles} onChange={(style) => setDraft((current) => ({ ...current, style }))} />
+            <FinanceSelectField label={verticalConfig.styleFieldLabel} value={draft.style} options={["Todos", ...verticalConfig.styleOptions]} onChange={(style) => setDraft((current) => ({ ...current, style }))} />
             <FinanceSelectField label="Origem" value={draft.source} options={budgetSources} onChange={(source) => setDraft((current) => ({ ...current, source }))} />
             <FinanceSelectField label="Período" value={draft.period} options={budgetPeriods} onChange={(period) => setDraft((current) => ({ ...current, period }))} />
             <FinanceSelectField label="Valor" value={draft.valueRange} options={budgetValueRanges} onChange={(valueRange) => setDraft((current) => ({ ...current, valueRange }))} />
@@ -2798,7 +2826,7 @@ function BudgetFilterMenu({
                   key={id}
                   type="button"
                   onClick={() => applyQuickFilter(id)}
-                  className="border px-2.5 py-1.5 text-[11px] font-semibold transition duration-200 hover:border-[color-mix(in srgb, var(--markly-text) 22%, transparent)]"
+                  className="border px-2.5 py-1.5 text-[11px] font-semibold transition duration-200 hover:border-[color-mix(in_srgb,var(--markly-text)_22%,transparent)]"
                   style={{ background: "color-mix(in srgb, var(--markly-text) 2%, transparent)", borderColor: T.border, color: T.muted }}
                 >
                   {label}
@@ -2809,7 +2837,7 @@ function BudgetFilterMenu({
         </div>
         <DropdownMenuSeparator className="my-2 bg-[color-mix(in srgb, var(--markly-text) 10%, transparent)]" />
         <div className="flex justify-end gap-2 px-1">
-          <button type="button" onClick={clear} className="rounded-[10px] border px-3 py-2 text-[12px] font-semibold transition duration-200 hover:border-[color-mix(in srgb, var(--markly-text) 22%, transparent)]" style={{ borderColor: T.border, color: T.muted }}>
+          <button type="button" onClick={clear} className="rounded-[10px] border px-3 py-2 text-[12px] font-semibold transition duration-200 hover:border-[color-mix(in_srgb,var(--markly-text)_22%,transparent)]" style={{ borderColor: T.border, color: T.muted }}>
             Limpar
           </button>
           <button
@@ -2840,6 +2868,7 @@ function BudgetSearchModal({
   onOpenChange: (open: boolean) => void
   onOpenBudget: (budget: BudgetItem) => void
 }) {
+  const verticalConfig = useVerticalConfig()
   const [query, setQuery] = useState("")
   const results = useMemo(() => budgets.filter((item) => budgetMatchesQuery(item, query)), [budgets, query])
 
@@ -2863,7 +2892,7 @@ function BudgetSearchModal({
             autoFocus
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Buscar por cliente, estilo ou orçamento..."
+            placeholder={`Buscar por cliente, ${verticalConfig.styleFieldLabel.toLowerCase()} ou orçamento...`}
             className="w-full bg-transparent text-sm outline-none placeholder:text-[color-mix(in srgb, var(--markly-text) 35%, transparent)]"
             style={{ color: T.text }}
           />
@@ -2883,7 +2912,7 @@ function BudgetSearchModal({
                     onOpenBudget(item)
                     onOpenChange(false)
                   }}
-                  className="flex w-full items-center gap-3 rounded-[14px] px-3 py-3 text-left transition duration-200 hover:bg-[color-mix(in srgb, var(--markly-text) 6%, transparent)]"
+                  className="flex w-full items-center gap-3 rounded-[14px] px-3 py-3 text-left transition duration-200 hover:bg-[color-mix(in_srgb,var(--markly-text)_6%,transparent)]"
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.18, delay: index * 0.02 }}
@@ -2930,6 +2959,7 @@ function NewBudgetModal({
   onOpenChange: (open: boolean) => void
   onSave: (budget: BudgetItem) => void
 }) {
+  const verticalConfig = useVerticalConfig()
   const [draft, setDraft] = useState<NewBudgetDraft>(initialBudgetDraft)
   const [error, setError] = useState("")
 
@@ -2946,8 +2976,11 @@ function NewBudgetModal({
   }
 
   const save = () => {
-    if (!draft.client || !draft.title.trim() || !draft.style || !draft.bodyPlacement.trim() || !formatDraftValueRange(draft)) {
-      setError("Preencha cliente, projeto, estilo, local do corpo e pelo menos um valor.")
+    const needsPlacement = Boolean(verticalConfig.placementFieldLabel)
+    if (!draft.client || !draft.title.trim() || !draft.style || (needsPlacement && !draft.bodyPlacement.trim()) || !formatDraftValueRange(draft)) {
+      const fields = ["cliente", "projeto", verticalConfig.styleFieldLabel.toLowerCase()]
+      if (needsPlacement) fields.push(verticalConfig.placementFieldLabel!.toLowerCase())
+      setError(`Preencha ${fields.join(", ")} e pelo menos um valor.`)
       return
     }
     const budget = createBudgetFromDraft(draft)
@@ -2960,7 +2993,7 @@ function NewBudgetModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className="max-h-[90vh] overflow-hidden rounded-[24px] border p-0 sm:max-w-[860px] [&>button]:right-5 [&>button]:top-5 [&>button]:rounded-full [&>button]:text-[color-mix(in srgb, var(--markly-text) 58%, transparent)] [&>button:hover]:text-[color-mix(in_srgb,var(--markly-text)_90%,transparent)]"
-        style={{ background: T.card, borderColor: T.borderStrong, color: T.text, boxShadow: "0 30px 100px color-mix(in srgb, var(--markly-text) 18%, transparent)" }}
+        style={{ background: T.card, borderColor: T.borderStrong, color: T.text, boxShadow: "0 30px 100px rgba(0,0,0,0.62)" }}
       >
         <DialogHeader className="border-b px-6 py-5 pr-14" style={{ borderColor: T.border }}>
           <div className="inline-flex w-fit items-center gap-2 border px-3 py-1 text-[11px] font-semibold" style={{ background: "rgba(0,71,65,0.18)", borderColor: T.border, color: T.accent }}>
@@ -2978,30 +3011,32 @@ function NewBudgetModal({
           <div className="grid gap-4 md:grid-cols-2">
             <FinanceSelectField label="Cliente" value={draft.client || "Selecionar ou criar cliente"} options={["Selecionar ou criar cliente", ...budgetClients]} onChange={(value) => update("client", value === "Selecionar ou criar cliente" ? "" : value)} />
             <label className="grid gap-1.5">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: T.faint }}>Nome do projeto/tattoo</span>
-              <input value={draft.title} onChange={(event) => update("title", event.target.value)} placeholder="Ex: Fine line costela" className="h-11 border bg-transparent px-3.5 text-sm font-semibold outline-none transition placeholder:text-[color-mix(in srgb, var(--markly-text) 34%, transparent)] focus:border-[color-mix(in srgb, var(--markly-accent) 30%, transparent)]" style={{ background: "rgba(2,8,6,0.62)", borderColor: T.border, color: T.text }} />
+              <span className="text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: T.faint }}>Nome do projeto</span>
+              <input value={draft.title} onChange={(event) => update("title", event.target.value)} placeholder={verticalConfig.projectTitlePlaceholder} className="h-11 border bg-transparent px-3.5 text-sm font-semibold outline-none transition placeholder:text-[color-mix(in srgb, var(--markly-text) 34%, transparent)] focus:border-[color-mix(in_srgb,var(--markly-accent)_30%,transparent)]" style={{ background: "rgba(2,8,6,0.62)", borderColor: T.border, color: T.text }} />
             </label>
-            <FinanceSelectField label="Estilo" value={draft.style || "Selecionar estilo"} options={["Selecionar estilo", ...styleOptions]} onChange={(value) => update("style", value === "Selecionar estilo" ? "" : value)} />
-            <label className="grid gap-1.5">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: T.faint }}>Local do corpo</span>
-              <input value={draft.bodyPlacement} onChange={(event) => update("bodyPlacement", event.target.value)} placeholder="Ex: Antebraço, costela, ombro..." className="h-11 border bg-transparent px-3.5 text-sm font-semibold outline-none transition placeholder:text-[color-mix(in srgb, var(--markly-text) 34%, transparent)] focus:border-[color-mix(in srgb, var(--markly-accent) 30%, transparent)]" style={{ background: "rgba(2,8,6,0.62)", borderColor: T.border, color: T.text }} />
-            </label>
+            <FinanceSelectField label={verticalConfig.styleFieldLabel} value={draft.style || "Selecionar"} options={["Selecionar", ...verticalConfig.styleOptions]} onChange={(value) => update("style", value === "Selecionar" ? "" : value)} />
+            {verticalConfig.placementFieldLabel && (
+              <label className="grid gap-1.5">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: T.faint }}>{verticalConfig.placementFieldLabel}</span>
+                <input value={draft.bodyPlacement} onChange={(event) => update("bodyPlacement", event.target.value)} placeholder={verticalConfig.placementFieldPlaceholder} className="h-11 border bg-transparent px-3.5 text-sm font-semibold outline-none transition placeholder:text-[color-mix(in srgb, var(--markly-text) 34%, transparent)] focus:border-[color-mix(in_srgb,var(--markly-accent)_30%,transparent)]" style={{ background: "rgba(2,8,6,0.62)", borderColor: T.border, color: T.text }} />
+              </label>
+            )}
             <label className="grid gap-1.5">
               <span className="text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: T.faint }}>Tamanho aproximado</span>
-              <input value={draft.size} onChange={(event) => update("size", event.target.value)} placeholder="Ex: 12cm, fechamento, 2 sessões..." className="h-11 border bg-transparent px-3.5 text-sm font-semibold outline-none transition placeholder:text-[color-mix(in srgb, var(--markly-text) 34%, transparent)] focus:border-[color-mix(in srgb, var(--markly-accent) 30%, transparent)]" style={{ background: "rgba(2,8,6,0.62)", borderColor: T.border, color: T.text }} />
+              <input value={draft.size} onChange={(event) => update("size", event.target.value)} placeholder="Ex: 12cm, fechamento, 2 sessões..." className="h-11 border bg-transparent px-3.5 text-sm font-semibold outline-none transition placeholder:text-[color-mix(in srgb, var(--markly-text) 34%, transparent)] focus:border-[color-mix(in_srgb,var(--markly-accent)_30%,transparent)]" style={{ background: "rgba(2,8,6,0.62)", borderColor: T.border, color: T.text }} />
             </label>
             <FinanceSelectField label="Origem do pedido" value={draft.source} options={budgetSources.filter((item) => item !== "Todos")} onChange={(value) => update("source", value)} />
             <label className="grid gap-1.5">
               <span className="text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: T.faint }}>Valor mínimo</span>
-              <input value={draft.minValue} onChange={(event) => update("minValue", event.target.value)} placeholder="R$ 0,00" className="h-11 border bg-transparent px-3.5 text-sm font-semibold outline-none transition placeholder:text-[color-mix(in srgb, var(--markly-text) 34%, transparent)] focus:border-[color-mix(in srgb, var(--markly-accent) 30%, transparent)]" style={{ background: "rgba(2,8,6,0.62)", borderColor: T.border, color: T.text }} />
+              <input value={draft.minValue} onChange={(event) => update("minValue", event.target.value)} placeholder="R$ 0,00" className="h-11 border bg-transparent px-3.5 text-sm font-semibold outline-none transition placeholder:text-[color-mix(in srgb, var(--markly-text) 34%, transparent)] focus:border-[color-mix(in_srgb,var(--markly-accent)_30%,transparent)]" style={{ background: "rgba(2,8,6,0.62)", borderColor: T.border, color: T.text }} />
             </label>
             <label className="grid gap-1.5">
               <span className="text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: T.faint }}>Valor máximo</span>
-              <input value={draft.maxValue} onChange={(event) => update("maxValue", event.target.value)} placeholder="R$ 0,00" className="h-11 border bg-transparent px-3.5 text-sm font-semibold outline-none transition placeholder:text-[color-mix(in srgb, var(--markly-text) 34%, transparent)] focus:border-[color-mix(in srgb, var(--markly-accent) 30%, transparent)]" style={{ background: "rgba(2,8,6,0.62)", borderColor: T.border, color: T.text }} />
+              <input value={draft.maxValue} onChange={(event) => update("maxValue", event.target.value)} placeholder="R$ 0,00" className="h-11 border bg-transparent px-3.5 text-sm font-semibold outline-none transition placeholder:text-[color-mix(in srgb, var(--markly-text) 34%, transparent)] focus:border-[color-mix(in_srgb,var(--markly-accent)_30%,transparent)]" style={{ background: "rgba(2,8,6,0.62)", borderColor: T.border, color: T.text }} />
             </label>
             <label className="grid gap-1.5">
               <span className="text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: T.faint }}>Valor do sinal</span>
-              <input value={draft.depositValue} onChange={(event) => update("depositValue", event.target.value)} placeholder="R$ 0,00" className="h-11 border bg-transparent px-3.5 text-sm font-semibold outline-none transition placeholder:text-[color-mix(in srgb, var(--markly-text) 34%, transparent)] focus:border-[color-mix(in srgb, var(--markly-accent) 30%, transparent)]" style={{ background: "rgba(2,8,6,0.62)", borderColor: T.border, color: T.text }} />
+              <input value={draft.depositValue} onChange={(event) => update("depositValue", event.target.value)} placeholder="R$ 0,00" className="h-11 border bg-transparent px-3.5 text-sm font-semibold outline-none transition placeholder:text-[color-mix(in srgb, var(--markly-text) 34%, transparent)] focus:border-[color-mix(in_srgb,var(--markly-accent)_30%,transparent)]" style={{ background: "rgba(2,8,6,0.62)", borderColor: T.border, color: T.text }} />
             </label>
             <FinanceSelectField label="Status inicial" value={draft.status} options={budgetInitialStatuses} onChange={(value) => update("status", value as NewBudgetDraft["status"])} />
           </div>
@@ -3012,7 +3047,7 @@ function NewBudgetModal({
               value={draft.description}
               onChange={(event) => update("description", event.target.value)}
               placeholder="Descreva a ideia do cliente, referências, observações e detalhes importantes."
-              className="min-h-24 resize-none border bg-transparent px-3.5 py-3 text-sm outline-none transition placeholder:text-[color-mix(in srgb, var(--markly-text) 34%, transparent)] focus:border-[color-mix(in srgb, var(--markly-accent) 30%, transparent)]"
+              className="min-h-24 resize-none border bg-transparent px-3.5 py-3 text-sm outline-none transition placeholder:text-[color-mix(in srgb, var(--markly-text) 34%, transparent)] focus:border-[color-mix(in_srgb,var(--markly-accent)_30%,transparent)]"
               style={{ background: "rgba(2,8,6,0.62)", borderColor: T.border, color: T.text }}
             />
           </label>
@@ -3023,7 +3058,7 @@ function NewBudgetModal({
               value={draft.internalNotes}
               onChange={(event) => update("internalNotes", event.target.value)}
               placeholder="Notas internas opcionais para o studio."
-              className="min-h-20 resize-none border bg-transparent px-3.5 py-3 text-sm outline-none transition placeholder:text-[color-mix(in srgb, var(--markly-text) 34%, transparent)] focus:border-[color-mix(in srgb, var(--markly-accent) 30%, transparent)]"
+              className="min-h-20 resize-none border bg-transparent px-3.5 py-3 text-sm outline-none transition placeholder:text-[color-mix(in srgb, var(--markly-text) 34%, transparent)] focus:border-[color-mix(in_srgb,var(--markly-accent)_30%,transparent)]"
               style={{ background: "rgba(2,8,6,0.62)", borderColor: T.border, color: T.text }}
             />
           </label>
@@ -3049,7 +3084,7 @@ function NewBudgetModal({
         </div>
 
         <div className="flex flex-col-reverse gap-3 border-t px-6 py-4 sm:flex-row sm:items-center sm:justify-end" style={{ borderColor: T.border, background: "rgba(2,8,6,0.58)" }}>
-          <button type="button" onClick={() => onOpenChange(false)} className="rounded-[12px] border px-4 py-2.5 text-sm font-semibold transition duration-200 hover:border-[color-mix(in srgb, var(--markly-text) 22%, transparent)]" style={{ borderColor: T.border, color: T.muted }}>
+          <button type="button" onClick={() => onOpenChange(false)} className="rounded-[12px] border px-4 py-2.5 text-sm font-semibold transition duration-200 hover:border-[color-mix(in_srgb,var(--markly-text)_22%,transparent)]" style={{ borderColor: T.border, color: T.muted }}>
             Cancelar
           </button>
           <button type="button" onClick={save} className="rounded-[12px] px-4 py-2.5 text-sm font-semibold transition duration-200 hover:-translate-y-0.5 hover:bg-[#FFFFFF]" style={{ background: T.text, color: T.bg }}>
@@ -3084,7 +3119,7 @@ function ClientSummaryCard({
 }) {
   return (
     <motion.div
-      className="border p-4 transition duration-200 hover:border-[color-mix(in srgb, var(--markly-text) 22%, transparent)]"
+      className="border p-4 transition duration-200 hover:border-[color-mix(in_srgb,var(--markly-text)_22%,transparent)]"
       style={{ background: T.card, borderColor: T.border, boxShadow: "0 18px 40px rgba(0,0,0,0.18)" }}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
@@ -3113,9 +3148,13 @@ function ClientsView({
   onOpenClient: (client: ClientItem) => void
   onNewClient: () => void
 }) {
+  const verticalConfig = useVerticalConfig()
   const filteredClients = useMemo(() => filterClients(clients, filters), [clients, filters])
   const hasFilters = JSON.stringify(filters) !== JSON.stringify(initialClientFilters)
   const summary = clientSummaryFromList(clients)
+  const tableGridCols = verticalConfig.showAnamnesis
+    ? "grid-cols-[1.15fr_1fr_0.9fr_0.7fr_1fr_0.65fr_0.72fr]"
+    : "grid-cols-[1.2fr_1.05fr_0.95fr_0.75fr_1.05fr_0.7fr]"
   const summaryCards = [
     { title: "Clientes ativos", value: String(summary.activeClients), description: `${summary.newThisMonth} novos este mês`, icon: Users },
     { title: "Com orçamento", value: String(summary.withBudget), description: `${summary.unansweredBudgets} aguardando resposta`, icon: FileText },
@@ -3134,7 +3173,7 @@ function ClientsView({
           <div>
             <h3 className="text-sm font-semibold" style={{ color: T.text }}>Central de clientes</h3>
             <p className="mt-1 text-[12px] leading-5" style={{ color: T.faint }}>
-              Contatos, interesses, orçamentos, sessões e anamnese no mesmo lugar.
+              Contatos, interesses, orçamentos e sessões{verticalConfig.showAnamnesis ? ` e ${verticalConfig.anamnesisSidebarLabel.toLowerCase()}` : ""} no mesmo lugar.
             </p>
           </div>
           <span className="text-[11px]" style={{ color: T.faint }}>
@@ -3162,14 +3201,14 @@ function ClientsView({
         ) : (
           <>
             <div className="hidden overflow-hidden border lg:block" style={{ borderColor: T.border }}>
-              <div className="grid grid-cols-[1.15fr_1fr_0.9fr_0.7fr_1fr_0.65fr_0.72fr] gap-3 border-b px-4 py-3 text-[10px] font-bold uppercase tracking-[0.12em]" style={{ background: "color-mix(in srgb, var(--markly-text) 2.5%, transparent)", borderColor: T.border, color: T.faint }}>
+              <div className={cn("grid gap-3 border-b px-4 py-3 text-[10px] font-bold uppercase tracking-[0.12em]", tableGridCols)} style={{ background: "color-mix(in srgb, var(--markly-text) 2.5%, transparent)", borderColor: T.border, color: T.faint }}>
                 <span>Cliente</span>
                 <span>Interesse</span>
                 <span>Status</span>
                 <span>Último contato</span>
                 <span>Próxima ação</span>
                 <span className="text-right">Valor</span>
-                <span>Anamnese</span>
+                {verticalConfig.showAnamnesis && <span>{verticalConfig.anamnesisSidebarLabel}</span>}
               </div>
               <div className="grid">
                 {filteredClients.map((client, index) => (
@@ -3177,7 +3216,7 @@ function ClientsView({
                     key={client.id}
                     type="button"
                     onClick={() => onOpenClient(client)}
-                    className="group grid grid-cols-[1.15fr_1fr_0.9fr_0.7fr_1fr_0.65fr_0.72fr] items-center gap-3 border-b px-4 py-3 text-left transition duration-200 last:border-b-0 hover:bg-[color-mix(in srgb, var(--markly-text) 4.5%, transparent)]"
+                    className={cn("group grid items-center gap-3 border-b px-4 py-3 text-left transition duration-200 last:border-b-0 hover:bg-[color-mix(in_srgb,var(--markly-text)_4.5%,transparent)]", tableGridCols)}
                     style={{ background: index % 2 === 0 ? "color-mix(in srgb, var(--markly-text) 1.2%, transparent)" : "rgba(2,8,6,0.24)", borderColor: T.border }}
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -3198,7 +3237,7 @@ function ClientsView({
                       <ChevronRight size={13} className="shrink-0 transition duration-200 group-hover:translate-x-0.5" />
                     </span>
                     <span className="text-right text-sm font-semibold" style={{ color: T.text }}>{client.value}</span>
-                    <ClientBadge style={clientAnamnesisStyle(client.anamnesis)}>{client.anamnesis}</ClientBadge>
+                    {verticalConfig.showAnamnesis && <ClientBadge style={clientAnamnesisStyle(client.anamnesis)}>{client.anamnesis}</ClientBadge>}
                   </motion.button>
                 ))}
               </div>
@@ -3210,7 +3249,7 @@ function ClientsView({
                   key={client.id}
                   type="button"
                   onClick={() => onOpenClient(client)}
-                  className="group border p-4 text-left transition duration-200 hover:-translate-y-0.5 hover:border-[color-mix(in srgb, var(--markly-text) 22%, transparent)]"
+                  className="group border p-4 text-left transition duration-200 hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--markly-text)_22%,transparent)]"
                   style={{ background: T.bgSec, borderColor: T.border }}
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -3225,7 +3264,9 @@ function ClientsView({
                   </div>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <ClientBadge style={clientStatusStyle(client.status)}>{client.status}</ClientBadge>
-                    <ClientBadge style={clientAnamnesisStyle(client.anamnesis)}>Anamnese: {client.anamnesis}</ClientBadge>
+                    {verticalConfig.showAnamnesis && (
+                      <ClientBadge style={clientAnamnesisStyle(client.anamnesis)}>{verticalConfig.anamnesisSidebarLabel}: {client.anamnesis}</ClientBadge>
+                    )}
                   </div>
                   <div className="mt-3 grid gap-1 text-[12px]" style={{ color: T.muted }}>
                     <span>{client.interest}</span>
@@ -3252,9 +3293,19 @@ function ClientFilterMenu({
   value: ClientFilterState
   onChange: (value: ClientFilterState) => void
 }) {
+  const verticalConfig = useVerticalConfig()
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState<ClientFilterState>(value)
   const activeCount = [value.status, value.style, value.source, value.lastContact].filter((item) => item !== "Todos").length + value.flags.length
+  const visibleFilterFlags = clientFilterFlags.filter((flag) => flag.id !== "pendingAnamnesis" || verticalConfig.showAnamnesis)
+  const quickFilters = [
+    ["unanswered3", "Sem resposta há mais de 3 dias"],
+    ["pendingDeposit", "Com sinal pendente"],
+    ["sessionWeek", "Com sessão essa semana"],
+    ...(verticalConfig.showAnamnesis ? [["pendingAnamnesis", `${verticalConfig.anamnesisSidebarLabel} pendente`]] : []),
+    ["highValue", "Clientes de alto valor"],
+    ["recurring", "Clientes recorrentes"],
+  ]
 
   useEffect(() => {
     if (open) setDraft(value)
@@ -3289,7 +3340,7 @@ function ClientFilterMenu({
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="inline-flex items-center gap-2 rounded-[12px] border px-4 py-2.5 text-sm font-semibold transition duration-200 hover:-translate-y-0.5 hover:border-[color-mix(in srgb, var(--markly-text) 22%, transparent)]"
+          className="inline-flex items-center gap-2 rounded-[12px] border px-4 py-2.5 text-sm font-semibold transition duration-200 hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--markly-text)_22%,transparent)]"
           style={{ background: activeCount ? "color-mix(in srgb, var(--markly-accent) 9%, transparent)" : "rgba(2,8,6,0.34)", borderColor: activeCount ? "color-mix(in srgb, var(--markly-accent) 30%, transparent)" : T.border, color: activeCount ? T.text : T.muted }}
         >
           <Calendar size={15} />
@@ -3314,14 +3365,14 @@ function ClientFilterMenu({
         <div className="grid gap-3 py-2">
           <div className="grid gap-2 sm:grid-cols-2">
             <FinanceSelectField label="Status" value={draft.status} options={clientStatusOptions} onChange={(status) => setDraft((current) => ({ ...current, status }))} />
-            <FinanceSelectField label="Estilo" value={draft.style} options={clientStyleOptions} onChange={(style) => setDraft((current) => ({ ...current, style }))} />
+            <FinanceSelectField label={verticalConfig.styleFieldLabel} value={draft.style} options={["Todos", ...verticalConfig.styleOptions]} onChange={(style) => setDraft((current) => ({ ...current, style }))} />
             <FinanceSelectField label="Origem" value={draft.source} options={clientSourceOptions} onChange={(source) => setDraft((current) => ({ ...current, source }))} />
             <FinanceSelectField label="Último contato" value={draft.lastContact} options={clientLastContactOptions} onChange={(lastContact) => setDraft((current) => ({ ...current, lastContact }))} />
           </div>
           <div>
             <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: T.faint }}>Marcadores</p>
             <div className="flex flex-wrap gap-2">
-              {clientFilterFlags.map((flag) => {
+              {visibleFilterFlags.map((flag) => {
                 const active = draft.flags.includes(flag.id)
                 return (
                   <button
@@ -3341,19 +3392,12 @@ function ClientFilterMenu({
           <div>
             <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: T.faint }}>Filtros rápidos</p>
             <div className="flex flex-wrap gap-2">
-              {[
-                ["unanswered3", "Sem resposta há mais de 3 dias"],
-                ["pendingDeposit", "Com sinal pendente"],
-                ["sessionWeek", "Com sessão essa semana"],
-                ["pendingAnamnesis", "Anamnese pendente"],
-                ["highValue", "Clientes de alto valor"],
-                ["recurring", "Clientes recorrentes"],
-              ].map(([id, label]) => (
+              {quickFilters.map(([id, label]) => (
                 <button
                   key={id}
                   type="button"
                   onClick={() => applyQuickFilter(id)}
-                  className="border px-2.5 py-1.5 text-[11px] font-semibold transition duration-200 hover:border-[color-mix(in srgb, var(--markly-text) 22%, transparent)]"
+                  className="border px-2.5 py-1.5 text-[11px] font-semibold transition duration-200 hover:border-[color-mix(in_srgb,var(--markly-text)_22%,transparent)]"
                   style={{ background: "color-mix(in srgb, var(--markly-text) 2%, transparent)", borderColor: T.border, color: T.muted }}
                 >
                   {label}
@@ -3364,7 +3408,7 @@ function ClientFilterMenu({
         </div>
         <DropdownMenuSeparator className="my-2 bg-[color-mix(in srgb, var(--markly-text) 10%, transparent)]" />
         <div className="flex justify-end gap-2 px-1">
-          <button type="button" onClick={clear} className="rounded-[10px] border px-3 py-2 text-[12px] font-semibold transition duration-200 hover:border-[color-mix(in srgb, var(--markly-text) 22%, transparent)]" style={{ borderColor: T.border, color: T.muted }}>
+          <button type="button" onClick={clear} className="rounded-[10px] border px-3 py-2 text-[12px] font-semibold transition duration-200 hover:border-[color-mix(in_srgb,var(--markly-text)_22%,transparent)]" style={{ borderColor: T.border, color: T.muted }}>
             Limpar
           </button>
           <button
@@ -3497,7 +3541,7 @@ function ClientSearchModal({
                       onOpenClient(client)
                       onOpenChange(false)
                     }}
-                    className="flex w-full items-start gap-3 rounded-[14px] px-3 py-3 text-left transition duration-200 hover:bg-[color-mix(in srgb, var(--markly-text) 6%, transparent)]"
+                    className="flex w-full items-start gap-3 rounded-[14px] px-3 py-3 text-left transition duration-200 hover:bg-[color-mix(in_srgb,var(--markly-text)_6%,transparent)]"
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.16, delay: index * 0.025 }}
@@ -3544,10 +3588,11 @@ function NewClientModal({
   onOpenChange: (open: boolean) => void
   onSave: (client: ClientItem) => void
 }) {
+  const verticalConfig = useVerticalConfig()
   const [draft, setDraft] = useState<NewClientDraft>(initialClientDraft)
   const [error, setError] = useState("")
-  const fieldClass = "h-11 border bg-transparent px-3.5 text-sm font-semibold outline-none transition placeholder:text-[color-mix(in srgb, var(--markly-text) 34%, transparent)] focus:border-[color-mix(in srgb, var(--markly-accent) 30%, transparent)]"
-  const textAreaClass = "min-h-24 resize-none border bg-transparent px-3.5 py-3 text-sm outline-none transition placeholder:text-[color-mix(in srgb, var(--markly-text) 34%, transparent)] focus:border-[color-mix(in srgb, var(--markly-accent) 30%, transparent)]"
+  const fieldClass = "h-11 border bg-transparent px-3.5 text-sm font-semibold outline-none transition placeholder:text-[color-mix(in srgb, var(--markly-text) 34%, transparent)] focus:border-[color-mix(in_srgb,var(--markly-accent)_30%,transparent)]"
+  const textAreaClass = "min-h-24 resize-none border bg-transparent px-3.5 py-3 text-sm outline-none transition placeholder:text-[color-mix(in srgb, var(--markly-text) 34%, transparent)] focus:border-[color-mix(in_srgb,var(--markly-accent)_30%,transparent)]"
 
   useEffect(() => {
     if (!open) {
@@ -3609,7 +3654,7 @@ function NewClientModal({
               <input value={draft.email} onChange={(event) => update("email", event.target.value)} placeholder="cliente@email.com" className={fieldClass} style={{ background: "rgba(2,8,6,0.62)", borderColor: T.border, color: T.text }} />
             </label>
             <FinanceSelectField label="Origem do cliente" value={draft.source || "Selecionar origem"} options={["Selecionar origem", ...clientSourceOptions.filter((item) => item !== "Todos")]} onChange={(value) => update("source", value === "Selecionar origem" ? "" : value)} />
-            <FinanceSelectField label="Estilo de interesse" value={draft.style || "Selecionar estilo"} options={["Selecionar estilo", ...clientStyleOptions.filter((item) => item !== "Todos")]} onChange={(value) => update("style", value === "Selecionar estilo" ? "" : value)} />
+            <FinanceSelectField label={`${verticalConfig.styleFieldLabel} de interesse`} value={draft.style || "Selecionar"} options={["Selecionar", ...verticalConfig.styleOptions]} onChange={(value) => update("style", value === "Selecionar" ? "" : value)} />
             <FinanceSelectField label="Status inicial" value={draft.status} options={clientStatusOptions.filter((item) => item !== "Todos")} onChange={(value) => update("status", value as ClientStatus)} />
             <FinanceSelectField label="Preferência de contato" value={draft.contactPreference} options={clientContactPreferences} onChange={(value) => update("contactPreference", value)} />
             <label className="grid gap-1.5">
@@ -3619,7 +3664,7 @@ function NewClientModal({
             <button
               type="button"
               onClick={() => update("acceptsReminders", !draft.acceptsReminders)}
-              className="flex h-11 items-center justify-between gap-3 rounded-[12px] border px-3.5 text-left text-sm font-semibold transition duration-200 hover:border-[color-mix(in srgb, var(--markly-text) 22%, transparent)]"
+              className="flex h-11 items-center justify-between gap-3 rounded-[12px] border px-3.5 text-left text-sm font-semibold transition duration-200 hover:border-[color-mix(in_srgb,var(--markly-text)_22%,transparent)]"
               style={{ background: "rgba(2,8,6,0.62)", borderColor: T.border, color: T.text }}
             >
               <span>Aceita lembretes</span>
@@ -3646,7 +3691,7 @@ function NewClientModal({
               value={draft.internalNotes}
               onChange={(event) => update("internalNotes", event.target.value)}
               placeholder="Notas internas opcionais para o studio."
-              className="min-h-20 resize-none border bg-transparent px-3.5 py-3 text-sm outline-none transition placeholder:text-[color-mix(in srgb, var(--markly-text) 34%, transparent)] focus:border-[color-mix(in srgb, var(--markly-accent) 30%, transparent)]"
+              className="min-h-20 resize-none border bg-transparent px-3.5 py-3 text-sm outline-none transition placeholder:text-[color-mix(in srgb, var(--markly-text) 34%, transparent)] focus:border-[color-mix(in_srgb,var(--markly-accent)_30%,transparent)]"
                style={{ background: "rgba(2,8,6,0.62)", borderColor: T.border, color: T.text }}
             />
           </label>
@@ -3659,7 +3704,7 @@ function NewClientModal({
         </div>
 
         <div className="flex flex-col-reverse gap-3 border-t px-6 py-4 sm:flex-row sm:items-center sm:justify-end" style={{ borderColor: T.border, background: "rgba(2,8,6,0.58)" }}>
-          <button type="button" onClick={() => onOpenChange(false)} className="rounded-[12px] border px-4 py-2.5 text-sm font-semibold transition duration-200 hover:border-[color-mix(in srgb, var(--markly-text) 22%, transparent)]" style={{ borderColor: T.border, color: T.muted }}>
+          <button type="button" onClick={() => onOpenChange(false)} className="rounded-[12px] border px-4 py-2.5 text-sm font-semibold transition duration-200 hover:border-[color-mix(in_srgb,var(--markly-text)_22%,transparent)]" style={{ borderColor: T.border, color: T.muted }}>
             Cancelar
           </button>
           <button type="button" onClick={save} className="rounded-[12px] px-4 py-2.5 text-sm font-semibold transition duration-200 hover:-translate-y-0.5 hover:bg-[#FFFFFF]" style={{ background: T.text, color: T.bg }}>
@@ -3680,6 +3725,8 @@ function ClientDetailPanel({
   onOpenChange: (open: boolean) => void
   onAction: (action: string) => void
 }) {
+  const verticalConfig = useVerticalConfig()
+
   if (!client) return null
 
   const summaryRows = [
@@ -3699,7 +3746,14 @@ function ClientDetailPanel({
     ["Cidade", client.city],
     ["Lembretes", client.acceptsReminders ? "Ativos" : "Desativados"],
   ]
-  const actions = ["Criar orçamento", "Agendar sessão", "Enviar anamnese", "Registrar pagamento", "Adicionar observação", "Editar cliente"]
+  const actions = [
+    "Criar orçamento",
+    "Agendar sessão",
+    ...(verticalConfig.showAnamnesis ? ["Enviar anamnese"] : []),
+    "Registrar pagamento",
+    "Adicionar observação",
+    "Editar cliente",
+  ]
 
   return (
     <Sheet open={Boolean(client)} onOpenChange={onOpenChange}>
@@ -3711,7 +3765,9 @@ function ClientDetailPanel({
         <SheetHeader className="border-b px-6 py-5 pr-14" style={{ borderColor: T.border }}>
           <div className="flex flex-wrap items-center gap-2">
             <ClientBadge style={clientStatusStyle(client.status)}>{client.status}</ClientBadge>
-            <ClientBadge style={clientAnamnesisStyle(client.anamnesis)}>Anamnese: {client.anamnesis}</ClientBadge>
+            {verticalConfig.showAnamnesis && (
+              <ClientBadge style={clientAnamnesisStyle(client.anamnesis)}>{verticalConfig.anamnesisSidebarLabel}: {client.anamnesis}</ClientBadge>
+            )}
           </div>
           <SheetTitle className="font-display text-2xl" style={{ color: T.text }}>{client.name}</SheetTitle>
           <SheetDescription style={{ color: T.muted }}>
@@ -3752,7 +3808,7 @@ function ClientDetailPanel({
                   key={`${budget.title}-${budget.status}`}
                   type="button"
                   onClick={() => toast(`${budget.title}: ${budget.action}`)}
-                  className="group flex items-center justify-between gap-3 border px-3 py-3 text-left transition duration-200 hover:border-[color-mix(in srgb, var(--markly-text) 22%, transparent)]"
+                  className="group flex items-center justify-between gap-3 border px-3 py-3 text-left transition duration-200 hover:border-[color-mix(in_srgb,var(--markly-text)_22%,transparent)]"
                   style={{ background: T.bgSec, borderColor: T.border }}
                 >
                   <span className="min-w-0">
@@ -3788,20 +3844,22 @@ function ClientDetailPanel({
             </div>
           </section>
 
-          <section>
-            <h3 className="mb-3 text-sm font-semibold" style={{ color: T.text }}>Anamnese</h3>
-            <div className="flex flex-col gap-3 border p-3 sm:flex-row sm:items-center sm:justify-between" style={{ background: T.bgSec, borderColor: T.border }}>
-              <ClientBadge style={clientAnamnesisStyle(client.anamnesis)}>{client.anamnesis}</ClientBadge>
-              <button
-                type="button"
-                onClick={() => onAction("Enviar anamnese")}
-                className="rounded-[12px] border px-3 py-2 text-[12px] font-semibold transition duration-200 hover:-translate-y-0.5"
-                style={{ borderColor: T.border, color: T.text }}
-              >
-                Enviar anamnese
-              </button>
-            </div>
-          </section>
+          {verticalConfig.showAnamnesis && (
+            <section>
+              <h3 className="mb-3 text-sm font-semibold" style={{ color: T.text }}>{verticalConfig.anamnesisSectionLabel}</h3>
+              <div className="flex flex-col gap-3 border p-3 sm:flex-row sm:items-center sm:justify-between" style={{ background: T.bgSec, borderColor: T.border }}>
+                <ClientBadge style={clientAnamnesisStyle(client.anamnesis)}>{client.anamnesis}</ClientBadge>
+                <button
+                  type="button"
+                  onClick={() => onAction("Enviar anamnese")}
+                  className="rounded-[12px] border px-3 py-2 text-[12px] font-semibold transition duration-200 hover:-translate-y-0.5"
+                  style={{ borderColor: T.border, color: T.text }}
+                >
+                  {anamnesisActionLabel("Enviar anamnese", verticalConfig.anamnesisSidebarLabel)}
+                </button>
+              </div>
+            </section>
+          )}
 
           <section>
             <h3 className="mb-3 text-sm font-semibold" style={{ color: T.text }}>Histórico</h3>
@@ -3830,10 +3888,10 @@ function ClientDetailPanel({
                   key={action}
                   type="button"
                   onClick={() => onAction(action)}
-                  className="rounded-[12px] border px-3 py-2.5 text-left text-[12px] font-semibold transition duration-200 hover:-translate-y-0.5 hover:border-[color-mix(in srgb, var(--markly-text) 22%, transparent)]"
+                  className="rounded-[12px] border px-3 py-2.5 text-left text-[12px] font-semibold transition duration-200 hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--markly-text)_22%,transparent)]"
                   style={{ background: "color-mix(in srgb, var(--markly-text) 2.5%, transparent)", borderColor: T.border, color: T.text }}
                 >
-                  {action}
+                  {anamnesisActionLabel(action, verticalConfig.anamnesisSidebarLabel)}
                 </button>
               ))}
             </div>
@@ -3951,6 +4009,7 @@ function MessageSummaryCard({
 }
 
 function MessagesView() {
+  const verticalConfig = useVerticalConfig()
   const [selectedId, setSelectedId] = useState(messagesMock[0]?.id ?? "")
   const [query, setQuery] = useState("")
   const [quickFilter, setQuickFilter] = useState("Todas")
@@ -4221,7 +4280,7 @@ function MessagesView() {
                   ))}
                 </div>
                 <div className="flex flex-wrap justify-end gap-2">
-                  {["Criar orçamento", "Enviar anamnese", "Registrar pagamento"].map((action) => (
+                  {["Criar orçamento", ...(verticalConfig.showAnamnesis ? ["Enviar anamnese"] : []), "Registrar pagamento"].map((action) => (
                     <button
                       key={action}
                       type="button"
@@ -4229,7 +4288,7 @@ function MessagesView() {
                       className="rounded-[12px] border px-3 py-2 text-[12px] font-semibold transition duration-200 hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--markly-text)_22%,transparent)]"
                       style={{ borderColor: T.border, color: T.text }}
                     >
-                      {action}
+                      {anamnesisActionLabel(action, verticalConfig.anamnesisSidebarLabel)}
                     </button>
                   ))}
                 </div>
@@ -4290,7 +4349,7 @@ function PortfolioSummaryCard({
 }) {
   return (
     <motion.div
-      className="border p-4 transition duration-200 hover:border-[color-mix(in srgb, var(--markly-text) 22%, transparent)]"
+      className="border p-4 transition duration-200 hover:border-[color-mix(in_srgb,var(--markly-text)_22%,transparent)]"
       style={{ background: T.card, borderColor: T.border, boxShadow: "0 18px 40px rgba(0,0,0,0.14)" }}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
@@ -4319,6 +4378,7 @@ function PortfolioView({
   onOpenItem: (item: PortfolioItem) => void
   onNewItem: () => void
 }) {
+  const verticalConfig = useVerticalConfig()
   const filteredItems = useMemo(() => filterPortfolioItems(items, filters), [items, filters])
   const hasFilters = JSON.stringify(filters) !== JSON.stringify(initialPortfolioFilters)
   const summary = portfolioSummaryFromList(items)
@@ -4372,7 +4432,7 @@ function PortfolioView({
                 key={item.id}
                 type="button"
                 onClick={() => onOpenItem(item)}
-                className="group overflow-hidden border text-left transition duration-200 hover:-translate-y-0.5 hover:border-[color-mix(in srgb, var(--markly-text) 24%, transparent)] hover:shadow-[0_20px_44px_rgba(0,0,0,0.16)]"
+                className="group overflow-hidden border text-left transition duration-200 hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--markly-text)_24%,transparent)] hover:shadow-[0_20px_44px_rgba(0,0,0,0.16)]"
                 style={{ background: T.bgSec, borderColor: T.border }}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -4383,7 +4443,9 @@ function PortfolioView({
                   <div className="flex items-start justify-between gap-3">
                     <span className="min-w-0">
                       <span className="block truncate text-sm font-semibold" style={{ color: T.text }}>{item.title}</span>
-                      <span className="mt-0.5 block truncate text-[12px]" style={{ color: T.faint }}>{item.client} · {item.bodyPlacement}</span>
+                      <span className="mt-0.5 block truncate text-[12px]" style={{ color: T.faint }}>
+                        {[item.client, verticalConfig.placementFieldLabel ? item.bodyPlacement : null].filter(Boolean).join(" · ")}
+                      </span>
                     </span>
                     <ClientBadge style={portfolioStatusStyle(item.status)}>{item.status}</ClientBadge>
                   </div>
@@ -4417,6 +4479,7 @@ function PortfolioFilterMenu({
   value: PortfolioFilterState
   onChange: (value: PortfolioFilterState) => void
 }) {
+  const verticalConfig = useVerticalConfig()
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState<PortfolioFilterState>(value)
   const activeCount = [value.status, value.style, value.source, value.visibility].filter((item) => item !== "Todos").length + value.flags.length
@@ -4443,7 +4506,7 @@ function PortfolioFilterMenu({
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="inline-flex items-center gap-2 rounded-[12px] border px-4 py-2.5 text-sm font-semibold transition duration-200 hover:-translate-y-0.5 hover:border-[color-mix(in srgb, var(--markly-text) 22%, transparent)]"
+          className="inline-flex items-center gap-2 rounded-[12px] border px-4 py-2.5 text-sm font-semibold transition duration-200 hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--markly-text)_22%,transparent)]"
           style={{ background: activeCount ? "color-mix(in srgb, var(--markly-accent) 9%, transparent)" : "color-mix(in srgb, var(--markly-bg-sec) 34%, transparent)", borderColor: activeCount ? "color-mix(in srgb, var(--markly-accent) 30%, transparent)" : T.border, color: activeCount ? T.text : T.muted }}
         >
           <ImageIcon size={15} />
@@ -4468,7 +4531,7 @@ function PortfolioFilterMenu({
         <div className="grid gap-3 py-2">
           <div className="grid gap-2 sm:grid-cols-2">
             <FinanceSelectField label="Status" value={draft.status} options={portfolioStatusOptions} onChange={(status) => setDraft((current) => ({ ...current, status }))} />
-            <FinanceSelectField label="Estilo" value={draft.style} options={portfolioStyleOptions} onChange={(style) => setDraft((current) => ({ ...current, style }))} />
+            <FinanceSelectField label={verticalConfig.styleFieldLabel} value={draft.style} options={["Todos", ...verticalConfig.styleOptions]} onChange={(style) => setDraft((current) => ({ ...current, style }))} />
             <FinanceSelectField label="Origem" value={draft.source} options={portfolioSourceOptions} onChange={(source) => setDraft((current) => ({ ...current, source }))} />
             <FinanceSelectField label="Visibilidade" value={draft.visibility} options={portfolioVisibilityOptions} onChange={(visibility) => setDraft((current) => ({ ...current, visibility }))} />
           </div>
@@ -4499,7 +4562,7 @@ function PortfolioFilterMenu({
         </div>
         <DropdownMenuSeparator className="my-2 bg-[color-mix(in srgb, var(--markly-text) 10%, transparent)]" />
         <div className="flex justify-end gap-2 px-1">
-          <button type="button" onClick={clear} className="rounded-[10px] border px-3 py-2 text-[12px] font-semibold transition duration-200 hover:border-[color-mix(in srgb, var(--markly-text) 22%, transparent)]" style={{ borderColor: T.border, color: T.muted }}>
+          <button type="button" onClick={clear} className="rounded-[10px] border px-3 py-2 text-[12px] font-semibold transition duration-200 hover:border-[color-mix(in_srgb,var(--markly-text)_22%,transparent)]" style={{ borderColor: T.border, color: T.muted }}>
             Limpar
           </button>
           <button
@@ -4530,6 +4593,7 @@ function PortfolioSearchModal({
   onOpenChange: (open: boolean) => void
   onOpenItem: (item: PortfolioItem) => void
 }) {
+  const verticalConfig = useVerticalConfig()
   const [query, setQuery] = useState("")
   const results = useMemo(() => items.filter((item) => portfolioMatchesQuery(item, query)), [items, query])
 
@@ -4553,7 +4617,7 @@ function PortfolioSearchModal({
             autoFocus
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Buscar trabalho, cliente, estilo ou tag..."
+            placeholder={`Buscar trabalho, cliente, ${verticalConfig.styleFieldLabel.toLowerCase()} ou tag...`}
             className="w-full bg-transparent text-sm outline-none placeholder:text-[color-mix(in srgb, var(--markly-text) 35%, transparent)]"
             style={{ color: T.text }}
           />
@@ -4573,7 +4637,7 @@ function PortfolioSearchModal({
                     onOpenItem(item)
                     onOpenChange(false)
                   }}
-                  className="flex w-full items-center gap-3 rounded-[14px] px-3 py-3 text-left transition duration-200 hover:bg-[color-mix(in srgb, var(--markly-text) 6%, transparent)]"
+                  className="flex w-full items-center gap-3 rounded-[14px] px-3 py-3 text-left transition duration-200 hover:bg-[color-mix(in_srgb,var(--markly-text)_6%,transparent)]"
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.16, delay: index * 0.025 }}
@@ -4621,9 +4685,10 @@ function NewPortfolioModal({
   onOpenChange: (open: boolean) => void
   onSave: (item: PortfolioItem) => void
 }) {
+  const verticalConfig = useVerticalConfig()
   const [draft, setDraft] = useState<NewPortfolioDraft>(initialPortfolioDraft)
   const [error, setError] = useState("")
-  const fieldClass = "h-11 border bg-transparent px-3.5 text-sm font-semibold outline-none transition placeholder:text-[color-mix(in srgb, var(--markly-text) 34%, transparent)] focus:border-[color-mix(in srgb, var(--markly-accent) 30%, transparent)]"
+  const fieldClass = "h-11 border bg-transparent px-3.5 text-sm font-semibold outline-none transition placeholder:text-[color-mix(in srgb, var(--markly-text) 34%, transparent)] focus:border-[color-mix(in_srgb,var(--markly-accent)_30%,transparent)]"
 
   useEffect(() => {
     if (!open) {
@@ -4638,8 +4703,11 @@ function NewPortfolioModal({
   }
 
   const save = () => {
-    if (!draft.title.trim() || !draft.style || !draft.bodyPlacement.trim()) {
-      setError("Preencha nome do trabalho, estilo e local do corpo.")
+    const needsPlacement = Boolean(verticalConfig.placementFieldLabel)
+    if (!draft.title.trim() || !draft.style || (needsPlacement && !draft.bodyPlacement.trim())) {
+      const fields = ["nome do trabalho", verticalConfig.styleFieldLabel.toLowerCase()]
+      if (needsPlacement) fields.push(verticalConfig.placementFieldLabel!.toLowerCase())
+      setError(`Preencha ${fields.join(", ")}.`)
       return
     }
     const item = createPortfolioFromDraft(draft)
@@ -4668,7 +4736,7 @@ function NewPortfolioModal({
         <div className="max-h-[calc(90vh-190px)] overflow-y-auto px-6 py-5">
           <div className="grid gap-4 md:grid-cols-[0.8fr_1.2fr]">
             <div className="border p-4" style={{ background: "color-mix(in srgb, var(--markly-text) 2.5%, transparent)", borderColor: T.border }}>
-              <PortfolioCover item={createPortfolioFromDraft({ ...draft, title: draft.title || "Prévia do trabalho", style: draft.style || "Autoral", bodyPlacement: draft.bodyPlacement || "A definir" })} compact />
+              <PortfolioCover item={createPortfolioFromDraft({ ...draft, title: draft.title || "Prévia do trabalho", style: draft.style || verticalConfig.styleOptions[0], bodyPlacement: draft.bodyPlacement || "A definir" })} compact />
               <button
                 type="button"
                 onClick={() => toast("Upload mockado: aqui entrariam fotos profissionais do trabalho.")}
@@ -4686,17 +4754,19 @@ function NewPortfolioModal({
             <div className="grid gap-4 md:grid-cols-2">
               <label className="grid gap-1.5 md:col-span-2">
                 <span className="text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: T.faint }}>Nome do trabalho</span>
-                <input value={draft.title} onChange={(event) => update("title", event.target.value)} placeholder="Ex: Fine line costela" className={fieldClass} style={{ background: "color-mix(in srgb, var(--markly-bg) 62%, transparent)", borderColor: T.border, color: T.text }} />
+                <input value={draft.title} onChange={(event) => update("title", event.target.value)} placeholder={verticalConfig.projectTitlePlaceholder} className={fieldClass} style={{ background: "color-mix(in srgb, var(--markly-bg) 62%, transparent)", borderColor: T.border, color: T.text }} />
               </label>
               <label className="grid gap-1.5">
                 <span className="text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: T.faint }}>Cliente</span>
                 <input value={draft.client} onChange={(event) => update("client", event.target.value)} placeholder="Opcional" className={fieldClass} style={{ background: "color-mix(in srgb, var(--markly-bg) 62%, transparent)", borderColor: T.border, color: T.text }} />
               </label>
-              <FinanceSelectField label="Estilo" value={draft.style || "Selecionar estilo"} options={["Selecionar estilo", ...portfolioStyleOptions.filter((item) => item !== "Todos")]} onChange={(value) => update("style", value === "Selecionar estilo" ? "" : value)} />
-              <label className="grid gap-1.5">
-                <span className="text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: T.faint }}>Local do corpo</span>
-                <input value={draft.bodyPlacement} onChange={(event) => update("bodyPlacement", event.target.value)} placeholder="Ex: Braço, costela, ombro..." className={fieldClass} style={{ background: "color-mix(in srgb, var(--markly-bg) 62%, transparent)", borderColor: T.border, color: T.text }} />
-              </label>
+              <FinanceSelectField label={verticalConfig.styleFieldLabel} value={draft.style || "Selecionar"} options={["Selecionar", ...verticalConfig.styleOptions]} onChange={(value) => update("style", value === "Selecionar" ? "" : value)} />
+              {verticalConfig.placementFieldLabel && (
+                <label className="grid gap-1.5">
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: T.faint }}>{verticalConfig.placementFieldLabel}</span>
+                  <input value={draft.bodyPlacement} onChange={(event) => update("bodyPlacement", event.target.value)} placeholder={verticalConfig.placementFieldPlaceholder} className={fieldClass} style={{ background: "color-mix(in srgb, var(--markly-bg) 62%, transparent)", borderColor: T.border, color: T.text }} />
+                </label>
+              )}
               <label className="grid gap-1.5">
                 <span className="text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: T.faint }}>Data/sessão</span>
                 <input value={draft.sessionDate} onChange={(event) => update("sessionDate", event.target.value)} placeholder="08/07/2026" className={fieldClass} style={{ background: "color-mix(in srgb, var(--markly-bg) 62%, transparent)", borderColor: T.border, color: T.text }} />
@@ -4714,7 +4784,7 @@ function NewPortfolioModal({
               value={draft.description}
               onChange={(event) => update("description", event.target.value)}
               placeholder="Descreva o trabalho, estilo, intenção e diferencial visual."
-              className="min-h-24 resize-none border bg-transparent px-3.5 py-3 text-sm outline-none transition placeholder:text-[color-mix(in srgb, var(--markly-text) 34%, transparent)] focus:border-[color-mix(in srgb, var(--markly-accent) 30%, transparent)]"
+              className="min-h-24 resize-none border bg-transparent px-3.5 py-3 text-sm outline-none transition placeholder:text-[color-mix(in srgb, var(--markly-text) 34%, transparent)] focus:border-[color-mix(in_srgb,var(--markly-accent)_30%,transparent)]"
               style={{ background: "color-mix(in srgb, var(--markly-bg) 62%, transparent)", borderColor: T.border, color: T.text }}
             />
           </label>
@@ -4726,7 +4796,7 @@ function NewPortfolioModal({
             <button
               type="button"
               onClick={() => update("featured", !draft.featured)}
-              className="flex h-11 items-center justify-between gap-3 rounded-[12px] border px-3.5 text-left text-sm font-semibold transition duration-200 hover:border-[color-mix(in srgb, var(--markly-text) 22%, transparent)]"
+              className="flex h-11 items-center justify-between gap-3 rounded-[12px] border px-3.5 text-left text-sm font-semibold transition duration-200 hover:border-[color-mix(in_srgb,var(--markly-text)_22%,transparent)]"
               style={{ background: "color-mix(in srgb, var(--markly-bg) 62%, transparent)", borderColor: T.border, color: T.text }}
             >
               <span>Marcar como destaque</span>
@@ -4741,7 +4811,7 @@ function NewPortfolioModal({
               value={draft.notes}
               onChange={(event) => update("notes", event.target.value)}
               placeholder="O que esse trabalho representa para o studio? Onde vale usar?"
-              className="min-h-20 resize-none border bg-transparent px-3.5 py-3 text-sm outline-none transition placeholder:text-[color-mix(in srgb, var(--markly-text) 34%, transparent)] focus:border-[color-mix(in srgb, var(--markly-accent) 30%, transparent)]"
+              className="min-h-20 resize-none border bg-transparent px-3.5 py-3 text-sm outline-none transition placeholder:text-[color-mix(in srgb, var(--markly-text) 34%, transparent)] focus:border-[color-mix(in_srgb,var(--markly-accent)_30%,transparent)]"
               style={{ background: "color-mix(in srgb, var(--markly-bg) 62%, transparent)", borderColor: T.border, color: T.text }}
             />
           </label>
@@ -4754,7 +4824,7 @@ function NewPortfolioModal({
         </div>
 
         <div className="flex flex-col-reverse gap-3 border-t px-6 py-4 sm:flex-row sm:items-center sm:justify-end" style={{ borderColor: T.border, background: "color-mix(in srgb, var(--markly-bg) 58%, transparent)" }}>
-          <button type="button" onClick={() => onOpenChange(false)} className="rounded-[12px] border px-4 py-2.5 text-sm font-semibold transition duration-200 hover:border-[color-mix(in srgb, var(--markly-text) 22%, transparent)]" style={{ borderColor: T.border, color: T.muted }}>
+          <button type="button" onClick={() => onOpenChange(false)} className="rounded-[12px] border px-4 py-2.5 text-sm font-semibold transition duration-200 hover:border-[color-mix(in_srgb,var(--markly-text)_22%,transparent)]" style={{ borderColor: T.border, color: T.muted }}>
             Cancelar
           </button>
           <button type="button" onClick={save} className="rounded-[12px] px-4 py-2.5 text-sm font-semibold transition duration-200 hover:-translate-y-0.5 hover:bg-[#FFFFFF]" style={{ background: T.text, color: T.bg }}>
@@ -4775,12 +4845,14 @@ function PortfolioDetailPanel({
   onOpenChange: (open: boolean) => void
   onAction: (action: string) => void
 }) {
+  const verticalConfig = useVerticalConfig()
+
   if (!item) return null
 
   const summaryRows = [
     ["Cliente", item.client],
-    ["Estilo", item.style],
-    ["Local", item.bodyPlacement],
+    [verticalConfig.styleFieldLabel, item.style],
+    ...(verticalConfig.placementFieldLabel ? [[verticalConfig.placementFieldLabel, item.bodyPlacement]] : []),
     ["Sessão", item.sessionDate],
     ["Origem", item.source],
     ["Uso", item.usage],
@@ -4802,7 +4874,7 @@ function PortfolioDetailPanel({
           </div>
           <SheetTitle className="font-display text-2xl" style={{ color: T.text }}>{item.title}</SheetTitle>
           <SheetDescription style={{ color: T.muted }}>
-            {item.client} · {item.style} · {item.bodyPlacement}
+            {[item.client, item.style, verticalConfig.placementFieldLabel ? item.bodyPlacement : null].filter(Boolean).join(" · ")}
           </SheetDescription>
         </SheetHeader>
 
@@ -4893,7 +4965,7 @@ function PortfolioDetailPanel({
                   key={action}
                   type="button"
                   onClick={() => onAction(action)}
-                  className="rounded-[12px] border px-3 py-2.5 text-left text-[12px] font-semibold transition duration-200 hover:-translate-y-0.5 hover:border-[color-mix(in srgb, var(--markly-text) 22%, transparent)]"
+                  className="rounded-[12px] border px-3 py-2.5 text-left text-[12px] font-semibold transition duration-200 hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--markly-text)_22%,transparent)]"
                   style={{ background: "color-mix(in srgb, var(--markly-text) 2.5%, transparent)", borderColor: T.border, color: action === "Arquivar" ? "#F6B6A8" : T.text }}
                 >
                   {action}
@@ -5184,7 +5256,7 @@ function ManageSelectField({
       <p className="mb-2 text-[12px] font-semibold" style={{ color: T.text }}>{label}</p>
       <Select value={value} onValueChange={onChange}>
         <SelectTrigger
-          className="h-11 rounded-[13px] border px-3.5 text-left text-[13px] font-semibold shadow-none data-[placeholder]:text-[color-mix(in srgb, var(--markly-text) 42%, transparent)]"
+          className="h-11 rounded-[13px] border px-3.5 text-left text-[13px] font-semibold shadow-none data-[placeholder]:text-[color-mix(in_srgb,var(--markly-text)_42%,transparent)]"
           style={{
             background: "rgba(2,8,6,0.62)",
             borderColor: value ? "color-mix(in srgb, var(--markly-text) 18%, transparent)" : T.border,
@@ -5201,7 +5273,7 @@ function ManageSelectField({
             <SelectItem
               key={option}
               value={option}
-              className="rounded-[10px] px-3 py-2.5 text-[13px] text-[color-mix(in srgb, var(--markly-text) 76%, transparent)] focus:bg-[color-mix(in srgb, var(--markly-text) 8%, transparent)] focus:text-[#F0EDE4]"
+              className="rounded-[10px] px-3 py-2.5 text-[13px] text-[color-mix(in srgb, var(--markly-text) 76%, transparent)] focus:bg-[color-mix(in_srgb,var(--markly-text)_8%,transparent)] focus:text-[#F0EDE4]"
             >
               {option}
             </SelectItem>
@@ -5248,7 +5320,7 @@ function ManageTimeField({
             <SelectItem
               key={option}
               value={option}
-              className="rounded-[10px] px-3 py-2.5 text-[13px] font-semibold text-[color-mix(in srgb, var(--markly-text) 78%, transparent)] focus:bg-[color-mix(in srgb, var(--markly-text) 8%, transparent)] focus:text-[#F0EDE4]"
+              className="rounded-[10px] px-3 py-2.5 text-[13px] font-semibold text-[color-mix(in srgb, var(--markly-text) 78%, transparent)] focus:bg-[color-mix(in_srgb,var(--markly-text)_8%,transparent)] focus:text-[#F0EDE4]"
             >
               {option}
             </SelectItem>
@@ -5304,6 +5376,7 @@ function StudioManageModal({
   const selectedBrandOption = studioBrandIconOptions.find((option) => option.id === draft.studioIcon) ?? studioBrandIconOptions[0]
   const activeManageIndex = studioManageSections.findIndex((section) => section.id === activeManageSection)
   const activeManagePosition = activeManageIndex >= 0 ? activeManageIndex : 0
+  const verticalConfig = useMemo(() => getVerticalConfig(draft.vertical), [draft.vertical])
 
   useEffect(() => {
     if (!open) return
@@ -5430,7 +5503,7 @@ function StudioManageModal({
                   <DropdownMenuTrigger asChild>
                     <button
                       type="button"
-                      className="group relative flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-[20px] border transition duration-200 hover:-translate-y-0.5 hover:border-[color-mix(in srgb, var(--markly-accent) 34%, transparent)]"
+                      className="group relative flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-[20px] border transition duration-200 hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--markly-accent)_34%,transparent)]"
                       style={{ background: "color-mix(in srgb, var(--markly-text) 4%, transparent)", borderColor: T.borderStrong, color: T.accent }}
                       aria-label="Selecionar ícone do studio"
                     >
@@ -5465,7 +5538,7 @@ function StudioManageModal({
                             key={option.id}
                             title={option.label}
                             onSelect={() => update("studioIcon", option.id)}
-                            className="flex size-11 cursor-pointer items-center justify-center rounded-[13px] p-0 focus:bg-[color-mix(in srgb, var(--markly-text) 8%, transparent)] focus:text-[#F0EDE4]"
+                            className="flex size-11 cursor-pointer items-center justify-center rounded-[13px] p-0 focus:bg-[color-mix(in_srgb,var(--markly-text)_8%,transparent)] focus:text-[#F0EDE4]"
                             style={{
                               background: active ? "color-mix(in srgb, var(--markly-accent) 12%, transparent)" : "color-mix(in srgb, var(--markly-text) 2.5%, transparent)",
                               color: active ? T.accent : T.faint,
@@ -5491,7 +5564,7 @@ function StudioManageModal({
 
               <div className="mt-4 flex flex-wrap gap-2">
                 <label
-                  className="inline-flex cursor-pointer items-center gap-2 rounded-[12px] border px-3 py-2 text-[12px] font-semibold transition duration-200 hover:border-[color-mix(in srgb, var(--markly-text) 22%, transparent)]"
+                  className="inline-flex cursor-pointer items-center gap-2 rounded-[12px] border px-3 py-2 text-[12px] font-semibold transition duration-200 hover:border-[color-mix(in_srgb,var(--markly-text)_22%,transparent)]"
                   style={{ borderColor: T.border, color: T.text, background: "color-mix(in srgb, var(--markly-text) 3.5%, transparent)" }}
                 >
                   <Upload size={14} />
@@ -5528,12 +5601,22 @@ function StudioManageModal({
                   id="studio-name"
                   value={draft.studioName}
                   onChange={(event) => update("studioName", event.target.value)}
-                  placeholder="Ink Tatoo"
-                  className="h-11 w-full rounded-[13px] border bg-transparent px-3.5 text-sm font-semibold outline-none transition placeholder:text-[color-mix(in srgb, var(--markly-text) 34%, transparent)] focus:border-[color-mix(in srgb, var(--markly-accent) 30%, transparent)]"
+                  placeholder={verticalConfig.studioNamePlaceholder}
+                  className="h-11 w-full rounded-[13px] border bg-transparent px-3.5 text-sm font-semibold outline-none transition placeholder:text-[color-mix(in srgb, var(--markly-text) 34%, transparent)] focus:border-[color-mix(in_srgb,var(--markly-accent)_30%,transparent)]"
                   style={{ background: "rgba(2,8,6,0.62)", borderColor: T.border, color: T.text }}
                 />
               </div>
               <div className="grid gap-4 md:grid-cols-2">
+                <ManageSelectField
+                  label="Segmento do studio"
+                  value={verticalConfig.label}
+                  options={studioVerticals.map((item) => item.label)}
+                  placeholder="Escolha o segmento"
+                  onChange={(value) => {
+                    const next = studioVerticals.find((item) => item.label === value)
+                    if (next) update("vertical", next.id)
+                  }}
+                />
                 <ManageSelectField label="Tipo de studio" value={draft.studioType} options={studioTypes} placeholder="Escolha o tipo" onChange={(value) => update("studioType", value)} />
                 <ManageSelectField label="Equipe" value={draft.teamSize} options={teamSizes} placeholder="Tamanho da equipe" onChange={(value) => update("teamSize", value)} />
                 <ManageSelectField label="Canal principal" value={draft.mainContactChannel} options={contactChannels} placeholder="Canal de atendimento" onChange={(value) => update("mainContactChannel", value)} />
@@ -5562,15 +5645,15 @@ function StudioManageModal({
             <section className={cn("rounded-[18px] border p-4", activeManageSection !== "styles" && "hidden")} style={{ background: "rgba(2,8,6,0.46)", borderColor: T.border }}>
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-[12px] font-semibold uppercase tracking-[0.14em]" style={{ color: T.faint }}>Estilos principais</p>
-                  <p className="mt-1 text-sm" style={{ color: T.muted }}>Selecione os estilos que aparecem como base do studio.</p>
+                  <p className="text-[12px] font-semibold uppercase tracking-[0.14em]" style={{ color: T.faint }}>{verticalConfig.specialtiesLabel}</p>
+                  <p className="mt-1 text-sm" style={{ color: T.muted }}>Selecione as opções que aparecem como base do studio.</p>
                 </div>
                 <span className="rounded-full border px-2.5 py-1 text-[11px] font-semibold" style={{ borderColor: T.border, color: T.faint }}>
                   {draft.mainStyles.length || 0} ativos
                 </span>
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
-                {styleOptions.map((style) => (
+                {verticalConfig.styleOptions.map((style) => (
                   <ManageStyleChip
                     key={style}
                     label={style}
@@ -5617,7 +5700,7 @@ function StudioManageModal({
             <button
               type="button"
               onClick={() => onOpenChange(false)}
-              className="rounded-[12px] border px-4 py-2.5 text-sm font-semibold transition duration-200 hover:border-[color-mix(in srgb, var(--markly-text) 22%, transparent)]"
+              className="rounded-[12px] border px-4 py-2.5 text-sm font-semibold transition duration-200 hover:border-[color-mix(in_srgb,var(--markly-text)_22%,transparent)]"
               style={{ borderColor: T.border, color: T.muted }}
             >
               Cancelar
@@ -5637,7 +5720,21 @@ function StudioManageModal({
   )
 }
 
-function StudioSwitcher({ profile, onManage }: { profile: StudioProfile; onManage: () => void }) {
+function StudioSwitcher({
+  profile,
+  studios,
+  activeStudioId,
+  onManage,
+  onSwitchStudio,
+  onAddStudio,
+}: {
+  profile: StudioProfile
+  studios: StudioRecord[]
+  activeStudioId: string
+  onManage: () => void
+  onSwitchStudio: (id: string) => void
+  onAddStudio: () => void
+}) {
   const studioName = studioValue(profile.studioName, overviewMock.studioProfile.fallbackName)
   const BrandIcon = getStudioBrandIcon(profile.studioIcon)
 
@@ -5646,7 +5743,7 @@ function StudioSwitcher({ profile, onManage }: { profile: StudioProfile; onManag
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="grid h-[52px] w-full grid-cols-[2.75rem_minmax(0,1fr)_1rem] items-center rounded-[16px] border border-[color-mix(in srgb, var(--markly-text) 12%, transparent)] bg-[color-mix(in srgb, var(--markly-text) 3%, transparent)] py-1.5 pr-3 text-left shadow-[inset_0_1px_0_color-mix(in srgb, var(--markly-text) 4.5%, transparent)] transition duration-300 hover:border-[color-mix(in srgb, var(--markly-accent) 22%, transparent)] hover:bg-[color-mix(in srgb, var(--markly-text) 4.5%, transparent)] group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:h-11 group-data-[collapsible=icon]:w-11 group-data-[collapsible=icon]:grid-cols-[2.75rem_0fr_0fr] group-data-[collapsible=icon]:rounded-[14px] group-data-[collapsible=icon]:border-[color-mix(in srgb, var(--markly-text) 12%, transparent)] group-data-[collapsible=icon]:bg-[color-mix(in srgb, var(--markly-text) 3.5%, transparent)] group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:shadow-[inset_0_1px_0_color-mix(in srgb, var(--markly-text) 5%, transparent)]"
+          className="grid h-[52px] w-full grid-cols-[2.75rem_minmax(0,1fr)_1rem] items-center rounded-[16px] border border-[color-mix(in srgb, var(--markly-text) 12%, transparent)] bg-[color-mix(in srgb, var(--markly-text) 3%, transparent)] py-1.5 pr-3 text-left shadow-[inset_0_1px_0_color-mix(in srgb, var(--markly-text) 4.5%, transparent)] transition duration-300 hover:border-[color-mix(in_srgb,var(--markly-accent)_22%,transparent)] hover:bg-[color-mix(in_srgb,var(--markly-text)_4.5%,transparent)] group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:h-11 group-data-[collapsible=icon]:w-11 group-data-[collapsible=icon]:grid-cols-[2.75rem_0fr_0fr] group-data-[collapsible=icon]:rounded-[14px] group-data-[collapsible=icon]:border-[color-mix(in_srgb,var(--markly-text)_12%,transparent)] group-data-[collapsible=icon]:bg-[color-mix(in_srgb,var(--markly-text)_3.5%,transparent)] group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:shadow-[inset_0_1px_0_color-mix(in srgb, var(--markly-text) 5%, transparent)]"
         >
           <span className="flex size-8 shrink-0 items-center justify-center justify-self-center overflow-hidden rounded-[9px] group-data-[collapsible=icon]:size-11" style={{ color: T.accent }}>
             {profile.studioLogoDataUrl ? (
@@ -5676,16 +5773,42 @@ function StudioSwitcher({ profile, onManage }: { profile: StudioProfile; onManag
           <span className="block text-[11px] uppercase tracking-[0.16em]" style={{ color: T.faint }}>Studio ativo</span>
           <span className="mt-1 block truncate text-sm font-semibold" style={{ color: T.text }}>{studioName}</span>
         </DropdownMenuLabel>
+        {studios.length > 1 && (
+          <>
+            <DropdownMenuSeparator className="bg-[color-mix(in srgb, var(--markly-text) 10%, transparent)]" />
+            <DropdownMenuLabel className="px-3 pb-1 pt-2 text-[10.5px] uppercase tracking-[0.14em]" style={{ color: T.faint }}>
+              Trocar de studio
+            </DropdownMenuLabel>
+            {studios.map((item) => {
+              const ItemIcon = getStudioBrandIcon(item.profile.studioIcon)
+              const isActive = item.id === activeStudioId
+              return (
+                <DropdownMenuItem
+                  key={item.id}
+                  className="flex cursor-pointer items-center gap-2.5 rounded-[12px] px-3 py-2 text-[13px] transition-colors duration-100 hover:bg-[color-mix(in_srgb,var(--markly-text)_14%,transparent)] hover:text-[#F0EDE4] focus:bg-[color-mix(in_srgb,var(--markly-text)_14%,transparent)] focus:text-[#F0EDE4]"
+                  style={{ color: isActive ? T.accent : "color-mix(in srgb, var(--markly-text) 78%, transparent)" }}
+                  onSelect={() => onSwitchStudio(item.id)}
+                >
+                  <ItemIcon size={14} strokeWidth={1.85} className="shrink-0" />
+                  <span className="min-w-0 flex-1 truncate">{studioValue(item.profile.studioName, "Studio sem nome")}</span>
+                  {isActive && <CheckCircle2 size={13} className="shrink-0" />}
+                </DropdownMenuItem>
+              )
+            })}
+          </>
+        )}
         <DropdownMenuSeparator className="bg-[color-mix(in srgb, var(--markly-text) 10%, transparent)]" />
         <DropdownMenuItem
-          className="cursor-pointer rounded-[12px] px-3 py-2 text-[13px] text-[color-mix(in srgb, var(--markly-text) 78%, transparent)] focus:bg-[color-mix(in srgb, var(--markly-text) 8%, transparent)] focus:text-[#F0EDE4]"
+          className="cursor-pointer rounded-[12px] px-3 py-2 text-[13px] text-[color-mix(in srgb, var(--markly-text) 78%, transparent)] transition-colors duration-100 hover:bg-[color-mix(in_srgb,var(--markly-text)_14%,transparent)] hover:text-[#F0EDE4] focus:bg-[color-mix(in_srgb,var(--markly-text)_14%,transparent)] focus:text-[#F0EDE4]"
           onSelect={onManage}
         >
           Gerenciar studio
         </DropdownMenuItem>
-        <DropdownMenuItem disabled className="rounded-[12px] px-3 py-2 text-[13px]">
-          <span className="flex-1">Adicionar novo studio</span>
-          <span className="rounded-full border px-2 py-0.5 text-[10px]" style={{ borderColor: T.border, color: T.faint }}>Em breve</span>
+        <DropdownMenuItem
+          className="cursor-pointer rounded-[12px] px-3 py-2 text-[13px] text-[color-mix(in srgb, var(--markly-text) 78%, transparent)] transition-colors duration-100 hover:bg-[color-mix(in_srgb,var(--markly-text)_14%,transparent)] hover:text-[#F0EDE4] focus:bg-[color-mix(in_srgb,var(--markly-text)_14%,transparent)] focus:text-[#F0EDE4]"
+          onSelect={onAddStudio}
+        >
+          Adicionar novo studio
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -5712,7 +5835,7 @@ function SidebarModeSwitcher({
             type="button"
             title={activeMode.title}
             aria-label={`Modo da sidebar: ${activeMode.label}`}
-            className="mx-auto flex size-11 items-center justify-center rounded-[15px] border transition duration-200 hover:-translate-y-0.5 hover:bg-[color-mix(in srgb, var(--markly-text) 7%, transparent)]"
+            className="mx-auto flex size-11 items-center justify-center rounded-[15px] border transition duration-200 hover:-translate-y-0.5 hover:bg-[color-mix(in_srgb,var(--markly-text)_7%,transparent)]"
             style={{ background: "rgba(6,17,15,0.82)", borderColor: T.borderStrong, color: T.accent, boxShadow: "inset 0 1px 0 color-mix(in srgb, var(--markly-text) 6%, transparent)" }}
           >
             <ActiveIcon size={18} strokeWidth={1.8} aria-hidden="true" />
@@ -5736,7 +5859,7 @@ function SidebarModeSwitcher({
             return (
               <DropdownMenuItem
                 key={item.id}
-                className="cursor-pointer gap-2.5 rounded-[10px] px-2.5 py-2 focus:bg-[color-mix(in srgb, var(--markly-text) 8%, transparent)] focus:text-[#F0EDE4]"
+                className="cursor-pointer gap-2.5 rounded-[10px] px-2.5 py-2 focus:bg-[color-mix(in_srgb,var(--markly-text)_8%,transparent)] focus:text-[#F0EDE4]"
                 onSelect={() => onChange(item.id)}
               >
                 <Icon size={15} style={{ color: isActive ? T.accent : T.faint }} />
@@ -5773,7 +5896,7 @@ function SidebarModeSwitcher({
             aria-label={item.label}
             onClick={() => onChange(item.id)}
             className={cn(
-              "relative flex h-8 flex-1 items-center justify-center rounded-[12px] transition duration-200 hover:bg-[color-mix(in srgb, var(--markly-text) 4%, transparent)]",
+              "relative flex h-8 flex-1 items-center justify-center rounded-[12px] transition duration-200 hover:bg-[color-mix(in_srgb,var(--markly-text)_4%,transparent)]",
               index > 0 && "before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-px before:bg-[color-mix(in srgb, var(--markly-text) 10%, transparent)]",
             )}
             style={{
@@ -5863,6 +5986,7 @@ function StudioSummary({
   setupCompleted: boolean
   onManage: () => void
 }) {
+  const verticalConfig = getVerticalConfig(profile.vertical)
   return (
     <Panel title="Studio" action={setupCompleted ? "Studio configurado" : "Setup pendente"}>
       <div className="grid gap-3 md:grid-cols-2">
@@ -5871,7 +5995,7 @@ function StudioSummary({
           ["Horário", studioHours(profile)],
           ["Canal principal", studioValue(profile.mainContactChannel)],
           ["Equipe", studioValue(profile.teamSize)],
-          ["Estilos principais", profile.mainStyles.length ? profile.mainStyles.join(", ") : "Fine line, Blackwork, Floral"],
+          [verticalConfig.specialtiesLabel, profile.mainStyles.length ? profile.mainStyles.join(", ") : verticalConfig.styleOptions.slice(0, 3).join(", ")],
         ].map(([label, value]) => (
           <div key={label} className="rounded-[12px] border px-3 py-2.5" style={{ background: T.bgSec, borderColor: T.border }}>
             <p className="text-[11px]" style={{ color: T.faint }}>{label}</p>
@@ -5922,7 +6046,7 @@ function FinanceSelectField({
             <SelectItem
               key={option}
               value={option}
-              className="rounded-[10px] text-[12px] font-semibold focus:bg-[color-mix(in srgb, var(--markly-text) 8%, transparent)] focus:text-[#F0EDE4]"
+              className="rounded-[10px] text-[12px] font-semibold focus:bg-[color-mix(in_srgb,var(--markly-text)_8%,transparent)] focus:text-[#F0EDE4]"
             >
               {option}
             </SelectItem>
@@ -5965,7 +6089,7 @@ function FinanceMetricCard({
 }) {
   return (
     <motion.div
-      className="border p-4 transition duration-200 hover:border-[color-mix(in srgb, var(--markly-text) 22%, transparent)]"
+      className="border p-4 transition duration-200 hover:border-[color-mix(in_srgb,var(--markly-text)_22%,transparent)]"
       style={{ background: T.card, borderColor: T.border, boxShadow: "0 18px 40px rgba(0,0,0,0.18)" }}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
@@ -6005,7 +6129,7 @@ function FinancePendingPayments({
               key={transaction.id}
               type="button"
               onClick={() => onMarkPaid(transaction)}
-              className="flex flex-col gap-3 border px-4 py-3 text-left transition duration-200 hover:-translate-y-0.5 hover:border-[color-mix(in srgb, var(--markly-text) 22%, transparent)] hover:bg-[color-mix(in srgb, var(--markly-text) 3.5%, transparent)] sm:flex-row sm:items-center sm:justify-between"
+              className="flex flex-col gap-3 border px-4 py-3 text-left transition duration-200 hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--markly-text)_22%,transparent)] hover:bg-[color-mix(in_srgb,var(--markly-text)_3.5%,transparent)] sm:flex-row sm:items-center sm:justify-between"
               style={{ background: T.bgSec, borderColor: T.border }}
             >
               <span className="min-w-0">
@@ -6281,6 +6405,7 @@ function AnamnesisView({
   onAction: (client: ClientItem, action: string) => void
   onOpenClient: (client: ClientItem) => void
 }) {
+  const verticalConfig = useVerticalConfig()
   const notSent = clients.filter((client) => client.anamnesis === "Não enviada")
   const pending = clients.filter((client) => client.anamnesis === "Pendente")
   const filled = clients.filter((client) => client.anamnesis === "Preenchida")
@@ -6306,7 +6431,7 @@ function AnamnesisView({
 
       <Panel title="Precisa de atenção" action={`${needsAttention.length} cliente(s)`}>
         {needsAttention.length === 0 ? (
-          <p className="px-1 text-sm" style={{ color: T.faint }}>Todas as anamneses estão em dia.</p>
+          <p className="px-1 text-sm" style={{ color: T.faint }}>Tudo em dia por aqui.</p>
         ) : (
           <div className="grid gap-2">
             {needsAttention.map((client) => (
@@ -6328,7 +6453,7 @@ function AnamnesisView({
                       className="rounded-[10px] border px-3 py-2 text-[12px] font-semibold transition duration-200 hover:-translate-y-0.5"
                       style={{ borderColor: T.border, color: T.text }}
                     >
-                      Enviar anamnese
+                      {anamnesisActionLabel("Enviar anamnese", verticalConfig.anamnesisSidebarLabel)}
                     </button>
                   ) : (
                     <button
@@ -6349,7 +6474,7 @@ function AnamnesisView({
 
       <Panel title="Preenchidas" action={`${filled.length} cliente(s) prontos`}>
         {filled.length === 0 ? (
-          <p className="px-1 text-sm" style={{ color: T.faint }}>Nenhuma anamnese preenchida ainda.</p>
+          <p className="px-1 text-sm" style={{ color: T.faint }}>Nenhum registro preenchido ainda.</p>
         ) : (
           <div className="grid gap-2 sm:grid-cols-2">
             {filled.map((client) => (
@@ -6401,6 +6526,8 @@ function SectionContent({
   onFontSizeChange,
   userProfile,
   onSaveUserProfile,
+  calendarEvents,
+  onCalendarEventsChange,
 }: {
   section: SectionId
   studioProfile: StudioProfile
@@ -6428,10 +6555,12 @@ function SectionContent({
   onFontSizeChange: (mode: FontSizeMode) => void
   userProfile: UserProfile
   onSaveUserProfile: (profile: UserProfile) => void
+  calendarEvents: CalendarEvent[]
+  onCalendarEventsChange: Dispatch<SetStateAction<CalendarEvent[]>>
 }) {
   if (section === "budgets") return <BudgetBoard columns={budgetColumns} filters={budgetFilters} onOpenBudget={onOpenBudget} onNewBudget={onNewBudget} />
   if (section === "clients") return <ClientsView clients={clients} filters={clientFilters} onOpenClient={onOpenClient} onNewClient={onNewClient} />
-  if (section === "calendar") return <CalendarView clients={clients} onOpenClient={onOpenClient} />
+  if (section === "calendar") return <CalendarView clients={clients} events={calendarEvents} setEvents={onCalendarEventsChange} onOpenClient={onOpenClient} />
   if (section === "portfolio") return <PortfolioView items={portfolioItems} filters={portfolioFilters} onOpenItem={onOpenPortfolioItem} onNewItem={onNewPortfolioItem} />
   if (section === "finance") return <FinanceView transactions={financeTransactions} onNewLaunch={onNewFinanceLaunch} onMarkPaid={onMarkFinancePaid} />
   if (section === "anamnesis") return <AnamnesisView clients={clients} onAction={onAnamnesisAction} onOpenClient={onOpenClient} />
@@ -6483,6 +6612,7 @@ function FinanceLaunchModal({
   onOpenChange: (open: boolean) => void
   onSave: (transaction: FinanceTransaction) => void
 }) {
+  const verticalConfig = useVerticalConfig()
   const [draft, setDraft] = useState<FinanceLaunchDraft>({
     type: "Entrada",
     description: "",
@@ -6568,8 +6698,8 @@ function FinanceLaunchModal({
               <input
                 value={draft.description}
                 onChange={(event) => update("description", event.target.value)}
-                placeholder="Ex: Sinal tattoo fine line"
-                className="h-11 rounded-[13px] border bg-transparent px-3.5 text-sm font-semibold outline-none transition placeholder:text-[color-mix(in srgb, var(--markly-text) 34%, transparent)] focus:border-[color-mix(in srgb, var(--markly-accent) 30%, transparent)]"
+                placeholder={verticalConfig.financeExamplePlaceholder}
+                className="h-11 rounded-[13px] border bg-transparent px-3.5 text-sm font-semibold outline-none transition placeholder:text-[color-mix(in srgb, var(--markly-text) 34%, transparent)] focus:border-[color-mix(in_srgb,var(--markly-accent)_30%,transparent)]"
                 style={{ background: "rgba(2,8,6,0.62)", borderColor: T.border, color: T.text }}
               />
             </label>
@@ -6579,7 +6709,7 @@ function FinanceLaunchModal({
                 value={draft.amount}
                 onChange={(event) => update("amount", event.target.value)}
                 placeholder="R$ 0,00"
-                className="h-11 rounded-[13px] border bg-transparent px-3.5 text-sm font-semibold outline-none transition placeholder:text-[color-mix(in srgb, var(--markly-text) 34%, transparent)] focus:border-[color-mix(in srgb, var(--markly-accent) 30%, transparent)]"
+                className="h-11 rounded-[13px] border bg-transparent px-3.5 text-sm font-semibold outline-none transition placeholder:text-[color-mix(in srgb, var(--markly-text) 34%, transparent)] focus:border-[color-mix(in_srgb,var(--markly-accent)_30%,transparent)]"
                 style={{ background: "rgba(2,8,6,0.62)", borderColor: T.border, color: T.text }}
               />
             </label>
@@ -6589,7 +6719,7 @@ function FinanceLaunchModal({
                 value={draft.date}
                 onChange={(event) => update("date", event.target.value)}
                 placeholder="08/07"
-                className="h-11 rounded-[13px] border bg-transparent px-3.5 text-sm font-semibold outline-none transition placeholder:text-[color-mix(in srgb, var(--markly-text) 34%, transparent)] focus:border-[color-mix(in srgb, var(--markly-accent) 30%, transparent)]"
+                className="h-11 rounded-[13px] border bg-transparent px-3.5 text-sm font-semibold outline-none transition placeholder:text-[color-mix(in srgb, var(--markly-text) 34%, transparent)] focus:border-[color-mix(in_srgb,var(--markly-accent)_30%,transparent)]"
                 style={{ background: "rgba(2,8,6,0.62)", borderColor: T.border, color: T.text }}
               />
             </label>
@@ -6608,7 +6738,7 @@ function FinanceLaunchModal({
           <button
             type="button"
             onClick={() => onOpenChange(false)}
-            className="rounded-[12px] border px-4 py-2.5 text-sm font-semibold transition duration-200 hover:border-[color-mix(in srgb, var(--markly-text) 22%, transparent)]"
+            className="rounded-[12px] border px-4 py-2.5 text-sm font-semibold transition duration-200 hover:border-[color-mix(in_srgb,var(--markly-text)_22%,transparent)]"
             style={{ borderColor: T.border, color: T.muted }}
           >
             Cancelar
@@ -6754,7 +6884,7 @@ function SearchModal({ open, onOpenChange }: { open: boolean; onOpenChange: (ope
                       onOpenChange(false)
                       toast(`Abrindo "${item.title}".`)
                     }}
-                    className="flex w-full items-start gap-3 rounded-[14px] px-3 py-3 text-left transition duration-200 hover:bg-[color-mix(in srgb, var(--markly-text) 6%, transparent)]"
+                    className="flex w-full items-start gap-3 rounded-[14px] px-3 py-3 text-left transition duration-200 hover:bg-[color-mix(in_srgb,var(--markly-text)_6%,transparent)]"
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.18, delay: index * 0.03 }}
@@ -6820,7 +6950,7 @@ function DateFilterMenu({
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="inline-flex items-center gap-2 rounded-[12px] border px-4 py-2.5 text-sm font-semibold transition duration-200 hover:-translate-y-0.5 hover:border-[color-mix(in srgb, var(--markly-text) 22%, transparent)] hover:text-[#F0EDE4] active:translate-y-0"
+          className="inline-flex items-center gap-2 rounded-[12px] border px-4 py-2.5 text-sm font-semibold transition duration-200 hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--markly-text)_22%,transparent)] hover:text-[#F0EDE4] active:translate-y-0"
           style={{
             background: hasFilter ? "color-mix(in srgb, var(--markly-accent) 9%, transparent)" : "rgba(2,8,6,0.34)",
             borderColor: hasFilter ? "color-mix(in srgb, var(--markly-accent) 30%, transparent)" : T.border,
@@ -6855,7 +6985,7 @@ function DateFilterMenu({
                 key={field}
                 type="button"
                 onClick={() => setActiveField(field)}
-                className="group flex h-12 w-full items-center justify-between rounded-[12px] border px-3 text-left transition duration-200 hover:border-[color-mix(in srgb, var(--markly-accent) 30%, transparent)] hover:bg-[color-mix(in srgb, var(--markly-text) 4%, transparent)]"
+                className="group flex h-12 w-full items-center justify-between rounded-[12px] border px-3 text-left transition duration-200 hover:border-[color-mix(in_srgb,var(--markly-accent)_30%,transparent)] hover:bg-[color-mix(in_srgb,var(--markly-text)_4%,transparent)]"
                 style={{
                   background: active ? "color-mix(in srgb, var(--markly-accent) 8%, transparent)" : "rgba(2,8,6,0.64)",
                   borderColor: active ? "color-mix(in srgb, var(--markly-accent) 34%, transparent)" : T.border,
@@ -6898,7 +7028,7 @@ function DateFilterMenu({
               caption_label: "text-[13px] font-semibold capitalize text-[#F0EDE4]",
               nav: "absolute inset-x-0 top-0 flex h-9 items-center justify-between",
               nav_button:
-                "flex size-8 items-center justify-center rounded-[10px] border border-[color-mix(in srgb, var(--markly-text) 12%, transparent)] bg-[rgba(2,8,6,0.56)] p-0 text-[#D8D0BF] opacity-100 transition hover:border-[color-mix(in srgb, var(--markly-accent) 32%, transparent)] hover:bg-[color-mix(in srgb, var(--markly-accent) 8%, transparent)]",
+                "flex size-8 items-center justify-center rounded-[10px] border border-[color-mix(in srgb, var(--markly-text) 12%, transparent)] bg-[rgba(2,8,6,0.56)] p-0 text-[#D8D0BF] opacity-100 transition hover:border-[color-mix(in_srgb,var(--markly-accent)_32%,transparent)] hover:bg-[color-mix(in_srgb,var(--markly-accent)_8%,transparent)]",
               nav_button_previous: "static",
               nav_button_next: "static",
               table: "w-full border-collapse",
@@ -6906,7 +7036,7 @@ function DateFilterMenu({
               head_cell: "flex h-7 items-center justify-center text-[10px] font-semibold uppercase text-[color-mix(in srgb, var(--markly-text) 42%, transparent)]",
               row: "mt-1 grid grid-cols-7 gap-1",
               cell: "p-0 text-center",
-              day: "flex size-8 items-center justify-center rounded-[10px] border border-transparent bg-transparent p-0 text-[12px] font-semibold text-[color-mix(in srgb, var(--markly-text) 72%, transparent)] transition hover:border-[color-mix(in srgb, var(--markly-accent) 24%, transparent)] hover:bg-[color-mix(in srgb, var(--markly-accent) 8%, transparent)] hover:text-[#F0EDE4]",
+              day: "flex size-8 items-center justify-center rounded-[10px] border border-transparent bg-transparent p-0 text-[12px] font-semibold text-[color-mix(in srgb, var(--markly-text) 72%, transparent)] transition hover:border-[color-mix(in_srgb,var(--markly-accent)_24%,transparent)] hover:bg-[color-mix(in_srgb,var(--markly-accent)_8%,transparent)] hover:text-[#F0EDE4]",
               day_selected:
                 "border-[color-mix(in srgb, var(--markly-accent) 55%, transparent)] bg-[#F0EDE4] text-[#020806] hover:bg-[#F0EDE4] hover:text-[#020806] focus:bg-[#F0EDE4] focus:text-[#020806]",
               day_today: "border-[color-mix(in srgb, var(--markly-accent) 26%, transparent)] text-[#D8D0BF]",
@@ -6920,7 +7050,7 @@ function DateFilterMenu({
           <button
             type="button"
             onClick={clear}
-            className="rounded-[10px] border px-3 py-2 text-[12px] font-semibold transition duration-200 hover:border-[color-mix(in srgb, var(--markly-text) 22%, transparent)]"
+            className="rounded-[10px] border px-3 py-2 text-[12px] font-semibold transition duration-200 hover:border-[color-mix(in_srgb,var(--markly-text)_22%,transparent)]"
             style={{ borderColor: T.border, color: T.muted }}
           >
             Limpar
@@ -6955,6 +7085,8 @@ function CreateMenu({
   onCreateClient: () => void
   onNavigate: (section: SectionId, label: string) => void
 }) {
+  const verticalConfig = useVerticalConfig()
+  const createActions = overviewMock.createActions.filter((action) => action.label !== "Nova anamnese" || verticalConfig.showAnamnesis)
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -6976,28 +7108,32 @@ function CreateMenu({
           Criação rápida
         </DropdownMenuLabel>
         <DropdownMenuSeparator className="bg-[color-mix(in srgb, var(--markly-text) 10%, transparent)]" />
-        {overviewMock.createActions.map((action) => (
-          <DropdownMenuItem
-            key={action.label}
-            className="cursor-pointer rounded-[12px] px-3 py-2.5 focus:bg-[color-mix(in srgb, var(--markly-text) 8%, transparent)] focus:text-[#F0EDE4]"
-            onSelect={() => {
-              if (action.label === "Novo orçamento") return onCreateBudget()
-              if (action.label === "Novo cliente") return onCreateClient()
-              onNavigate(createActionSectionMap[action.label] ?? "overview", action.label)
-            }}
-          >
-            <span className="min-w-0">
-              <span className="block text-[13px] font-semibold" style={{ color: T.text }}>{action.label}</span>
-              <span className="block text-[11px] leading-5" style={{ color: T.faint }}>{action.description}</span>
-            </span>
-          </DropdownMenuItem>
-        ))}
+        {createActions.map((action) => {
+          const displayLabel = action.label === "Nova anamnese" ? `Nova ${verticalConfig.anamnesisSidebarLabel.toLowerCase()}` : action.label
+          return (
+            <DropdownMenuItem
+              key={action.label}
+              className="cursor-pointer rounded-[12px] px-3 py-2.5 focus:bg-[color-mix(in_srgb,var(--markly-text)_8%,transparent)] focus:text-[#F0EDE4]"
+              onSelect={() => {
+                if (action.label === "Novo orçamento") return onCreateBudget()
+                if (action.label === "Novo cliente") return onCreateClient()
+                onNavigate(createActionSectionMap[action.label] ?? "overview", displayLabel)
+              }}
+            >
+              <span className="min-w-0">
+                <span className="block text-[13px] font-semibold" style={{ color: T.text }}>{displayLabel}</span>
+                <span className="block text-[11px] leading-5" style={{ color: T.faint }}>{action.description}</span>
+              </span>
+            </DropdownMenuItem>
+          )
+        })}
       </DropdownMenuContent>
     </DropdownMenu>
   )
 }
 
-function getSectionTitle(section: SectionId) {
+function getSectionTitle(section: SectionId, anamnesisLabel = "Anamnese") {
+  if (section === "anamnesis") return anamnesisLabel
   return sections.find((item) => item.id === section)?.label ?? "Visão geral"
 }
 
@@ -7020,6 +7156,7 @@ export default function DevDashboard() {
   const [clientCreateOpen, setClientCreateOpen] = useState(false)
   const [selectedClient, setSelectedClient] = useState<ClientItem | null>(null)
   const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>(portfolioMock)
+  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>(() => buildCalendarMockEvents())
   const [portfolioFilters, setPortfolioFilters] = useState<PortfolioFilterState>(initialPortfolioFilters)
   const [portfolioSearchOpen, setPortfolioSearchOpen] = useState(false)
   const [portfolioCreateOpen, setPortfolioCreateOpen] = useState(false)
@@ -7031,10 +7168,90 @@ export default function DevDashboard() {
   const [userProfile, setUserProfile] = useState<UserProfile>(() => readUserProfile())
   const [railHover, setRailHover] = useState(false)
   const {
+    studios,
+    activeStudioId,
     studioProfile,
     studioSetupCompleted,
-    completeStudioSetup,
-  } = useStudioSetup()
+    createStudio,
+    updateActiveStudioProfile,
+    switchStudio,
+  } = useStudioManager()
+  const [addStudioModalOpen, setAddStudioModalOpen] = useState(false)
+  const studioDataCacheRef = useRef<Record<string, StudioOperationalData>>({})
+
+  const seedFreshStudioData = (): StudioOperationalData => ({
+    budgetColumns: budgetMock.columns,
+    clients: clientsMock.clients,
+    portfolioItems: portfolioMock,
+    financeTransactions: financeMock.transactions,
+    calendarEvents: buildCalendarMockEvents(),
+  })
+
+  const applyStudioData = (data: StudioOperationalData) => {
+    setBudgetColumns(data.budgetColumns)
+    setClientsData(data.clients)
+    setPortfolioItems(data.portfolioItems)
+    setFinanceTransactions(data.financeTransactions)
+    setCalendarEvents(data.calendarEvents)
+  }
+
+  const resetSectionSelection = () => {
+    setSelectedBudget(null)
+    setSelectedClient(null)
+    setSelectedPortfolioItem(null)
+    setActiveSection("overview")
+  }
+
+  const handleSwitchStudio = (id: string) => {
+    if (id === activeStudioId) return
+    if (activeStudioId) {
+      studioDataCacheRef.current[activeStudioId] = {
+        budgetColumns,
+        clients: clientsData,
+        portfolioItems,
+        financeTransactions,
+        calendarEvents,
+      }
+    }
+    applyStudioData(studioDataCacheRef.current[id] ?? seedFreshStudioData())
+    switchStudio(id)
+    resetSectionSelection()
+    const target = studios.find((item) => item.id === id)
+    toast(`Studio "${studioValue(target?.profile.studioName ?? "", "sem nome")}" ativado.`)
+  }
+
+  const handleCreateStudio = (profile: StudioProfile) => {
+    if (activeStudioId) {
+      studioDataCacheRef.current[activeStudioId] = {
+        budgetColumns,
+        clients: clientsData,
+        portfolioItems,
+        financeTransactions,
+        calendarEvents,
+      }
+    }
+    const newId = createStudio(profile)
+    const freshData = seedFreshStudioData()
+    studioDataCacheRef.current[newId] = freshData
+    applyStudioData(freshData)
+    resetSectionSelection()
+    setAddStudioModalOpen(false)
+    toast(`Studio "${studioValue(profile.studioName, "sem nome")}" criado e ativado.`)
+  }
+  const verticalConfig = useMemo(() => getVerticalConfig(studioProfile.vertical), [studioProfile.vertical])
+  const visibleSections = useMemo(
+    () =>
+      sections
+        .filter((item) => item.id !== "anamnesis" || verticalConfig.showAnamnesis)
+        .map((item) => (item.id === "anamnesis" ? { ...item, label: verticalConfig.anamnesisSidebarLabel } : item)),
+    [verticalConfig],
+  )
+
+  useEffect(() => {
+    if (activeSection === "anamnesis" && !verticalConfig.showAnamnesis) {
+      setActiveSection("overview")
+    }
+  }, [activeSection, verticalConfig.showAnamnesis])
 
   const sidebarOpen = sidebarMode === "expanded" || (sidebarMode === "hover" && railHover)
 
@@ -7124,6 +7341,7 @@ export default function DevDashboard() {
   const isPortfolio = activeSection === "portfolio"
   const isFinance = activeSection === "finance"
   const isCalendar = activeSection === "calendar"
+  const isSettings = activeSection === "settings"
   const budgetItems = useMemo(() => allBudgetItems(budgetColumns), [budgetColumns])
   const addBudget = (budget: BudgetItem) => {
     const columnId = budgetColumnIdForStatus(budget.status)
@@ -7171,7 +7389,7 @@ export default function DevDashboard() {
       toast(`Pagamento registrado (simulado) para ${selectedClient.name}.`)
       return
     }
-    const { client, message } = applyClientAction(selectedClient, action)
+    const { client, message } = applyClientAction(selectedClient, action, verticalConfig.anamnesisSidebarLabel)
     setClientsData((current) => current.map((item) => (item.id === client.id ? client : item)))
     setSelectedClient(client)
     toast(message)
@@ -7192,7 +7410,7 @@ export default function DevDashboard() {
     toast(`Pagamento de ${transaction.category} marcado como recebido.`)
   }
   const handleAnamnesisAction = (client: ClientItem, action: string) => {
-    const { client: updated, message } = applyClientAction(client, action)
+    const { client: updated, message } = applyClientAction(client, action, verticalConfig.anamnesisSidebarLabel)
     setClientsData((current) => current.map((item) => (item.id === updated.id ? updated : item)))
     if (selectedClient?.id === updated.id) setSelectedClient(updated)
     toast(message)
@@ -7222,6 +7440,7 @@ export default function DevDashboard() {
   const overviewSummary = `${overviewMock.summary.todaySessions} sessões hoje · ${overviewMock.summary.unansweredBudgets} orçamentos abertos · ${formatCurrency(overviewMock.summary.pendingDepositsAmount)} em sinais pendentes`
 
   return (
+    <VerticalConfigContext.Provider value={verticalConfig}>
     <SidebarProvider
       style={sidebarVars}
       data-markly-theme={appearanceMode}
@@ -7260,14 +7479,21 @@ export default function DevDashboard() {
         />
 
         <SidebarHeader className="relative z-10 px-2 pb-3 pt-4">
-          <StudioSwitcher profile={studioProfile} onManage={() => setStudioManageOpen(true)} />
+          <StudioSwitcher
+            profile={studioProfile}
+            studios={studios}
+            activeStudioId={activeStudioId}
+            onManage={() => setStudioManageOpen(true)}
+            onSwitchStudio={handleSwitchStudio}
+            onAddStudio={() => setAddStudioModalOpen(true)}
+          />
         </SidebarHeader>
 
         <SidebarContent className="relative z-10 px-2 pb-2">
           <SidebarGroup>
             <SidebarGroupContent>
               <SidebarMenu className="gap-1.5">
-                {sections.map(({ id, label, icon: Icon, badge }) => {
+                {visibleSections.map(({ id, label, icon: Icon, badge }) => {
                   const isActive = activeSection === id
                   return (
                   <SidebarMenuItem key={id}>
@@ -7275,7 +7501,7 @@ export default function DevDashboard() {
                       isActive={isActive}
                       tooltip={label}
                       onClick={() => setActiveSection(id)}
-                      className="relative flex! h-11 items-center gap-0! rounded-[15px] py-0! pl-0! pr-8! text-[color-mix(in srgb, var(--markly-text) 64%, transparent)] transition-[background-color,color,box-shadow,transform] duration-300 hover:bg-[color-mix(in srgb, var(--markly-text) 5.5%, transparent)] hover:text-[#F0EDE4] data-[active=true]:bg-transparent data-[active=true]:text-[#F0EDE4] group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:h-11! group-data-[collapsible=icon]:w-11! group-data-[collapsible=icon]:pr-0!"
+                      className="relative flex! h-11 items-center gap-0! rounded-[15px] py-0! pl-0! pr-8! text-[color-mix(in srgb, var(--markly-text) 64%, transparent)] transition-[background-color,color,box-shadow,transform] duration-300 hover:bg-[color-mix(in_srgb,var(--markly-text)_5.5%,transparent)] hover:text-[#F0EDE4] data-[active=true]:bg-transparent data-[active=true]:text-[#F0EDE4] group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:h-11! group-data-[collapsible=icon]:w-11! group-data-[collapsible=icon]:pr-0!"
                     >
                       {isActive && (
                         <motion.span
@@ -7321,7 +7547,7 @@ export default function DevDashboard() {
       <SidebarInset className="min-h-screen min-w-0 bg-[var(--markly-bg)] pt-16 text-[var(--markly-text)]">
         <header className="fixed inset-x-0 top-0 z-50 flex h-16 items-center justify-between border-b px-4 backdrop-blur md:px-7" style={{ background: "color-mix(in srgb, var(--markly-bg-sec) 88%, transparent)", borderColor: T.border }}>
           <div className="flex min-w-0 items-center gap-4">
-            <a href="#/painel" className="flex shrink-0 items-center gap-2.5 rounded-[14px] px-1 py-1.5 transition duration-200 hover:bg-[color-mix(in srgb, var(--markly-text) 3.5%, transparent)]" aria-label="Markly">
+            <a href="#/painel" className="flex shrink-0 items-center gap-2.5 rounded-[14px] px-1 py-1.5 transition duration-200 hover:bg-[color-mix(in_srgb,var(--markly-text)_3.5%,transparent)]" aria-label="Markly">
               <img src={marklyIcon} alt="" className="size-9 object-contain" style={{ filter: "drop-shadow(0 0 16px color-mix(in srgb, var(--markly-accent) 8%, transparent))" }} aria-hidden="true" />
               <span className="font-display text-xl font-semibold leading-none" style={{ color: T.text }}>
                 Markly
@@ -7414,16 +7640,16 @@ export default function DevDashboard() {
                   />
                   <span className="relative size-1.5" style={{ background: T.accent }} />
                 </span>
-                {isFinance ? "Controle financeiro" : activeSection === "anamnesis" ? "Anamnese mockada" : headerBadge}
+                {isFinance ? "Controle financeiro" : activeSection === "anamnesis" ? `${verticalConfig.anamnesisSidebarLabel} · dados de exemplo` : headerBadge}
               </motion.div>
               <h2
                 className="font-display text-[1.5rem] font-semibold md:text-[2.25rem]"
                 style={{ color: T.text }}
               >
-                {getSectionTitle(activeSection)}
+                {getSectionTitle(activeSection, verticalConfig.anamnesisSidebarLabel)}
               </h2>
               <p className="mt-1 max-w-[620px] text-sm leading-6" style={{ color: T.muted }}>
-                {isFinance ? "Acompanhe sinais, pagamentos e faturamento do seu studio." : activeSection === "anamnesis" ? "Organize fichas, envios e pendências de anamnese dos clientes." : headerSubtitle}
+                {isFinance ? "Acompanhe sinais, pagamentos e faturamento do seu studio." : activeSection === "anamnesis" ? verticalConfig.anamnesisSectionCopy : headerSubtitle}
               </p>
               {isOverview && (
                 <p className="mt-1 max-w-[720px] text-[13px] leading-6" style={{ color: T.faint }}>
@@ -7431,57 +7657,59 @@ export default function DevDashboard() {
                 </p>
               )}
             </div>
-            <div className="flex flex-wrap gap-2">
-              {isBudgets ? (
-                <BudgetFilterMenu value={budgetFilters} onChange={setBudgetFilters} />
-              ) : isClients ? (
-                <ClientFilterMenu value={clientFilters} onChange={setClientFilters} />
-              ) : isPortfolio ? (
-                <PortfolioFilterMenu value={portfolioFilters} onChange={setPortfolioFilters} />
-              ) : (
-                !isFinance && !isCalendar && <DateFilterMenu value={dateFilter} onChange={setDateFilter} />
-              )}
-              <button
-                type="button"
-                onClick={() => {
-                  if (isBudgets) {
-                    setBudgetSearchOpen(true)
-                    return
-                  }
-                  if (isClients) {
-                    setClientSearchOpen(true)
-                    return
-                  }
-                  if (isPortfolio) {
-                    setPortfolioSearchOpen(true)
-                    return
-                  }
-                  setSearchOpen(true)
-                }}
-                className="inline-flex items-center gap-2 rounded-[12px] border px-4 py-2.5 text-sm transition duration-200 hover:border-[color-mix(in srgb, var(--markly-text) 22%, transparent)] hover:text-[#F0EDE4]"
-                style={{ borderColor: T.border, color: T.muted }}
-              >
-                <Search size={15} /> Buscar
-                <span className="ml-1 hidden rounded-md border px-1.5 py-0.5 text-[10px] font-semibold md:inline-flex" style={{ borderColor: T.border, color: T.faint }}>
-                  Ctrl K
-                </span>
-              </button>
-              {isBudgets ? (
-                <NewBudgetButton onClick={() => setBudgetCreateOpen(true)} />
-              ) : isClients ? (
-                <NewClientButton onClick={() => setClientCreateOpen(true)} />
-              ) : isPortfolio ? (
-                <NewPortfolioButton onClick={() => setPortfolioCreateOpen(true)} />
-              ) : isFinance ? (
-                <FinanceLaunchButton onClick={() => setFinanceLaunchOpen(true)} />
-              ) : (
-                <CreateMenu
-                  onCreateBudget={() => setBudgetCreateOpen(true)}
-                  onCreateClient={() => setClientCreateOpen(true)}
-                  onNavigate={handleCreateNavigate}
-                />
-              )}
-            </div>
+            {!isSettings && (
+              <div className="flex flex-wrap gap-2">
+                {isBudgets ? (
+                  <BudgetFilterMenu value={budgetFilters} onChange={setBudgetFilters} />
+                ) : isClients ? (
+                  <ClientFilterMenu value={clientFilters} onChange={setClientFilters} />
+                ) : isPortfolio ? (
+                  <PortfolioFilterMenu value={portfolioFilters} onChange={setPortfolioFilters} />
+                ) : (
+                  !isFinance && !isCalendar && <DateFilterMenu value={dateFilter} onChange={setDateFilter} />
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (isBudgets) {
+                      setBudgetSearchOpen(true)
+                      return
+                    }
+                    if (isClients) {
+                      setClientSearchOpen(true)
+                      return
+                    }
+                    if (isPortfolio) {
+                      setPortfolioSearchOpen(true)
+                      return
+                    }
+                    setSearchOpen(true)
+                  }}
+                  className="inline-flex items-center gap-2 rounded-[12px] border px-4 py-2.5 text-sm transition duration-200 hover:border-[color-mix(in_srgb,var(--markly-text)_22%,transparent)] hover:text-[#F0EDE4]"
+                  style={{ borderColor: T.border, color: T.muted }}
+                >
+                  <Search size={15} /> Buscar
+                  <span className="ml-1 hidden rounded-md border px-1.5 py-0.5 text-[10px] font-semibold md:inline-flex" style={{ borderColor: T.border, color: T.faint }}>
+                    Ctrl K
+                  </span>
+                </button>
+                {isBudgets ? (
+                  <NewBudgetButton onClick={() => setBudgetCreateOpen(true)} />
+                ) : isClients ? (
+                  <NewClientButton onClick={() => setClientCreateOpen(true)} />
+                ) : isPortfolio ? (
+                  <NewPortfolioButton onClick={() => setPortfolioCreateOpen(true)} />
+                ) : isFinance ? (
+                  <FinanceLaunchButton onClick={() => setFinanceLaunchOpen(true)} />
+                ) : (
+                  <CreateMenu
+                    onCreateBudget={() => setBudgetCreateOpen(true)}
+                    onCreateClient={() => setClientCreateOpen(true)}
+                    onNavigate={handleCreateNavigate}
+                  />
+                )}
+              </div>
+            )}
           </div>
 
           <AnimatePresence mode="wait">
@@ -7519,6 +7747,8 @@ export default function DevDashboard() {
                 onFontSizeChange={handleFontSizeChange}
                 userProfile={userProfile}
                 onSaveUserProfile={handleSaveUserProfile}
+                calendarEvents={calendarEvents}
+                onCalendarEventsChange={setCalendarEvents}
               />
             </motion.div>
           </AnimatePresence>
@@ -7526,16 +7756,17 @@ export default function DevDashboard() {
       </SidebarInset>
 
       <StudioSetupModal
-        open={!studioSetupCompleted}
-        initialProfile={studioProfile}
-        onComplete={completeStudioSetup}
+        open={!studioSetupCompleted || addStudioModalOpen}
+        initialProfile={addStudioModalOpen ? defaultStudioProfile : studioProfile}
+        onComplete={handleCreateStudio}
+        onCancel={addStudioModalOpen ? () => setAddStudioModalOpen(false) : undefined}
       />
 
       <StudioManageModal
         open={studioManageOpen}
         profile={studioProfile}
         onOpenChange={setStudioManageOpen}
-        onSave={completeStudioSetup}
+        onSave={updateActiveStudioProfile}
       />
 
       <FinanceLaunchModal
@@ -7589,5 +7820,6 @@ export default function DevDashboard() {
         }}
       />
     </SidebarProvider>
+    </VerticalConfigContext.Provider>
   )
 }
