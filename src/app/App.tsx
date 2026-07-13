@@ -6,7 +6,8 @@ import {
   LayoutDashboard, Users, Calendar, ImageIcon, MessageSquare, Settings,
   TrendingUp, Clock, CheckCircle2, Package,
   Zap, ArrowRight, Menu, X, FileText, Bell,
-  Layers, Filter, BarChart3, Inbox
+  Layers, Filter, BarChart3, Inbox, WalletCards, DollarSign, Search, Plus,
+  ChevronDown, HeartHandshake,
 } from "lucide-react"
 import marklyIcon from "../assets/icon-markly.png"
 import LaserFlow from "./components/LaserFlow/LaserFlow"
@@ -59,6 +60,43 @@ function BrandMark({ size = 24 }: { size?: number }) {
 }
 
 function LaptopMockup() {
+  const navItems = [
+    { Icon: LayoutDashboard, label: "Visão geral", active: true, badge: null as string | null },
+    { Icon: FileText, label: "Orçamentos", active: false, badge: "12" },
+    { Icon: Users, label: "Clientes", active: false, badge: null },
+    { Icon: Calendar, label: "Agenda", active: false, badge: "Hoje" },
+    { Icon: ImageIcon, label: "Portfólio", active: false, badge: null },
+    { Icon: MessageSquare, label: "Mensagens", active: false, badge: "3" },
+    { Icon: DollarSign, label: "Financeiro", active: false, badge: null },
+    { Icon: HeartHandshake, label: "Anamnese", active: false, badge: null },
+  ] as const
+
+  const stats = [
+    { label: "Orçamentos abertos", value: "42", hint: "12 sem resposta", Icon: FileText },
+    { label: "Sessões hoje", value: "3", hint: "Próxima às 10:00", Icon: Calendar },
+    { label: "Sinais pendentes", value: "R$ 1.240", hint: "4 aguardando", Icon: WalletCards },
+    { label: "Faturamento estimado", value: "R$ 8.450", hint: "mês atual", Icon: TrendingUp },
+  ] as const
+
+  const pipeline = [
+    { label: "Novo", value: "R$ 2.400", count: "8" },
+    { label: "Em análise", value: "R$ 5.800", count: "12" },
+    { label: "Sinal pendente", value: "R$ 1.240", count: "4" },
+    { label: "Agendado", value: "R$ 8.450", count: "18" },
+  ]
+
+  const attention = [
+    { name: "Mariana Alves", description: "Orçamento enviado há 2 dias", badge: "Follow-up" },
+    { name: "Lucas Rocha", description: "Sinal pendente", badge: "Pagamento" },
+    { name: "Júlia Martins", description: "Sessão hoje às 10:00", badge: "Hoje" },
+  ]
+
+  const schedule = [
+    { time: "10:00", title: "Sessão floral P&B", client: "Júlia Martins", status: "Sinal pago", alert: false },
+    { time: "13:30", title: "Retoque fine line", client: "Marina Alves", status: "Confirmado", alert: false },
+    { time: "16:00", title: "Consulta blackwork", client: "Rafael Nunes", status: "Anamnese pendente", alert: true },
+  ]
+
   return (
     <div className="relative w-full max-w-[1320px] mx-auto select-none">
       <div
@@ -107,109 +145,254 @@ function LaptopMockup() {
           <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
         </a>
         <div className="overflow-hidden rounded-[10px]">
-        <div
-          className="flex items-center gap-3 px-4 py-3 border-b"
-          style={{ borderColor: T.border, background: "#040608" }}
-        >
-          <div className="flex gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-full" style={{ background: "rgba(239,68,68,0.5)" }} />
-            <div className="w-2.5 h-2.5 rounded-full" style={{ background: "rgba(234,179,8,0.5)" }} />
-            <div className="w-2.5 h-2.5 rounded-full" style={{ background: "rgba(34,197,94,0.5)" }} />
-          </div>
           <div
-            className="flex-1 max-w-[200px] mx-auto rounded-md px-3 py-1 text-[10px] font-mono text-center"
-            style={{ background: "rgba(240,237,228,0.04)", color: "rgba(240,237,228,0.24)" }}
+            className="flex items-center gap-3 px-4 py-3 border-b"
+            style={{ borderColor: T.border, background: "#040907" }}
           >
-            app.markly.com.br
-          </div>
-          <Bell size={11} style={{ color: "rgba(240,237,228,0.22)" }} />
-        </div>
-        <div className="flex" style={{ height: "min(46vw, 520px)", minHeight: 360 }}>
-          <div
-            className="w-48 flex-shrink-0 flex flex-col p-3 gap-0.5 border-r"
-            style={{ background: "#040608", borderColor: T.border }}
-          >
-            <div className="flex items-center gap-2 px-2 py-2.5 mb-1 text-[13px] font-bold" style={{ color: T.text }}>
-              <BrandMark size={20} />
-              Markly
+            <div className="flex gap-1.5">
+              <div className="w-2.5 h-2.5 rounded-full" style={{ background: "rgba(239,68,68,0.5)" }} />
+              <div className="w-2.5 h-2.5 rounded-full" style={{ background: "rgba(234,179,8,0.5)" }} />
+              <div className="w-2.5 h-2.5 rounded-full" style={{ background: "rgba(34,197,94,0.5)" }} />
             </div>
-            {([
-              { Icon: LayoutDashboard, label: "Visão geral", active: true, badge: 0 },
-              { Icon: FileText, label: "Orçamentos", active: false, badge: 0 },
-              { Icon: Users, label: "Clientes", active: false, badge: 0 },
-              { Icon: Calendar, label: "Agenda", active: false, badge: 0 },
-              { Icon: ImageIcon, label: "Portfólio", active: false, badge: 0 },
-              { Icon: MessageSquare, label: "Mensagens", active: false, badge: 3 },
-            ] as const).map(({ Icon, label, active, badge }) => (
+            <div
+              className="flex-1 max-w-[200px] mx-auto rounded-md px-3 py-1 text-[10px] font-mono text-center"
+              style={{ background: "rgba(240,237,228,0.04)", color: "rgba(240,237,228,0.24)" }}
+            >
+              app.markly.com.br
+            </div>
+            <Bell size={11} style={{ color: "rgba(240,237,228,0.22)" }} />
+          </div>
+
+          <div className="flex" style={{ height: "min(52vw, 580px)", minHeight: 400 }}>
+            <div
+              className="hidden w-[200px] flex-shrink-0 flex-col border-r p-3 sm:flex"
+              style={{ background: "#040907", borderColor: T.border }}
+            >
+              <div className="mb-2 flex items-center gap-2 px-2 py-2 text-[13px] font-semibold" style={{ color: T.text, fontFamily: "'Syne', sans-serif" }}>
+                <BrandMark size={22} />
+                Markly
+              </div>
+
               <div
-                key={label}
-                className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[11px] cursor-default"
-                style={{ background: active ? `${T.teal}14` : "transparent", color: active ? T.text : "rgba(240,237,228,0.42)" }}
+                className="mb-3 flex items-center gap-2 rounded-[12px] border px-2 py-2"
+                style={{ background: "rgba(240,237,228,0.025)", borderColor: T.border }}
               >
-                <Icon size={13} />
-                <span>{label}</span>
-                {badge > 0 && (
-                  <span className="ml-auto text-[9px] px-1.5 py-0.5 rounded-full" style={{ background: T.amber, color: T.bg }}>{badge}</span>
-                )}
+                <span
+                  className="flex size-7 shrink-0 items-center justify-center rounded-[9px] border text-[11px] font-semibold"
+                  style={{ background: "rgba(0,71,65,0.24)", borderColor: "rgba(240,237,228,0.14)", color: T.accent }}
+                >
+                  I
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[11px] font-semibold" style={{ color: T.text }}>Ink Tattoo</span>
+                  <span className="block text-[9px]" style={{ color: T.faint }}>Studio ativo</span>
+                </span>
+                <ChevronDown size={12} style={{ color: T.faint }} />
               </div>
-            ))}
-            <div className="mt-auto border-t pt-2" style={{ borderColor: T.border }}>
-              <div className="flex items-center gap-2.5 px-2.5 py-2 text-[11px]" style={{ color: "rgba(240,237,228,0.28)" }}>
-                <Settings size={13} /><span>Configurações</span>
-              </div>
-            </div>
-          </div>
-          <div className="flex-1 p-4 flex flex-col gap-3 overflow-hidden">
-            <div className="flex items-center justify-between">
-              <span className="text-[12px] font-semibold" style={{ color: T.text }}>Visão geral</span>
-              <div className="text-[10px] px-2.5 py-1 rounded-full border" style={{ background: "rgba(0,71,65,0.2)", color: T.accent, borderColor: "rgba(240,237,228,0.14)" }}>Julho 2026</div>
-            </div>
-            <div className="grid grid-cols-4 gap-2">
-              {([
-                { label: "Sessões no mês", value: "14", Icon: Calendar, color: T.accent },
-                { label: "Orçamentos enviados", value: "22", Icon: FileText, color: T.amber },
-                { label: "Taxa de fechamento", value: "68%", Icon: CheckCircle2, color: T.green },
-                { label: "Faturamento estimado", value: "R$8.450", Icon: TrendingUp, color: T.accent },
-              ] as const).map(({ label, value, Icon, color }) => (
-                <div key={label} className="rounded-xl p-3 border" style={{ background: T.card, borderColor: T.border }}>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[9px]" style={{ color: T.muted }}>{label}</span>
-                    <Icon size={10} style={{ color }} />
+
+              <p className="mb-1 px-2 text-[9px] uppercase tracking-[0.16em]" style={{ color: "rgba(240,237,228,0.35)" }}>
+                Workspace
+              </p>
+              <div className="flex flex-col gap-0.5">
+                {navItems.map(({ Icon, label, active, badge }) => (
+                  <div
+                    key={label}
+                    className="flex items-center gap-2 rounded-[10px] px-2 py-1.5 text-[11px]"
+                    style={{
+                      background: active ? "rgba(240,237,228,0.10)" : "transparent",
+                      color: active ? T.text : "rgba(240,237,228,0.55)",
+                    }}
+                  >
+                    <Icon size={13} />
+                    <span className="flex-1 truncate">{label}</span>
+                    {badge && (
+                      <span className="text-[9px]" style={{ color: "rgba(240,237,228,0.45)" }}>{badge}</span>
+                    )}
                   </div>
-                  <div className="text-[13px] font-bold" style={{ color }}>{value}</div>
+                ))}
+              </div>
+
+              <div className="mt-auto border-t pt-2" style={{ borderColor: T.border }}>
+                <div className="flex items-center gap-2 rounded-[10px] px-2 py-1.5 text-[11px]" style={{ color: "rgba(240,237,228,0.35)" }}>
+                  <Settings size={13} />
+                  <span>Configurações</span>
                 </div>
-              ))}
+              </div>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-medium" style={{ color: T.muted }}>Orçamentos recentes</span>
-              <span className="text-[9px]" style={{ color: T.accent }}>Ver todos →</span>
-            </div>
-            <div className="grid grid-cols-4 gap-2 flex-1">
-              {[
-                { label: "Novo", dot: T.accent, cards: ["Floral fine line · R$800", "Lobo realista · R$1.200"] },
-                { label: "Respondido", dot: T.amber, cards: ["Mandala geométrica · R$950"] },
-                { label: "Ag. sinal", dot: "#8a8577", cards: ["Blackwork braço · R$1.400", "Fine line costela · R$600"] },
-                { label: "Fechado", dot: T.green, cards: ["Floral P&B · R$700"] },
-              ].map(({ label, dot, cards }) => (
-                <div key={label} className="flex flex-col gap-1.5">
-                  <div className="flex items-center gap-1.5 mb-0.5">
-                    <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: dot }} />
-                    <span className="text-[9px] font-medium" style={{ color: T.muted }}>{label}</span>
-                    <span className="ml-auto text-[8px] px-1.5 rounded-full" style={{ background: "rgba(240,237,228,0.05)", color: T.muted }}>{cards.length}</span>
+
+            <div className="flex min-w-0 flex-1 flex-col overflow-hidden" style={{ background: T.bg }}>
+              <div
+                className="flex h-11 shrink-0 items-center justify-between border-b px-4"
+                style={{ background: "rgba(4,9,7,0.78)", borderColor: T.border }}
+              >
+                <div className="min-w-0">
+                  <p className="text-[9px] uppercase tracking-[0.16em]" style={{ color: T.faint }}>Painel interno</p>
+                  <p className="truncate text-[12px] font-semibold" style={{ color: T.text }}>Olá, Bruno</p>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="hidden rounded-full border px-2 py-0.5 text-[9px] md:inline-flex" style={{ borderColor: T.border, color: T.muted }}>Owner</span>
+                  <Bell size={12} style={{ color: T.muted }} />
+                </div>
+              </div>
+
+              <div className="min-h-0 flex-1 overflow-hidden p-3 md:p-4">
+                <div className="mb-3 flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div
+                      className="mb-1.5 inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[9px] font-semibold"
+                      style={{ background: "rgba(0,71,65,0.18)", borderColor: T.border, color: T.accent }}
+                    >
+                      <span className="h-1 w-1 rounded-full" style={{ background: T.accent }} />
+                      Operação ativa
+                    </div>
+                    <h2 className="text-[18px] font-semibold leading-tight md:text-[22px]" style={{ color: T.text, fontFamily: "'Syne', sans-serif" }}>
+                      Visão geral
+                    </h2>
+                    <p className="mt-0.5 text-[11px]" style={{ color: T.muted }}>Ink Tattoo · Hoje</p>
+                    <p className="mt-0.5 hidden text-[10px] sm:block" style={{ color: T.faint }}>
+                      3 sessões hoje · 12 orçamentos abertos · R$ 1.240 em sinais pendentes
+                    </p>
                   </div>
-                  {cards.map((c) => (
-                    <div key={c} className="rounded-lg p-2 border text-[9px] leading-4" style={{ background: T.bgSec, borderColor: T.border, color: "rgba(240,237,228,0.58)" }}>{c}</div>
+                  <div className="hidden shrink-0 gap-1.5 sm:flex">
+                    <span
+                      className="inline-flex items-center gap-1 rounded-[10px] border px-2.5 py-1.5 text-[10px]"
+                      style={{ borderColor: T.border, color: T.muted }}
+                    >
+                      <Search size={11} /> Buscar
+                    </span>
+                    <span
+                      className="inline-flex items-center gap-1 rounded-[10px] px-2.5 py-1.5 text-[10px] font-semibold"
+                      style={{ background: T.text, color: T.bg }}
+                    >
+                      <Plus size={11} /> Novo
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mb-2.5 grid grid-cols-2 gap-2 xl:grid-cols-4">
+                  {stats.map(({ label, value, hint, Icon }, index) => (
+                    <div
+                      key={label}
+                      className="rounded-[14px] border p-2.5"
+                      style={{ background: T.card, borderColor: T.border }}
+                    >
+                      <div className="mb-2 flex items-center justify-between gap-2">
+                        <span className="truncate text-[9px]" style={{ color: T.muted }}>{label}</span>
+                        <span
+                          className="flex size-6 shrink-0 items-center justify-center rounded-[8px] border"
+                          style={{ background: "rgba(240,237,228,0.04)", borderColor: T.border }}
+                        >
+                          <Icon size={11} style={{ color: index % 2 === 0 ? T.accent : "#8DCEC0" }} />
+                        </span>
+                      </div>
+                      <div className="text-[15px] font-semibold tracking-tight" style={{ color: T.text }}>{value}</div>
+                      <div className="mt-0.5 truncate text-[9px]" style={{ color: T.faint }}>{hint}</div>
+                    </div>
                   ))}
                 </div>
-              ))}
+
+                <div className="mb-2.5 rounded-[14px] border p-2.5" style={{ background: T.card, borderColor: T.border }}>
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-[11px] font-semibold" style={{ color: T.text }}>Pipeline de orçamentos</span>
+                    <span className="text-[9px]" style={{ color: T.faint }}>Valores estimados</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5 xl:grid-cols-4">
+                    {pipeline.map((stage) => (
+                      <div
+                        key={stage.label}
+                        className="rounded-[10px] border px-2 py-2"
+                        style={{ background: T.bgSec, borderColor: T.border }}
+                      >
+                        <div className="mb-1.5 flex items-center justify-between gap-1">
+                          <span className="truncate text-[9px] font-semibold" style={{ color: T.text }}>{stage.label}</span>
+                          <span
+                            className="rounded-full border px-1.5 py-0.5 text-[8px]"
+                            style={{ borderColor: T.border, color: T.faint }}
+                          >
+                            {stage.count}
+                          </span>
+                        </div>
+                        <div className="text-[12px] font-semibold" style={{ color: T.text }}>{stage.value}</div>
+                        <div className="text-[8px]" style={{ color: T.faint }}>{stage.count} oportunidades</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid min-h-0 gap-2.5 xl:grid-cols-[1.2fr_0.8fr]">
+                  <div className="min-w-0 rounded-[14px] border p-2.5" style={{ background: T.card, borderColor: T.border }}>
+                    <div className="mb-2 flex items-center justify-between">
+                      <span className="text-[11px] font-semibold" style={{ color: T.text }}>Precisa de atenção</span>
+                      <span className="text-[9px]" style={{ color: T.faint }}>Prioridade de hoje</span>
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      {attention.map((item) => (
+                        <div
+                          key={item.name}
+                          className="flex items-center gap-2 rounded-[10px] border px-2 py-1.5"
+                          style={{ background: "rgba(6,17,15,0.76)", borderColor: T.border }}
+                        >
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-[10px] font-semibold" style={{ color: T.text }}>{item.name}</p>
+                            <p className="truncate text-[9px]" style={{ color: T.faint }}>{item.description}</p>
+                          </div>
+                          <span
+                            className="shrink-0 rounded-full border px-1.5 py-0.5 text-[8px] font-semibold"
+                            style={{ borderColor: T.border, color: T.muted }}
+                          >
+                            {item.badge}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="min-w-0 rounded-[14px] border p-2.5" style={{ background: T.card, borderColor: T.border }}>
+                    <div className="mb-2 flex items-center justify-between">
+                      <span className="text-[11px] font-semibold" style={{ color: T.text }}>Agenda de hoje</span>
+                      <span className="text-[9px]" style={{ color: T.faint }}>3 sessões</span>
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      {schedule.map((event) => (
+                        <div
+                          key={event.time}
+                          className="flex items-center gap-2 rounded-[10px] border px-2 py-1.5"
+                          style={{ background: T.bgSec, borderColor: T.border }}
+                        >
+                          <div
+                            className="flex h-7 w-10 shrink-0 items-center justify-center rounded-[8px] text-[9px] font-semibold"
+                            style={{ background: "rgba(240,237,228,0.06)", color: T.accent }}
+                          >
+                            {event.time}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-[10px] font-semibold" style={{ color: T.text }}>{event.title}</p>
+                            <p className="truncate text-[9px]" style={{ color: T.faint }}>{event.client}</p>
+                          </div>
+                          <span
+                            className="hidden shrink-0 rounded-full border px-1.5 py-0.5 text-[8px] font-semibold md:inline-flex"
+                            style={{
+                              background: event.alert ? "rgba(216,208,191,0.10)" : "rgba(47,127,104,0.12)",
+                              borderColor: event.alert ? "rgba(216,208,191,0.28)" : "rgba(47,127,104,0.30)",
+                              color: T.accent,
+                            }}
+                          >
+                            {event.status}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
         </div>
       </div>
     </div>
   )
 }
+
 
 function Header() {
   const [scrolled, setScrolled] = useState(false)
@@ -352,7 +535,7 @@ function HeroHeadline() {
         className="text-[44px] font-semibold leading-tight tracking-tight opacity-0 md:text-[60px] lg:text-[72px]"
         style={{ color: T.text, fontFamily: "Poppins, sans-serif", perspective: 800 }}
       >
-        Sua arte no corpo.{" "}
+        Seu ofício no centro.{" "}
         <span
           data-grad
           style={{
@@ -370,7 +553,7 @@ function HeroHeadline() {
         className="mt-6 max-w-[520px] text-base leading-7 opacity-0 md:text-lg"
         style={{ color: "rgba(240,237,228,0.6)" }}
       >
-        Orçamentos, agenda, clientes e portfólio em um único painel — menos WhatsApp, mais tatuagem.
+        Orçamentos, agenda, clientes e portfólio em um único painel — para tatuagem, barbearia, estética, unhas e outros studios.
       </p>
       <p
         className="mt-4 inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-[13px] font-medium opacity-0"
@@ -407,9 +590,9 @@ function ProblemSection() {
   const accent = T.accent
   const problems = [
     { Icon: Inbox, title: "Orçamentos perdidos no WhatsApp", desc: "Pedidos importantes somem entre conversas, áudios e fotos sem organização." },
-    { Icon: Users, title: "Clientes sem histórico organizado", desc: "Sem registro de sessões anteriores, estilos preferidos ou contato centralizado." },
-    { Icon: Calendar, title: "Agenda espalhada", desc: "Horários em apps diferentes, confirmações por mensagem e sessões marcadas na cabeça." },
-    { Icon: ImageIcon, title: "Portfólio sem controle comercial", desc: "Artes e referências em pastas soltas, sem conexão com clientes ou orçamentos." },
+    { Icon: Users, title: "Clientes sem histórico organizado", desc: "Sem registro de atendimentos anteriores, preferências ou contato centralizado." },
+    { Icon: Calendar, title: "Agenda espalhada", desc: "Horários em apps diferentes, confirmações por mensagem e atendimentos marcados na cabeça." },
+    { Icon: ImageIcon, title: "Portfólio sem controle comercial", desc: "Fotos e trabalhos em pastas soltas, sem conexão com clientes ou orçamentos." },
   ]
   return (
     <section className="relative overflow-hidden py-28 px-6" style={{ background: T.bgSec }}>
@@ -429,13 +612,13 @@ function ProblemSection() {
               O problema
             </p>
             <h2 className="text-3xl md:text-5xl font-bold leading-tight" style={{ ...fs(visible, 60), color: T.text }}>
-              Seu trabalho é arte.
+              Seu trabalho é o atendimento.
               <br />
               <span style={{ color: T.muted }}>A bagunça da gestão não precisa fazer parte.</span>
             </h2>
           </div>
           <p className="text-base leading-relaxed md:pb-2 md:text-lg" style={{ ...fs(visible, 140), color: T.muted }}>
-            Muitos tatuadores ainda controlam pedidos pelo WhatsApp, agenda por aplicativos separados, referências em pastas soltas e pagamentos em anotações manuais. O Markly centraliza tudo.
+            Muitos profissionais ainda controlam pedidos pelo WhatsApp, agenda por aplicativos separados, fotos em pastas soltas e pagamentos em anotações manuais. O Markly centraliza tudo.
           </p>
         </div>
         <div className="grid grid-cols-1 gap-px overflow-hidden rounded-2xl border sm:grid-cols-2 lg:grid-cols-4" style={{ background: T.border, borderColor: T.border }}>
@@ -480,22 +663,22 @@ function ProductSection() {
   const [active, setActive] = useState(0)
   const featureRefs = useRef<Array<HTMLDivElement | null>>([])
   const features = [
-    { Icon: FileText, title: "Orçamentos visuais", desc: "Cada pedido entra com estilo, tamanho, referência, valor e status. Você acompanha do primeiro contato ao sinal pago.", metric: "18 pedidos ativos" },
-    { Icon: Users, title: "Clientes organizados", desc: "Histórico, preferências, sessões, contatos e referências ficam reunidos em uma ficha simples de consultar.", metric: "127 clientes salvos" },
-    { Icon: Calendar, title: "Agenda inteligente", desc: "Sessões, retornos, encaixes e horários livres aparecem conectados ao cliente e ao orçamento.", metric: "9 sessões na semana" },
-    { Icon: ImageIcon, title: "Portfólio comercial", desc: "Artes, flashs, fotos e estilos viram um acervo vendável para responder melhor cada briefing.", metric: "42 referências" },
-    { Icon: MessageSquare, title: "Mensagens e follow-up", desc: "Veja quem precisa de resposta, quem confirmou sinal e quem merece um lembrete para fechar.", metric: "6 conversas quentes" },
+    { Icon: FileText, title: "Orçamentos visuais", desc: "Cada pedido entra com serviço, detalhes, valor e status. Você acompanha do primeiro contato ao depósito pago.", metric: "18 pedidos ativos" },
+    { Icon: Users, title: "Clientes organizados", desc: "Histórico, preferências, atendimentos e contatos ficam reunidos em uma ficha simples de consultar.", metric: "127 clientes salvos" },
+    { Icon: Calendar, title: "Agenda inteligente", desc: "Atendimentos, retornos, encaixes e horários livres aparecem conectados ao cliente e ao orçamento.", metric: "9 atendimentos na semana" },
+    { Icon: ImageIcon, title: "Portfólio comercial", desc: "Fotos, trabalhos e categorias viram um acervo vendável para responder melhor cada pedido.", metric: "42 trabalhos" },
+    { Icon: MessageSquare, title: "Mensagens e follow-up", desc: "Veja quem precisa de resposta, quem confirmou o depósito e quem merece um lembrete para fechar.", metric: "6 conversas quentes" },
   ]
   const kanbanCols = [
-    { label: "Novo", dot: T.text, cards: ["Floral fine line", "Lobo geométrico"] },
-    { label: "Respondido", dot: T.amber, cards: ["Mandala geométrica"] },
-    { label: "Ag. sinal", dot: T.muted, cards: ["Blackwork braço"] },
-    { label: "Fechado", dot: T.green, cards: ["Floral P&B"] },
+    { label: "Novo", dot: T.text, cards: ["Corte + barba", "Limpeza de pele"] },
+    { label: "Respondido", dot: T.amber, cards: ["Alongamento em gel"] },
+    { label: "Ag. depósito", dot: T.muted, cards: ["Pacote mensal"] },
+    { label: "Fechado", dot: T.green, cards: ["Manutenção"] },
   ]
   const clientList = [
-    { name: "Mariana Alves", sessions: 4, tag: "Fine line" },
-    { name: "Lucas Rocha", sessions: 2, tag: "Realismo" },
-    { name: "Carla Vieira", sessions: 7, tag: "Floral" },
+    { name: "Mariana Alves", sessions: 4, tag: "Barbearia" },
+    { name: "Lucas Rocha", sessions: 2, tag: "Estética" },
+    { name: "Carla Vieira", sessions: 7, tag: "Unhas" },
   ]
 
   // Sincroniza o painel sticky com o item que cruza a faixa central da viewport.
@@ -691,7 +874,7 @@ function ProductSection() {
                       <div className="flex h-9 w-9 items-center justify-center rounded-full text-[11px] font-bold" style={{ background: T.text, color: T.teal }}>{name[0]}</div>
                       <div className="flex-1">
                         <div className="text-[11px] font-medium" style={{ color: T.text }}>{name}</div>
-                        <div className="text-[10px]" style={{ color: T.muted }}>{sessions} sessões</div>
+                        <div className="text-[10px]" style={{ color: T.muted }}>{sessions} atendimentos</div>
                       </div>
                       <span className="rounded-full px-2 py-0.5 text-[9px]" style={{ background: "rgba(240,237,228,0.08)", color: T.text }}>{tag}</span>
                     </div>
@@ -706,7 +889,7 @@ function ProductSection() {
                       <div className="h-10 w-1 rounded-full" style={{ background: paid ? T.green : T.text }} />
                       <div className="flex-1">
                         <div className="text-[11px] font-medium" style={{ color: T.text }}>{client}</div>
-                        <div className="text-[10px]" style={{ color: T.muted }}>{time}{paid ? " · Sinal pago ✓" : ""}</div>
+                        <div className="text-[10px]" style={{ color: T.muted }}>{time}{paid ? " · Depósito pago ✓" : ""}</div>
                       </div>
                       <span className="text-[10px]" style={{ color: paid ? T.text : T.muted }}>{paid ? "Confirmado" : "Pendente"}</span>
                     </div>
@@ -719,13 +902,13 @@ function ProductSection() {
                     {Array.from({ length: 6 }).map((_, i) => <div key={i} className="aspect-square rounded-[12px] border" style={{ background: `linear-gradient(135deg, rgba(240,237,228,0.09) 0%, rgba(0,71,65,0.28) 100%)`, borderColor: T.border }} />)}
                   </div>
                   <div className="flex flex-wrap gap-1.5">
-                    {["Fine line", "Realismo", "Floral", "Geométrico", "Blackwork"].map((s) => <span key={s} className="rounded-full border px-2 py-0.5 text-[9px]" style={{ borderColor: T.border, color: T.muted }}>{s}</span>)}
+                    {["Barbearia", "Estética", "Unhas", "Tatuagem", "Outros"].map((s) => <span key={s} className="rounded-full border px-2 py-0.5 text-[9px]" style={{ borderColor: T.border, color: T.muted }}>{s}</span>)}
                   </div>
                 </div>
               )}
               {active === 4 && (
                 <div className="flex flex-col gap-2">
-                  {[{ from: "Mariana Alves", preview: "Queria fazer uma flor no antebraço...", time: "10m", unread: true }, { from: "Lucas Rocha", preview: "Quando fica pronto o orçamento?", time: "1h", unread: true }, { from: "Carla Vieira", preview: "Confirmei o sinal!", time: "3h", unread: false }].map(({ from, preview, time, unread }) => (
+                  {[{ from: "Mariana Alves", preview: "Queria agendar um horário esta semana...", time: "10m", unread: true }, { from: "Lucas Rocha", preview: "Quando fica pronto o orçamento?", time: "1h", unread: true }, { from: "Carla Vieira", preview: "Confirmei o depósito!", time: "3h", unread: false }].map(({ from, preview, time, unread }) => (
                     <div key={from} className="flex items-center gap-3 rounded-[12px] border p-3"
                       style={{ background: unread ? `${T.teal}06` : T.bgSec, borderColor: unread ? `${T.teal}20` : T.border }}>
                       <div className="flex h-9 w-9 items-center justify-center rounded-full text-[11px] font-bold" style={{ background: unread ? T.text : "rgba(240,237,228,0.08)", color: unread ? T.teal : T.text }}>{from[0]}</div>
@@ -753,11 +936,11 @@ function WorkflowSection() {
   const { ref, visible } = useFadeIn(0.3)
   const accent = T.accent
   const steps = [
-    { n: "01", Icon: MessageSquare, title: "Cliente envia uma ideia", desc: "Referências, estilo, tamanho e localização chegam pelo seu canal." },
-    { n: "02", Icon: FileText, title: "Você cria o orçamento", desc: "Registra valor, estilo, tempo estimado e envia o retorno." },
+    { n: "01", Icon: MessageSquare, title: "Cliente pede um atendimento", desc: "Detalhes do serviço e preferências chegam pelo seu canal." },
+    { n: "02", Icon: FileText, title: "Você cria o orçamento", desc: "Registra valor, tipo de serviço, tempo estimado e envia o retorno." },
     { n: "03", Icon: Layers, title: "Pedido entra no painel", desc: "Aparece no kanban com status e dados do cliente organizados." },
-    { n: "04", Icon: CheckCircle2, title: "Cliente confirma o sinal", desc: "Você marca o pagamento e o pedido avança automaticamente." },
-    { n: "05", Icon: Calendar, title: "Sessão entra na agenda", desc: "Data, horário e cliente confirmados na sua grade da semana." },
+    { n: "04", Icon: CheckCircle2, title: "Cliente confirma o depósito", desc: "Você marca o pagamento e o pedido avança automaticamente." },
+    { n: "05", Icon: Calendar, title: "Atendimento entra na agenda", desc: "Data, horário e cliente confirmados na sua grade da semana." },
   ]
   // Cascata: cada passo "carrega" depois do anterior; a linha de progresso
   // percorre o trilho no mesmo ritmo para conectar os disparos.
@@ -777,7 +960,7 @@ function WorkflowSection() {
               Como funciona
             </p>
             <h2 className="max-w-[640px] text-3xl font-bold leading-tight md:text-5xl" style={{ ...fs(visible, 60), color: T.text }}>
-              Do primeiro contato <span style={{ color: T.muted }}>até a sessão fechada.</span>
+              Do primeiro contato <span style={{ color: T.muted }}>até o atendimento fechado.</span>
             </h2>
           </div>
           <span
@@ -867,7 +1050,7 @@ function InterfaceSection() {
               <Filter size={13} style={{ color: T.muted }} />
             </div>
             <div className="p-4 flex flex-col gap-2">
-              {[{ status: "Novo", client: "Beatriz Almada", style: "Fineline", value: "R$800", dot: T.teal }, { status: "Ag. sinal", client: "Pedro Ramos", style: "Realismo", value: "R$1.500", dot: T.amber }, { status: "Fechado", client: "Carla Neves", style: "Old School", value: "R$600", dot: T.green }].map(({ status, client, style, value, dot }) => (
+              {[{ status: "Novo", client: "Beatriz Almada", style: "Corte + barba", value: "R$120", dot: T.teal }, { status: "Ag. depósito", client: "Pedro Ramos", style: "Limpeza de pele", value: "R$280", dot: T.amber }, { status: "Fechado", client: "Carla Neves", style: "Alongamento", value: "R$180", dot: T.green }].map(({ status, client, style, value, dot }) => (
                 <div key={client} className="p-3.5 rounded-xl border" style={{ background: T.bgSec, borderColor: T.border }}>
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full" style={{ background: dot }} /><span className="text-[10px]" style={{ color: T.muted }}>{status}</span></div>
@@ -900,7 +1083,7 @@ function InterfaceSection() {
                     <div className="w-1 h-6 rounded-full" style={{ background: paid ? T.green : T.teal }} />
                     <div>
                       <div className="text-[11px] font-medium" style={{ color: T.text }}>{client}</div>
-                      <div className="text-[10px]" style={{ color: T.muted }}>{time}{paid ? " · Sinal pago ✓" : ""}</div>
+                      <div className="text-[10px]" style={{ color: T.muted }}>{time}{paid ? " · Depósito pago ✓" : ""}</div>
                     </div>
                   </div>
                 ))}
@@ -916,11 +1099,11 @@ function InterfaceSection() {
                 <div className="w-12 h-12 rounded-full flex items-center justify-center text-base font-bold" style={{ background: `${T.teal}20`, color: T.teal }}>J</div>
                 <div>
                   <div className="text-sm font-semibold" style={{ color: T.text }}>Juliana Costa</div>
-                  <div className="text-[11px]" style={{ color: T.muted }}>7 sessões · Desde 2023</div>
+                  <div className="text-[11px]" style={{ color: T.muted }}>7 atendimentos · Desde 2023</div>
                 </div>
               </div>
               <div className="flex flex-col gap-2">
-                {[{ label: "Estilo favorito", value: "Old School" }, { label: "Próxima sessão", value: "09/07 às 15:00" }, { label: "Valor total", value: "R$4.200" }].map(({ label, value }) => (
+                {[{ label: "Serviço favorito", value: "Corte + barba" }, { label: "Próximo atendimento", value: "09/07 às 15:00" }, { label: "Valor total", value: "R$4.200" }].map(({ label, value }) => (
                   <div key={label} className="flex items-center justify-between p-2.5 rounded-lg border" style={{ background: T.bgSec, borderColor: T.border }}>
                     <span className="text-[11px]" style={{ color: T.muted }}>{label}</span>
                     <span className="text-[11px] font-medium" style={{ color: T.text }}>{value}</span>
@@ -928,7 +1111,7 @@ function InterfaceSection() {
                 ))}
               </div>
               <div className="mt-3">
-                <div className="text-[10px] mb-1.5 font-medium" style={{ color: T.muted }}>Referências</div>
+                <div className="text-[10px] mb-1.5 font-medium" style={{ color: T.muted }}>Anexos</div>
                 <div className="flex gap-1.5">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="w-10 h-10 rounded-lg border" style={{ background: `linear-gradient(135deg, ${T.card} 0%, rgba(0,71,65,0.16) 100%)`, borderColor: T.border }} />)}</div>
               </div>
             </div>
@@ -941,20 +1124,48 @@ function InterfaceSection() {
 
 function InterfaceShowcaseSection() {
   const { ref, visible } = useFadeIn()
-  const budgetRows = [
-    { status: "Novo", client: "Mariana Alves", style: "Fine line", value: "R$800", dot: T.text },
-    { status: "Ag. sinal", client: "Lucas Rocha", style: "Realismo", value: "R$1.500", dot: T.amber },
-    { status: "Fechado", client: "Rafael Mendes", style: "Blackwork", value: "R$600", dot: T.green },
+
+  const navItems = [
+    { Icon: LayoutDashboard, label: "Visão geral", active: true, badge: null as string | null },
+    { Icon: FileText, label: "Orçamentos", active: false, badge: "12" },
+    { Icon: Users, label: "Clientes", active: false, badge: null },
+    { Icon: Calendar, label: "Agenda", active: false, badge: "Hoje" },
+    { Icon: ImageIcon, label: "Portfólio", active: false, badge: null },
+    { Icon: MessageSquare, label: "Mensagens", active: false, badge: "3" },
+    { Icon: DollarSign, label: "Financeiro", active: false, badge: null },
   ]
+
   const stats = [
-    { label: "Orçamentos enviados", value: "22" },
-    { label: "Sessões no mês", value: "14" },
-    { label: "Faturamento", value: "R$8.4k" },
+    { label: "Orçamentos abertos", value: "42", hint: "12 sem resposta", Icon: FileText },
+    { label: "Sessões hoje", value: "3", hint: "Próxima às 10:00", Icon: Calendar },
+    { label: "Sinais pendentes", value: "R$ 1.240", hint: "4 aguardando", Icon: WalletCards },
+    { label: "Faturamento estimado", value: "R$ 8.450", hint: "mês atual", Icon: TrendingUp },
   ]
-  const summaryItems = [
-    { label: "Tempo médio de resposta", value: "12 min", Icon: MessageSquare },
-    { label: "Sessões confirmadas", value: "09", Icon: CheckCircle2 },
-    { label: "Clientes em follow-up", value: "06", Icon: Users },
+
+  const pipeline = [
+    { label: "Novo", value: "R$ 2.400", count: "8" },
+    { label: "Em análise", value: "R$ 5.800", count: "12" },
+    { label: "Sinal pendente", value: "R$ 1.240", count: "4" },
+    { label: "Agendado", value: "R$ 8.450", count: "18" },
+  ]
+
+  const attention = [
+    { name: "Mariana Alves", description: "Orçamento enviado há 2 dias", badge: "Follow-up" },
+    { name: "Lucas Rocha", description: "Sinal pendente", badge: "Pagamento" },
+    { name: "Júlia Martins", description: "Sessão hoje às 10:00", badge: "Hoje" },
+    { name: "Rafael Nunes", description: "Anamnese não preenchida", badge: "Anamnese" },
+  ]
+
+  const schedule = [
+    { time: "10:00", title: "Sessão floral P&B", client: "Júlia Martins", status: "Sinal pago", alert: false },
+    { time: "13:30", title: "Retoque fine line", client: "Marina Alves", status: "Confirmado", alert: false },
+    { time: "16:00", title: "Consulta blackwork", client: "Rafael Nunes", status: "Anamnese pendente", alert: true },
+  ]
+
+  const pulse = [
+    { label: "Ticket médio", value: "R$ 620", Icon: WalletCards },
+    { label: "Tempo médio de resposta", value: "6h", Icon: Clock },
+    { label: "Taxa de fechamento", value: "68%", Icon: TrendingUp },
   ]
 
   return (
@@ -977,7 +1188,7 @@ function InterfaceShowcaseSection() {
             </h2>
           </div>
           <p className="max-w-[360px] text-sm leading-7 md:text-base lg:pb-1" style={{ ...fs(visible, 140), color: T.muted }}>
-            Status, agenda e histórico do cliente aparecem juntos, com o mínimo de atrito para a rotina do estúdio.
+            A Visão geral junta métricas, pipeline, prioridades e agenda do dia — o mesmo centro operacional do painel.
           </p>
         </div>
 
@@ -990,155 +1201,174 @@ function InterfaceShowcaseSection() {
             boxShadow: "0 34px 110px rgba(0,0,0,0.52), inset 0 1px 0 rgba(240,237,228,0.08)",
           }}
         >
-          <div className="flex items-center justify-between border-b px-4 py-3 md:px-5" style={{ borderColor: T.border, background: "rgba(2,6,5,0.72)" }}>
-            <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between border-b px-4 py-3 md:px-5" style={{ borderColor: T.border, background: "rgba(4,9,7,0.86)" }}>
+            <div className="flex min-w-0 items-center gap-3">
               <BrandMark size={24} />
-              <div>
-                <div className="text-[12px] font-semibold" style={{ color: T.text }}>Markly Studio</div>
-                <div className="text-[10px]" style={{ color: T.muted }}>Operação de hoje</div>
+              <div className="min-w-0">
+                <div className="text-[12px] font-semibold" style={{ color: T.text }}>Ink Tattoo</div>
+                <div className="text-[10px]" style={{ color: T.muted }}>Operação ativa · Hoje</div>
               </div>
             </div>
             <div className="hidden items-center gap-2 md:flex">
-              {["Hoje", "Semana", "Mês"].map((label, i) => (
-                <span
-                  key={label}
-                  className="rounded-full border px-3 py-1 text-[11px] font-medium"
-                  style={{ background: i === 0 ? T.text : "transparent", borderColor: i === 0 ? T.text : T.border, color: i === 0 ? T.teal : T.muted }}
-                >
-                  {label}
-                </span>
-              ))}
+              <span className="inline-flex items-center gap-1.5 rounded-[10px] border px-3 py-1.5 text-[11px]" style={{ borderColor: T.border, color: T.muted }}>
+                <Search size={12} /> Buscar
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-[10px] px-3 py-1.5 text-[11px] font-semibold" style={{ background: T.text, color: T.bg }}>
+                <Plus size={12} /> Novo
+              </span>
             </div>
           </div>
 
-          <div className="grid min-h-[560px] grid-cols-1 lg:grid-cols-[190px_minmax(0,1fr)_330px]">
-            <aside className="hidden border-r p-4 lg:block" style={{ borderColor: T.border, background: "rgba(2,6,5,0.34)" }}>
-              <div className="mb-5 text-[10px] uppercase tracking-[0.18em]" style={{ color: T.muted }}>Workspace</div>
-              <div className="flex flex-col gap-1.5">
-                {[
-                  { Icon: LayoutDashboard, label: "Resumo", active: true },
-                  { Icon: FileText, label: "Orçamentos", active: false },
-                  { Icon: Calendar, label: "Agenda", active: false },
-                  { Icon: Users, label: "Clientes", active: false },
-                ].map(({ Icon, label, active }) => (
-                  <div key={label} className="flex items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-[12px]" style={{ background: active ? "rgba(240,237,228,0.08)" : "transparent", color: active ? T.text : T.muted }}>
+          <div className="grid min-h-[620px] grid-cols-1 lg:grid-cols-[200px_minmax(0,1fr)_300px]">
+            <aside className="hidden border-r p-4 lg:flex lg:flex-col" style={{ borderColor: T.border, background: "#040907" }}>
+              <div
+                className="mb-4 flex items-center gap-2.5 rounded-[14px] border px-2.5 py-2.5"
+                style={{ background: "rgba(240,237,228,0.025)", borderColor: T.border }}
+              >
+                <span
+                  className="flex size-8 shrink-0 items-center justify-center rounded-[10px] border text-[12px] font-semibold"
+                  style={{ background: "rgba(0,71,65,0.24)", borderColor: "rgba(240,237,228,0.14)", color: T.accent }}
+                >
+                  I
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[12px] font-semibold" style={{ color: T.text }}>Ink Tattoo</span>
+                  <span className="block text-[10px]" style={{ color: T.faint }}>Studio ativo</span>
+                </span>
+                <ChevronDown size={13} style={{ color: T.faint }} />
+              </div>
+
+              <div className="mb-2 text-[10px] uppercase tracking-[0.18em]" style={{ color: "rgba(240,237,228,0.38)" }}>Workspace</div>
+              <div className="flex flex-col gap-1">
+                {navItems.map(({ Icon, label, active, badge }) => (
+                  <div
+                    key={label}
+                    className="flex items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-[12px]"
+                    style={{ background: active ? "rgba(240,237,228,0.10)" : "transparent", color: active ? T.text : "rgba(240,237,228,0.58)" }}
+                  >
                     <Icon size={14} />
-                    {label}
+                    <span className="flex-1 truncate">{label}</span>
+                    {badge && <span className="text-[10px]" style={{ color: "rgba(240,237,228,0.45)" }}>{badge}</span>}
                   </div>
                 ))}
               </div>
-              <div className="mt-8 rounded-[14px] border p-3" style={{ borderColor: T.border, background: "rgba(240,237,228,0.035)" }}>
-                <div className="mb-3 text-[10px]" style={{ color: T.muted }}>Meta do mês</div>
-                <div className="text-xl font-semibold" style={{ color: T.text }}>68%</div>
-                <div className="mt-3 h-1.5 overflow-hidden rounded-full" style={{ background: "rgba(240,237,228,0.08)" }}>
-                  <div className="h-full w-[68%] rounded-full" style={{ background: T.text }} />
-                </div>
+
+              <div className="mt-auto rounded-[14px] border p-3" style={{ borderColor: T.border, background: "rgba(0,71,65,0.16)" }}>
+                <div className="mb-1 text-[10px]" style={{ color: T.accent }}>Agenda ocupada</div>
+                <div className="text-xl font-semibold" style={{ color: T.text }}>92%</div>
+                <div className="mt-2 text-[10px]" style={{ color: T.faint }}>semana atual</div>
               </div>
             </aside>
 
-            <div className="border-r p-4 md:p-5" style={{ borderColor: T.border }}>
-              <div className="mb-4 grid grid-cols-3 gap-3">
-                {stats.map(({ label, value }) => (
-                  <div key={label} className="rounded-[14px] border p-3" style={{ borderColor: T.border, background: "rgba(2,6,5,0.42)" }}>
-                    <div className="text-[10px]" style={{ color: T.muted }}>{label}</div>
-                    <div className="mt-1 text-lg font-semibold" style={{ color: T.text }}>{value}</div>
+            <div className="border-r p-4 md:p-5" style={{ borderColor: T.border, background: T.bg }}>
+              <div className="mb-4">
+                <div
+                  className="mb-2 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold"
+                  style={{ background: "rgba(0,71,65,0.18)", borderColor: T.border, color: T.accent }}
+                >
+                  <span className="h-1.5 w-1.5 rounded-full" style={{ background: T.accent }} />
+                  Operação ativa
+                </div>
+                <h3 className="text-xl font-semibold" style={{ color: T.text, fontFamily: "'Syne', sans-serif" }}>Visão geral</h3>
+                <p className="mt-1 text-[12px]" style={{ color: T.muted }}>Ink Tattoo · Hoje</p>
+                <p className="mt-0.5 text-[11px]" style={{ color: T.faint }}>
+                  3 sessões hoje · 12 orçamentos abertos · R$ 1.240 em sinais pendentes
+                </p>
+              </div>
+
+              <div className="mb-4 grid grid-cols-2 gap-2.5 xl:grid-cols-4">
+                {stats.map(({ label, value, hint, Icon }, index) => (
+                  <div key={label} className="rounded-[14px] border p-3" style={{ borderColor: T.border, background: T.card }}>
+                    <div className="mb-2 flex items-center justify-between gap-2">
+                      <span className="truncate text-[10px]" style={{ color: T.muted }}>{label}</span>
+                      <Icon size={12} style={{ color: index % 2 === 0 ? T.accent : "#8DCEC0" }} />
+                    </div>
+                    <div className="text-lg font-semibold tracking-tight" style={{ color: T.text }}>{value}</div>
+                    <div className="mt-0.5 truncate text-[10px]" style={{ color: T.faint }}>{hint}</div>
                   </div>
                 ))}
               </div>
 
-              <div className="rounded-[18px] border" style={{ borderColor: T.border, background: T.card }}>
-                <div className="flex items-center justify-between border-b px-4 py-3" style={{ borderColor: T.border }}>
-                  <div>
-                    <div className="text-sm font-semibold" style={{ color: T.text }}>Orçamentos</div>
-                    <div className="text-[10px]" style={{ color: T.muted }}>Pipeline comercial</div>
-                  </div>
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full border" style={{ borderColor: T.border, color: T.muted }}>
-                    <Filter size={14} />
-                  </div>
+              <div className="mb-4 rounded-[16px] border p-3.5" style={{ borderColor: T.border, background: T.card }}>
+                <div className="mb-3 flex items-center justify-between">
+                  <div className="text-sm font-semibold" style={{ color: T.text }}>Pipeline de orçamentos</div>
+                  <div className="text-[10px]" style={{ color: T.faint }}>Valores estimados</div>
                 </div>
-
-                <div className="p-3">
-                  {budgetRows.map(({ status, client, style, value, dot }) => (
-                    <div key={client} className="mb-2 rounded-[14px] border p-3 last:mb-0" style={{ background: T.bgSec, borderColor: T.border }}>
-                      <div className="mb-2 flex items-center justify-between">
-                        <div className="flex items-center gap-1.5">
-                          <div className="h-1.5 w-1.5 rounded-full" style={{ background: dot }} />
-                          <span className="text-[10px]" style={{ color: T.muted }}>{status}</span>
-                        </div>
-                        <span className="text-[11px] font-semibold" style={{ color: T.text }}>{value}</span>
+                <div className="grid grid-cols-2 gap-2 xl:grid-cols-4">
+                  {pipeline.map((stage) => (
+                    <div key={stage.label} className="rounded-[12px] border px-2.5 py-2.5" style={{ background: T.bgSec, borderColor: T.border }}>
+                      <div className="mb-2 flex items-center justify-between gap-1">
+                        <span className="truncate text-[11px] font-semibold" style={{ color: T.text }}>{stage.label}</span>
+                        <span className="rounded-full border px-1.5 py-0.5 text-[9px]" style={{ borderColor: T.border, color: T.faint }}>{stage.count}</span>
                       </div>
-                      <div className="text-[12px] font-medium" style={{ color: T.text }}>{client}</div>
-                      <div className="text-[10px]" style={{ color: T.muted }}>{style}</div>
+                      <div className="text-[14px] font-semibold" style={{ color: T.text }}>{stage.value}</div>
+                      <div className="text-[9px]" style={{ color: T.faint }}>{stage.count} oportunidades</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-[16px] border p-3.5" style={{ borderColor: T.border, background: T.card }}>
+                <div className="mb-3 flex items-center justify-between">
+                  <div className="text-sm font-semibold" style={{ color: T.text }}>Precisa de atenção</div>
+                  <div className="text-[10px]" style={{ color: T.faint }}>Prioridade de hoje</div>
+                </div>
+                <div className="flex flex-col gap-2">
+                  {attention.map((item) => (
+                    <div key={item.name} className="flex items-center gap-3 rounded-[12px] border px-3 py-2.5" style={{ background: "rgba(6,17,15,0.76)", borderColor: T.border }}>
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-[12px] font-semibold" style={{ color: T.text }}>{item.name}</div>
+                        <div className="truncate text-[10px]" style={{ color: T.faint }}>{item.description}</div>
+                      </div>
+                      <span className="shrink-0 rounded-full border px-2 py-0.5 text-[9px] font-semibold" style={{ borderColor: T.border, color: T.muted }}>
+                        {item.badge}
+                      </span>
                     </div>
                   ))}
                 </div>
               </div>
             </div>
 
-            <div className="grid gap-px" style={{ background: T.border }}>
-              <div className="p-4 md:p-5" style={{ background: T.card }}>
-                <div className="mb-4 flex items-center justify-between">
-                  <div>
-                    <div className="text-sm font-semibold" style={{ color: T.text }}>Agenda</div>
-                    <div className="text-[10px]" style={{ color: T.muted }}>Julho 2026</div>
-                  </div>
-                  <span className="rounded-full border px-2.5 py-1 text-[10px]" style={{ borderColor: T.border, color: T.muted }}>5 sessões</span>
-                </div>
-                <div className="mb-4 grid grid-cols-7 gap-1">
-                  {["D","S","T","Q","Q","S","S"].map((d, i) => <div key={i} className="text-center text-[9px]" style={{ color: T.muted }}>{d}</div>)}
-                  {Array.from({ length: 21 }, (_, i) => i + 1).map((d) => (
-                    <div key={d} className="flex aspect-square items-center justify-center rounded-md text-[10px]" style={{ background: [3,9,14,17].includes(d) ? "rgba(240,237,228,0.08)" : "transparent", color: [3,9,14,17].includes(d) ? T.text : T.muted, fontWeight: [3,9,14,17].includes(d) ? 600 : 400 }}>
-                      {d}
-                    </div>
-                  ))}
-                </div>
-                <div className="flex flex-col gap-2">
-                  {[{ client: "Mariana Alves", time: "10:00", paid: true }, { client: "Lucas Rocha", time: "14:00", paid: false }].map(({ client, time, paid }) => (
-                    <div key={client} className="flex items-center gap-3 rounded-[12px] border p-2.5" style={{ background: paid ? `${T.green}10` : `${T.teal}08`, borderColor: paid ? `${T.green}20` : `${T.teal}18` }}>
-                      <div className="h-7 w-1 rounded-full" style={{ background: paid ? T.green : T.text }} />
-                      <div>
-                        <div className="text-[11px] font-medium" style={{ color: T.text }}>{client}</div>
-                        <div className="text-[10px]" style={{ color: T.muted }}>{time}{paid ? " · Sinal pago ✓" : ""}</div>
-                      </div>
-                    </div>
-                  ))}
+            <div className="flex flex-col p-4 md:p-5" style={{ background: T.card }}>
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-semibold" style={{ color: T.text }}>Agenda de hoje</div>
+                  <div className="text-[10px]" style={{ color: T.muted }}>3 sessões</div>
                 </div>
               </div>
 
-              <div className="p-4 md:p-5" style={{ background: T.text }}>
-                <div className="mb-4 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-full text-sm font-bold" style={{ background: T.teal, color: T.text }}>C</div>
-                    <div>
-                      <div className="text-sm font-semibold" style={{ color: "#0A1F1B" }}>Carla Vieira</div>
-                      <div className="text-[11px]" style={{ color: "rgba(2,8,6,0.52)" }}>7 sessões · Desde 2023</div>
+              <div className="flex flex-col gap-2.5">
+                {schedule.map((event) => (
+                  <div key={event.time} className="flex items-center gap-3 rounded-[12px] border p-3" style={{ background: T.bgSec, borderColor: T.border }}>
+                    <div
+                      className="flex h-10 w-12 shrink-0 items-center justify-center rounded-[10px] text-[11px] font-semibold"
+                      style={{ background: "rgba(240,237,228,0.06)", color: T.accent }}
+                    >
+                      {event.time}
                     </div>
-                  </div>
-                  <span className="rounded-full border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.1em]" style={{ borderColor: "rgba(0,71,65,0.25)", color: T.teal }}>Preview</span>
-                </div>
-                <div className="flex flex-col gap-2">
-                  {[{ label: "Estilo favorito", value: "Floral" }, { label: "Próxima sessão", value: "09/07 às 15:00" }, { label: "Valor total", value: "R$4.200" }].map(({ label, value }) => (
-                    <div key={label} className="flex items-center justify-between rounded-[10px] border p-2.5" style={{ background: "#FFFFFF", borderColor: "rgba(0,71,65,0.12)" }}>
-                      <span className="text-[10px]" style={{ color: "rgba(2,8,6,0.52)" }}>{label}</span>
-                      <span className="text-[10px] font-semibold" style={{ color: T.teal }}>{value}</span>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-[12px] font-semibold" style={{ color: T.text }}>{event.title}</div>
+                      <div className="truncate text-[10px]" style={{ color: T.faint }}>{event.client}</div>
                     </div>
-                  ))}
-                </div>
-                <div className="mt-4">
-                  <div className="mb-2 text-[10px] font-medium" style={{ color: "rgba(2,8,6,0.52)" }}>Referências</div>
-                  <div className="grid grid-cols-4 gap-2">
-                    {Array.from({ length: 4 }).map((_, i) => (
-                      <div key={i} className="aspect-square rounded-[10px] border" style={{ background: `linear-gradient(135deg, rgba(0,71,65,0.10), rgba(0,71,65,0.30))`, borderColor: "rgba(0,71,65,0.12)" }} />
-                    ))}
+                    <span
+                      className="shrink-0 rounded-full border px-2 py-0.5 text-[9px] font-semibold"
+                      style={{
+                        background: event.alert ? "rgba(216,208,191,0.10)" : "rgba(47,127,104,0.12)",
+                        borderColor: event.alert ? "rgba(216,208,191,0.28)" : "rgba(47,127,104,0.30)",
+                        color: T.accent,
+                      }}
+                    >
+                      {event.status}
+                    </span>
                   </div>
-                </div>
+                ))}
               </div>
             </div>
           </div>
 
           <div className="grid gap-px border-t md:grid-cols-3" style={{ borderColor: T.border, background: T.border }}>
-            {summaryItems.map(({ label, value, Icon }) => (
-              <div key={label} className="flex items-center justify-between p-4" style={{ background: "rgba(2,6,5,0.74)" }}>
+            {pulse.map(({ label, value, Icon }) => (
+              <div key={`footer-${label}`} className="flex items-center justify-between p-4" style={{ background: "rgba(2,6,5,0.74)" }}>
                 <div>
                   <div className="text-[10px]" style={{ color: T.muted }}>{label}</div>
                   <div className="mt-1 text-base font-semibold" style={{ color: T.text }}>{value}</div>
@@ -1156,9 +1386,9 @@ function InterfaceShowcaseSection() {
 function ForWhomSection() {
   const { ref, visible } = useFadeIn()
   const personas = [
-    { title: "Tatuador independente", tag: "Solo", desc: "Pedidos, agenda e clientes sem depender de planilhas, grupos de WhatsApp ou anotações soltas.", fit: "Ideal para quem atende sozinho e quer responder mais rápido.", metric: "1 artista", Icon: FileText },
-    { title: "Estúdio pequeno", tag: "Equipe", desc: "Uma visão clara da operação, com orçamentos, sessões e clientes no mesmo fluxo.", fit: "Para estúdios que precisam organizar a rotina sem sistema pesado.", metric: "2-8 pessoas", Icon: Users },
-    { title: "Artista em crescimento", tag: "Escala", desc: "Estrutura profissional para vender melhor, acompanhar leads e manter qualidade no atendimento.", fit: "Para quem está aumentando demanda e quer parecer mais premium.", metric: "+ demanda", Icon: TrendingUp },
+    { title: "Profissional independente", tag: "Solo", desc: "Pedidos, agenda e clientes sem depender de planilhas, grupos de WhatsApp ou anotações soltas.", fit: "Ideal para quem atende sozinho e quer responder mais rápido.", metric: "1 profissional", Icon: FileText },
+    { title: "Estúdio pequeno", tag: "Equipe", desc: "Uma visão clara da operação, com orçamentos, atendimentos e clientes no mesmo fluxo.", fit: "Para estúdios que precisam organizar a rotina sem sistema pesado.", metric: "2-8 pessoas", Icon: Users },
+    { title: "Negócio em crescimento", tag: "Escala", desc: "Estrutura profissional para vender melhor, acompanhar leads e manter qualidade no atendimento.", fit: "Para quem está aumentando demanda e quer parecer mais premium.", metric: "+ demanda", Icon: TrendingUp },
   ]
   return (
     <section id="clientes" className="relative overflow-hidden scroll-mt-[68px] px-5 py-28 md:px-8 lg:py-32" style={{ background: T.bgSec }}>
@@ -1173,11 +1403,11 @@ function ForWhomSection() {
               Para quem é
             </p>
             <h2 className="text-3xl font-semibold leading-tight md:text-5xl" style={{ ...fs(visible, 70), color: T.text }}>
-              Feito para quem vive da própria arte.
+              Feito para quem vive do próprio ofício.
             </h2>
           </div>
           <p className="max-w-[520px] text-sm leading-7 md:text-base" style={{ ...fs(visible, 130), color: T.muted }}>
-            O Markly se adapta ao tamanho do seu estúdio: começa simples para o artista solo e continua útil quando a demanda cresce.
+            O Markly se adapta ao tamanho do seu estúdio: começa simples para o profissional solo e continua útil quando a demanda cresce.
           </p>
         </div>
 
@@ -1237,11 +1467,11 @@ function DifferentialsSection() {
   const accent = T.accent
   const diffs = [
     { Icon: Layers, title: "Painel limpo e direto", desc: "Sem menus escondidos. Tudo que você precisa na primeira tela." },
-    { Icon: BarChart3, title: "Controle por status", desc: "Orçamentos, sessões e clientes sempre com situação clara." },
-    { Icon: Users, title: "Histórico completo", desc: "Cada cliente com registro de sessões, referências e valores." },
-    { Icon: Calendar, title: "Agenda integrada", desc: "Sessões conectadas a orçamentos. Sem duplicação de dados." },
-    { Icon: ImageIcon, title: "Portfólio organizado", desc: "Suas artes, estilos e fotos em um portfólio dentro do sistema." },
-    { Icon: Zap, title: "Pensado para tatuadores", desc: "Não é um sistema genérico adaptado. É feito para o seu negócio." },
+    { Icon: BarChart3, title: "Controle por status", desc: "Orçamentos, atendimentos e clientes sempre com situação clara." },
+    { Icon: Users, title: "Histórico completo", desc: "Cada cliente com registro de atendimentos, anexos e valores." },
+    { Icon: Calendar, title: "Agenda integrada", desc: "Atendimentos conectados a orçamentos. Sem duplicação de dados." },
+    { Icon: ImageIcon, title: "Portfólio organizado", desc: "Seus trabalhos, categorias e fotos em um portfólio dentro do sistema." },
+    { Icon: Zap, title: "Feito para estúdios", desc: "Se adapta a tatuagem, barbearia, estética, unhas e outros serviços." },
   ]
   const stackCards = [
     {
@@ -1253,13 +1483,13 @@ function DifferentialsSection() {
     {
       icon: <Users className="size-4" style={{ color: accent }} />,
       title: "Histórico completo",
-      description: "Sessões, referências e valores",
+      description: "Atendimentos, anexos e valores",
       date: "Ficha do cliente",
     },
     {
       icon: <Zap className="size-4" style={{ color: accent }} />,
-      title: "Feito para tattoo",
-      description: "Nada de sistema genérico adaptado",
+      title: "Multi-studio",
+      description: "Para diferentes tipos de negócio",
       date: "Direto ao ponto",
     },
   ]
@@ -1355,7 +1585,7 @@ function DifferentialsSection() {
 
 function PricingSection() {
   const { ref, visible } = useFadeIn()
-  const items = ["Orçamentos ilimitados", "Cadastro de clientes", "Agenda de sessões", "Portfólio organizado", "Painel de visão geral", "Suporte inicial"]
+  const items = ["Orçamentos ilimitados", "Cadastro de clientes", "Agenda de atendimentos", "Portfólio organizado", "Painel de visão geral", "Suporte inicial"]
   return (
     <section className="py-28 px-6" style={{ background: T.bgSec }}>
       <div className="max-w-6xl mx-auto">
@@ -1377,7 +1607,7 @@ function PricingSection() {
                 </div>
                 <span className="text-[10px] px-3 py-1.5 rounded-full border font-medium" style={{ background: `${T.amber}12`, borderColor: `${T.amber}25`, color: T.amber }}>Beta</span>
               </div>
-              <p className="text-sm mb-8 leading-relaxed" style={{ color: T.muted }}>Para tatuadores que querem sair da bagunça e controlar melhor seus pedidos.</p>
+              <p className="text-sm mb-8 leading-relaxed" style={{ color: T.muted }}>Para profissionais e estúdios que querem sair da bagunça e controlar melhor seus pedidos.</p>
               <div className="flex flex-col gap-3 mb-8">
                 {items.map((item) => (
                   <div key={item} className="flex items-center gap-3">
@@ -1405,7 +1635,7 @@ function PricingShowcaseSection() {
   const features = [
     "Orçamentos ilimitados",
     "Cadastro de clientes",
-    "Agenda de sessões",
+    "Agenda de atendimentos",
     "Portfólio organizado",
     "Painel de visão geral",
     "Suporte inicial",
@@ -1550,11 +1780,11 @@ function PricingShowcaseSection() {
 function FAQSection() {
   const { ref, visible } = useFadeIn()
   const faqs = [
-    { q: "O Markly é para tatuador autônomo?", a: "Sim. Ele foi pensado para tatuadores independentes e pequenos estúdios que querem organizar pedidos, clientes e agenda." },
+    { q: "O Markly é para profissional autônomo?", a: "Sim. Ele foi pensado para profissionais independentes e pequenos estúdios — tatuagem, barbearia, estética, unhas e outros — que querem organizar pedidos, clientes e agenda." },
     { q: "Preciso instalar alguma coisa?", a: "Não. O Markly funciona online, direto pelo navegador, sem necessidade de instalação." },
     { q: "Posso usar para controlar orçamentos do WhatsApp?", a: "Sim. A ideia é trazer os pedidos para um painel organizado, evitando que conversas importantes se percam." },
     { q: "Vai ter controle financeiro?", a: "A versão inicial foca em orçamentos, clientes e agenda. Recursos financeiros podem entrar nas próximas versões." },
-    { q: "Posso cadastrar meu portfólio?", a: "Sim. O portfólio faz parte da organização do artista dentro do sistema, conectado a estilos, clientes e orçamentos." },
+    { q: "Posso cadastrar meu portfólio?", a: "Sim. O portfólio faz parte da organização do seu estúdio, conectado a serviços, clientes e orçamentos." },
   ]
   return (
     <section id="faq" className="scroll-mt-[68px] py-28 px-6" style={{ background: T.bg }}>
@@ -1620,7 +1850,7 @@ function CTASection() {
             Organize seu estúdio com a calma de quem tem tudo no lugar.
           </h2>
           <p className="mx-auto mt-6 max-w-[600px] text-base leading-7 md:text-lg" style={{ color: T.muted }}>
-            Pedidos, clientes, agenda, portfólio e orçamentos em uma bancada digital feita para tatuadores.
+            Pedidos, clientes, agenda, portfólio e orçamentos em um painel digital feito para o seu estúdio.
           </p>
 
           <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -1662,7 +1892,7 @@ function Footer() {
               <BrandMark size={28} />
               <span className="text-xl font-semibold" style={{ color: T.text }}>Markly</span>
             </div>
-            <p className="max-w-[280px] text-sm leading-6" style={{ color: T.muted }}>Sua bancada digital para organizar pedidos, clientes e agenda.</p>
+            <p className="max-w-[280px] text-sm leading-6" style={{ color: T.muted }}>Seu painel digital para organizar pedidos, clientes e agenda.</p>
           </div>
 
           <div>
