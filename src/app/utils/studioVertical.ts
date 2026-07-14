@@ -92,7 +92,7 @@ export const studioVerticals: VerticalConfig[] = [
     studioNamePlaceholder: "Ex: Nail Studio Bela",
     projectTitlePlaceholder: "Ex: Alongamento em gel",
     styleFieldLabel: "Serviço",
-    styleOptions: ["Alongamento em gel", "Alongamento em fibra", "Esmaltação em gel", "Manutenção", "Nail art", "Spa dos pés", "Outro"],
+    styleOptions: ["Alongamento em gel", "Alongamento em fibra", "Esmaltação em gel", "Manutenção", "Nail art", "Banho de gel", "Spa dos pés", "Outro"],
     placementFieldLabel: null,
     placementFieldPlaceholder: "",
     detailsSectionLabel: "Detalhes do serviço",

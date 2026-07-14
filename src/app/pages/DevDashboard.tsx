@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type Dispatch, type SetStateAction } from "react"
+import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type Dispatch, type SetStateAction } from "react"
 import { AnimatePresence, motion } from "motion/react"
 import { toast, Toaster } from "sonner"
 import { ptBR } from "date-fns/locale/pt-BR"
@@ -17,7 +17,6 @@ import {
   LayoutDashboard,
   LogOut,
   MessageSquare,
-  MoreHorizontal,
   Moon,
   PanelLeftClose,
   PanelLeftDashed,
@@ -2356,125 +2355,110 @@ function StudioPulse() {
   )
 }
 
-function BudgetSummaryCard({
-  title,
-  value,
-  description,
-  icon: Icon,
-  index,
-}: {
-  title: string
-  value: string
-  description: string
-  icon: typeof FileText
-  index: number
-}) {
-  return (
-    <motion.div
-      className="border p-4 transition duration-200 hover:border-[color-mix(in_srgb,var(--markly-text)_22%,transparent)]"
-      style={{ background: T.card, borderColor: T.border, boxShadow: "0 18px 40px rgba(0,0,0,0.18)" }}
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.22, delay: index * 0.03 }}
-    >
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <p className="text-[12px]" style={{ color: T.muted }}>{title}</p>
-        <span className="flex size-8 items-center justify-center border" style={{ background: "color-mix(in srgb, var(--markly-text) 4%, transparent)", borderColor: T.border }}>
-          <Icon size={15} style={{ color: statIconColor(index) }} />
-        </span>
-      </div>
-      <p className="text-2xl font-semibold tracking-tight" style={{ color: T.text }}>{value}</p>
-      <p className="mt-1 text-[11px]" style={{ color: T.faint }}>{description}</p>
-    </motion.div>
-  )
-}
-
-function BudgetFollowups() {
-  const allFollowups = [
-    "3 orçamentos precisam de resposta hoje",
-    "2 clientes estão com sinal pendente",
-    "1 orçamento de alto valor está parado há 4 dias",
-  ]
-  const [resolved, setResolved] = useState<string[]>([])
-  const followups = allFollowups.filter((followup) => !resolved.includes(followup))
-
-  if (followups.length === 0) return null
-
-  return (
-    <div className="border p-4" style={{ background: T.card, borderColor: T.border }}>
-      <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-        <h3 className="text-sm font-semibold" style={{ color: T.text }}>Follow-ups inteligentes</h3>
-        <span className="text-[11px]" style={{ color: T.faint }}>Priorize onde agir primeiro</span>
-      </div>
-      <div className="grid gap-2 md:grid-cols-3">
-        {followups.map((followup, index) => (
-          <button
-            key={followup}
-            type="button"
-            onClick={() => {
-              setResolved((current) => [...current, followup])
-              toast("Follow-up resolvido.")
-            }}
-            className="group flex min-h-16 items-center justify-between gap-3 border px-3 py-2.5 text-left transition duration-200 hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--markly-text)_22%,transparent)]"
-            style={{ background: "color-mix(in srgb, var(--markly-text) 2.5%, transparent)", borderColor: T.border }}
-          >
-            <span className="text-[12px] font-semibold leading-5" style={{ color: T.text }}>{followup}</span>
-            <span className="flex size-7 shrink-0 items-center justify-center border text-[11px] font-bold" style={{ borderColor: T.border, color: T.accent, background: "color-mix(in srgb, var(--markly-accent) 6%, transparent)" }}>
-              {index + 1}
-            </span>
-          </button>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-function BudgetKanbanCard({ item, onOpen }: { item: BudgetItem; onOpen: (item: BudgetItem) => void }) {
+function BudgetQueueRow({ item, onOpen }: { item: BudgetItem; onOpen: (item: BudgetItem) => void }) {
   const verticalConfig = useVerticalConfig()
   const cardMeta = [item.style, verticalConfig.placementFieldLabel ? item.bodyPlacement : null, item.size].filter(Boolean).join(" · ")
+  const pendingDeposit = budgetHasPendingDeposit(item)
+
   return (
     <button
       type="button"
       onClick={() => onOpen(item)}
-      className="group w-full border p-3 text-left transition duration-200 hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--markly-text)_24%,transparent)] hover:shadow-[0_18px_36px_rgba(0,0,0,0.18)]"
-      style={{ background: T.bgSec, borderColor: T.border }}
+      className="group w-full border-t px-4 py-4 text-left transition-[background-color,border-color] duration-200 first:border-t-0 hover:bg-[color-mix(in_srgb,var(--markly-accent)_5%,transparent)] focus-visible:relative focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--markly-accent)] md:px-5"
+      style={{ borderColor: T.border }}
     >
-      <div className="mb-2 flex items-start justify-between gap-3">
+      <div className="grid min-w-0 gap-3 md:grid-cols-[minmax(0,1.35fr)_minmax(120px,0.72fr)_minmax(110px,0.55fr)_minmax(150px,0.78fr)_20px] md:items-center md:gap-5">
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold" style={{ color: T.text }}>{item.title}</p>
-          <p className="mt-0.5 truncate text-[12px]" style={{ color: T.faint }}>{item.client}</p>
+          <div className="flex min-w-0 items-center gap-2">
+            <p className="truncate text-sm font-semibold" style={{ color: T.text }}>{item.title}</p>
+            <span
+              className="hidden shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold sm:inline-flex"
+              style={{
+                borderColor: pendingDeposit ? "color-mix(in srgb, var(--markly-accent) 36%, transparent)" : T.border,
+                color: pendingDeposit ? T.accent : T.muted,
+                background: pendingDeposit ? "color-mix(in srgb, var(--markly-accent) 8%, transparent)" : "color-mix(in srgb, var(--markly-text) 3%, transparent)",
+              }}
+            >
+              {item.status}
+            </span>
+          </div>
+          <p className="mt-1 truncate text-[12px]" style={{ color: T.muted }}>{item.client}</p>
+          <p className="mt-1 truncate text-[11px] md:hidden" style={{ color: T.faint }}>{cardMeta}</p>
         </div>
-        <MoreHorizontal size={15} className="shrink-0 opacity-60 transition group-hover:opacity-100" style={{ color: T.faint }} />
-      </div>
-      <p className="text-[11px] leading-5" style={{ color: T.muted }}>
-        {cardMeta}
-      </p>
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        <span className="border px-2 py-1 text-[11px] font-semibold" style={{ borderColor: T.border, color: T.text, background: "color-mix(in srgb, var(--markly-text) 3%, transparent)" }}>
-          {item.valueRange}
-        </span>
-        {item.deposit && (
-          <span className="border px-2 py-1 text-[11px] font-semibold" style={{ borderColor: budgetHasPendingDeposit(item) ? "color-mix(in srgb, var(--markly-accent) 32%, transparent)" : T.border, color: budgetHasPendingDeposit(item) ? T.accent : T.muted }}>
-            {item.deposit}
-          </span>
-        )}
-      </div>
-      <div className="mt-3 flex items-center justify-between gap-3">
-        <span className="border px-2 py-1 text-[10px] font-semibold" style={{ borderColor: T.border, color: T.faint }}>
-          {item.source}
-        </span>
-        <span className="inline-flex items-center gap-1 text-[11px]" style={{ color: T.faint }}>
-          <Clock size={12} />
-          {item.waitingTime}
-        </span>
-      </div>
-      <div className="mt-3 border-t pt-3" style={{ borderColor: T.border }}>
-        <span className="inline-flex max-w-full items-center gap-1 text-[11px] font-semibold" style={{ color: T.accent }}>
-          {item.nextAction}
-          <ChevronRight size={13} className="transition duration-200 group-hover:translate-x-0.5" />
-        </span>
+
+        <div className="hidden min-w-0 md:block">
+          <p className="truncate text-[12px] font-medium" style={{ color: T.muted }}>{cardMeta}</p>
+          <p className="mt-1 truncate text-[11px]" style={{ color: T.faint }}>{item.source}</p>
+        </div>
+
+        <div className="flex flex-wrap items-baseline justify-between gap-2 md:block">
+          <p className="text-[12px] font-semibold" style={{ color: T.text }}>{item.valueRange}</p>
+          {item.deposit && <p className="mt-1 text-[10px]" style={{ color: pendingDeposit ? T.accent : T.faint }}>{item.deposit}</p>}
+        </div>
+
+        <div className="flex items-center justify-between gap-3 md:block">
+          <p className="truncate text-[12px] font-semibold" style={{ color: T.accent }}>{item.nextAction}</p>
+          <p className="mt-1 inline-flex items-center gap-1 text-[10px]" style={{ color: T.faint }}>
+            <Clock size={11} />
+            {item.waitingTime}
+          </p>
+        </div>
+
+        <ChevronRight size={17} className="hidden transition-transform duration-200 group-hover:translate-x-0.5 md:block" style={{ color: T.faint }} />
       </div>
     </button>
+  )
+}
+
+function BudgetPriorities({ items, onOpen }: { items: BudgetItem[]; onOpen: (item: BudgetItem) => void }) {
+  const priorityIds = ["bgt-001", "bgt-007", "bgt-005"]
+  const priorities = priorityIds.map((id) => items.find((item) => item.id === id)).filter((item): item is BudgetItem => Boolean(item))
+
+  return (
+    <aside className="border lg:sticky lg:top-24 lg:self-start" style={{ background: T.card, borderColor: T.border }}>
+      <div className="flex items-start justify-between gap-4 border-b px-4 py-4" style={{ borderColor: T.border }}>
+        <div>
+          <h3 className="text-sm font-semibold" style={{ color: T.text }}>Prioridades de hoje</h3>
+          <p className="mt-1 text-[11px]" style={{ color: T.faint }}>O que merece resposta primeiro.</p>
+        </div>
+        <span className="flex size-7 items-center justify-center rounded-full text-[11px] font-bold" style={{ background: T.text, color: T.bg }}>
+          {priorities.length}
+        </span>
+      </div>
+
+      <div>
+        {priorities.map((item, index) => (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => onOpen(item)}
+            className="group w-full border-t px-4 py-4 text-left transition-colors duration-200 first:border-t-0 hover:bg-[color-mix(in_srgb,var(--markly-accent)_5%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--markly-accent)]"
+            style={{ borderColor: T.border }}
+          >
+            <div className="flex items-start gap-3">
+              <span className="flex size-7 shrink-0 items-center justify-center rounded-full border text-[10px] font-bold" style={{ borderColor: T.borderStrong, color: T.accent }}>
+                {String(index + 1).padStart(2, "0")}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[12px] font-semibold" style={{ color: T.text }}>{item.client}</span>
+                <span className="mt-0.5 block truncate text-[11px]" style={{ color: T.faint }}>{item.title}</span>
+                <span className="mt-3 flex items-center justify-between gap-3">
+                  <span className="truncate text-[11px] font-semibold" style={{ color: T.accent }}>{item.nextAction}</span>
+                  <span className="shrink-0 text-[10px]" style={{ color: T.faint }}>{item.waitingTime}</span>
+                </span>
+              </span>
+            </div>
+          </button>
+        ))}
+      </div>
+
+      <div className="border-t px-4 py-3" style={{ borderColor: T.border, background: "color-mix(in srgb, var(--markly-text) 2%, transparent)" }}>
+        <div className="flex items-center justify-between gap-3 text-[11px]">
+          <span style={{ color: T.faint }}>Sinais aguardando</span>
+          <span className="font-semibold" style={{ color: T.text }}>{formatCurrency(budgetMock.summary.pendingDepositsAmount)}</span>
+        </div>
+      </div>
+    </aside>
   )
 }
 
@@ -2490,17 +2474,24 @@ function BudgetBoard({
   onNewBudget: () => void
 }) {
   const filteredColumns = useMemo(() => filterBudgetColumns(columns, filters), [columns, filters])
-  const visibleCount = filteredColumns.reduce((total, column) => total + column.items.length, 0)
+  const [activeStage, setActiveStage] = useState<"all" | BudgetColumnId>("all")
+  const allItems = useMemo(() => allBudgetItems(columns), [columns])
+  const filteredItems = useMemo(() => allBudgetItems(filteredColumns), [filteredColumns])
+  const activeColumn = activeStage === "all" ? null : filteredColumns.find((column) => column.id === activeStage)
+  const activeItems = activeColumn?.items ?? filteredItems
   const hasFilters = JSON.stringify(filters) !== JSON.stringify(initialBudgetFilters)
-  const columnRefs = useRef<Record<string, HTMLElement | null>>({})
-  const summaryCards = [
-    { title: "Orçamentos abertos", value: String(budgetMock.summary.openBudgets), description: "12 sem resposta", icon: FileText },
-    { title: "Aguardando resposta", value: String(budgetMock.summary.unansweredBudgets), description: "follow-up recomendado", icon: MessageSquare },
-    { title: "Sinais pendentes", value: formatCurrency(budgetMock.summary.pendingDepositsAmount), description: "4 aguardando pagamento", icon: WalletCards },
-    { title: "Valor em negociação", value: formatCurrency(budgetMock.summary.negotiationAmount), description: "pipeline atual", icon: TrendingUp },
+  const metrics = [
+    { label: "Em aberto", value: String(budgetMock.summary.openBudgets), note: "12 aguardam resposta", icon: FileText },
+    { label: "Em negociação", value: formatCurrency(budgetMock.summary.negotiationAmount), note: "pipeline atual", icon: TrendingUp },
+    { label: "Sinais pendentes", value: formatCurrency(budgetMock.summary.pendingDepositsAmount), note: "4 pagamentos", icon: WalletCards },
+    { label: "Tempo de resposta", value: "6h", note: "média do studio", icon: MessageSquare },
+  ]
+  const stageOptions = [
+    { id: "all" as const, title: "Todos", count: filteredItems.length },
+    ...filteredColumns.map((column) => ({ id: column.id, title: column.title, count: column.items.length })),
   ]
 
-  if (allBudgetItems(columns).length === 0) {
+  if (allItems.length === 0) {
     return (
       <div className="flex min-h-[420px] flex-col items-center justify-center border px-6 py-12 text-center" style={{ background: T.card, borderColor: T.border }}>
         <FileText size={26} style={{ color: T.accent }} />
@@ -2522,68 +2513,99 @@ function BudgetBoard({
   }
 
   return (
-    <div className="grid gap-5">
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        {summaryCards.map((card, index) => <BudgetSummaryCard key={card.title} {...card} index={index} />)}
-      </div>
-
-      <BudgetFollowups />
-
-      <div className="border p-4" style={{ background: T.card, borderColor: T.border }}>
-        <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-          <div>
-            <h3 className="text-sm font-semibold" style={{ color: T.text }}>Pipeline de orçamentos</h3>
-            <p className="mt-1 text-[12px]" style={{ color: T.faint }}>
-              Pedido → orçamento → proposta → sinal → agenda → fechamento.
-            </p>
-          </div>
-          <span className="text-[11px]" style={{ color: T.faint }}>
-            {hasFilters ? `${visibleCount} resultado(s) com filtros` : "6 etapas em visão completa"}
-          </span>
-        </div>
-        <div className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
-          {filteredColumns.map((column) => (
-            <section
-              key={column.id}
-              ref={(node) => { columnRefs.current[column.id] = node }}
-              className="flex min-h-[320px] min-w-0 flex-col border p-3"
-              style={{ background: "rgba(2,8,6,0.32)", borderColor: T.border }}
+    <div className="grid gap-4">
+      <section className="grid grid-cols-2 border xl:grid-cols-4" style={{ background: T.card, borderColor: T.border }}>
+        {metrics.map((metric, index) => {
+          const Icon = metric.icon
+          return (
+            <div
+              key={metric.label}
+              className={cn(
+                "min-w-0 px-4 py-4 md:px-5",
+                index === 0 && "border-b border-r xl:border-b-0 xl:border-r-0",
+                index === 1 && "border-b xl:border-b-0 xl:border-l",
+                index === 2 && "border-r xl:border-l xl:border-r-0",
+                index === 3 && "xl:border-l",
+              )}
+              style={{ borderColor: T.border }}
             >
-              <div className="mb-3 flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <h4 className="truncate text-sm font-semibold" style={{ color: T.text }}>{column.title}</h4>
-                  <p className="mt-0.5 truncate text-[11px]" style={{ color: T.faint }}>{column.description}</p>
-                </div>
-                <span className="border px-2 py-0.5 text-[10px] font-bold" style={{ background: "color-mix(in srgb, var(--markly-text) 4%, transparent)", borderColor: T.border, color: T.muted }}>
-                  {column.count}
+              <div className="flex items-center justify-between gap-3">
+                <p className="truncate text-[11px] font-medium" style={{ color: T.muted }}>{metric.label}</p>
+                <Icon size={14} className="shrink-0" style={{ color: statIconColor(index) }} />
+              </div>
+              <p className="mt-3 text-xl font-semibold tracking-tight md:text-2xl" style={{ color: T.text }}>{metric.value}</p>
+              <p className="mt-1 truncate text-[10px]" style={{ color: T.faint }}>{metric.note}</p>
+            </div>
+          )
+        })}
+      </section>
+
+      <section className="border p-2" style={{ background: T.card, borderColor: T.border }}>
+        <div className="grid grid-cols-2 gap-1 sm:grid-cols-4 xl:grid-cols-7" role="tablist" aria-label="Etapas do pipeline">
+          {stageOptions.map((stage) => {
+            const active = activeStage === stage.id
+            return (
+              <button
+                key={stage.id}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => setActiveStage(stage.id)}
+                className="flex min-h-11 items-center justify-between gap-2 rounded-[10px] px-3 py-2 text-left transition-[background-color,color] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--markly-accent)]"
+                style={{
+                  background: active ? T.text : "transparent",
+                  color: active ? T.bg : T.muted,
+                }}
+              >
+                <span className="truncate text-[11px] font-semibold">{stage.title}</span>
+                <span
+                  className="flex size-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold"
+                  style={{ background: active ? "color-mix(in srgb, var(--markly-bg) 16%, transparent)" : "color-mix(in srgb, var(--markly-text) 5%, transparent)" }}
+                >
+                  {stage.count}
                 </span>
-              </div>
-              <div className="grid max-h-[520px] flex-1 content-start gap-2.5 overflow-y-auto pr-1">
-                {column.items.length ? (
-                  column.items.map((item) => <BudgetKanbanCard key={item.id} item={item} onOpen={onOpenBudget} />)
-                ) : (
-                  <div className="border px-3 py-8 text-center text-[12px]" style={{ background: "color-mix(in srgb, var(--markly-text) 1.8%, transparent)", borderColor: T.border, color: T.faint }}>
-                    Nenhum orçamento aqui.
-                  </div>
-                )}
-              </div>
-            </section>
-          ))}
+              </button>
+            )
+          })}
         </div>
-        <div className="mt-4 grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
-          {filteredColumns.map((column) => (
-            <button
-              key={`quick-${column.id}`}
-              type="button"
-              onClick={() => columnRefs.current[column.id]?.scrollIntoView({ behavior: "smooth", block: "nearest" })}
-              className="flex items-center justify-between gap-2 border px-3 py-2 text-left transition duration-200 hover:border-[color-mix(in_srgb,var(--markly-text)_22%,transparent)]"
-              style={{ background: "color-mix(in srgb, var(--markly-text) 1.8%, transparent)", borderColor: T.border }}
-            >
-              <span className="truncate text-[11px] font-semibold" style={{ color: T.muted }}>{column.title}</span>
-              <span className="shrink-0 text-[11px] font-bold" style={{ color: T.accent }}>{column.count}</span>
-            </button>
-          ))}
-        </div>
+      </section>
+
+      <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_280px] xl:grid-cols-[minmax(0,1fr)_310px]">
+        <section className="min-w-0 border" role="tabpanel" style={{ background: T.card, borderColor: T.border }}>
+          <div className="flex flex-col gap-2 border-b px-4 py-4 sm:flex-row sm:items-end sm:justify-between md:px-5" style={{ borderColor: T.border }}>
+            <div>
+              <h3 className="text-sm font-semibold" style={{ color: T.text }}>{activeColumn?.title ?? "Fila de orçamentos"}</h3>
+              <p className="mt-1 text-[11px]" style={{ color: T.faint }}>
+                {activeColumn?.description ?? "Compare pedidos, valores e a próxima ação em uma única lista."}
+              </p>
+            </div>
+            <span className="text-[11px]" style={{ color: T.faint }}>
+              {hasFilters ? `${activeItems.length} resultado(s) nesta etapa` : `${activeItems.length} orçamento(s) nesta visão`}
+            </span>
+          </div>
+
+          <div className="hidden grid-cols-[minmax(0,1.35fr)_minmax(120px,0.72fr)_minmax(110px,0.55fr)_minmax(150px,0.78fr)_20px] gap-5 border-b px-5 py-2.5 text-[10px] font-semibold md:grid" style={{ borderColor: T.border, color: T.faint, background: "color-mix(in srgb, var(--markly-text) 2%, transparent)" }}>
+            <span>Projeto e cliente</span>
+            <span>Detalhes</span>
+            <span>Valor</span>
+            <span>Próxima ação</span>
+            <span />
+          </div>
+
+          {activeItems.length ? (
+            <div>
+              {activeItems.map((item) => <BudgetQueueRow key={item.id} item={item} onOpen={onOpenBudget} />)}
+            </div>
+          ) : (
+            <div className="flex min-h-56 flex-col items-center justify-center px-5 py-10 text-center">
+              <FileText size={22} style={{ color: T.accent }} />
+              <h4 className="mt-3 text-sm font-semibold" style={{ color: T.text }}>Nenhum orçamento nesta etapa.</h4>
+              <p className="mt-1 text-[12px]" style={{ color: T.faint }}>Altere a etapa ou limpe os filtros para ver outros pedidos.</p>
+            </div>
+          )}
+        </section>
+
+        <BudgetPriorities items={allItems} onOpen={onOpenBudget} />
       </div>
     </div>
   )
@@ -7299,9 +7321,15 @@ export default function DevDashboard() {
     [appearanceMode],
   )
 
-  useEffect(() => {
-    document.documentElement.dataset.marklyTheme = appearanceMode
-    document.documentElement.classList.toggle("dark", appearanceMode === "dark")
+  useLayoutEffect(() => {
+    const root = document.documentElement
+    root.dataset.marklyTheme = appearanceMode
+    root.classList.toggle("dark", appearanceMode === "dark")
+
+    return () => {
+      delete root.dataset.marklyTheme
+      root.classList.remove("dark")
+    }
   }, [appearanceMode])
 
   useEffect(() => {
@@ -7757,6 +7785,7 @@ export default function DevDashboard() {
 
       <StudioSetupModal
         open={!studioSetupCompleted || addStudioModalOpen}
+        theme={appearanceMode}
         initialProfile={addStudioModalOpen ? defaultStudioProfile : studioProfile}
         onComplete={handleCreateStudio}
         onCancel={addStudioModalOpen ? () => setAddStudioModalOpen(false) : undefined}

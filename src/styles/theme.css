@@ -303,6 +303,110 @@ html[data-markly-theme="light"],
     color: var(--markly-text) !important;
   }
 
+  .markly-setup-root[data-markly-theme] {
+    background: transparent !important;
+  }
+
+  html[data-markly-theme="light"] .markly-setup-select-trigger,
+  [data-markly-theme="light"] .markly-setup-select-trigger {
+    background: #ffffff !important;
+    border-color: rgba(16, 35, 27, 0.16) !important;
+    color: var(--markly-text) !important;
+    box-shadow: 0 1px 2px rgba(23, 35, 30, 0.05) !important;
+  }
+
+  html[data-markly-theme="light"] .markly-setup-select-trigger[data-placeholder],
+  [data-markly-theme="light"] .markly-setup-select-trigger[data-placeholder] {
+    color: rgba(23, 35, 30, 0.58) !important;
+  }
+
+  html[data-markly-theme="light"] .markly-setup-select-trigger:hover,
+  [data-markly-theme="light"] .markly-setup-select-trigger:hover {
+    background: #f8fbf9 !important;
+    border-color: rgba(13, 92, 83, 0.28) !important;
+  }
+
+  html[data-markly-theme="light"] .markly-setup-select-trigger[data-state="open"],
+  [data-markly-theme="light"] .markly-setup-select-trigger[data-state="open"] {
+    border-color: rgba(13, 92, 83, 0.42) !important;
+    box-shadow: 0 0 0 3px rgba(13, 92, 83, 0.09) !important;
+  }
+
+  html[data-markly-theme="light"] .markly-setup-select-content,
+  [data-markly-theme="light"] .markly-setup-select-content {
+    background: #ffffff !important;
+    border-color: rgba(16, 35, 27, 0.14) !important;
+    color: var(--markly-text) !important;
+    box-shadow: 0 8px 24px rgba(23, 35, 30, 0.14) !important;
+  }
+
+  html[data-markly-theme="light"] .markly-setup-select-item,
+  [data-markly-theme="light"] .markly-setup-select-item {
+    color: rgba(23, 35, 30, 0.76) !important;
+  }
+
+  html[data-markly-theme="light"] .markly-setup-select-item:focus,
+  [data-markly-theme="light"] .markly-setup-select-item:focus {
+    background: rgba(13, 92, 83, 0.08) !important;
+    color: var(--markly-text) !important;
+  }
+
+  html[data-markly-theme="light"] .markly-setup-time-field[data-disabled="true"],
+  [data-markly-theme="light"] .markly-setup-time-field[data-disabled="true"] {
+    background: #f5f8f6 !important;
+    border-color: rgba(16, 35, 27, 0.12) !important;
+    opacity: 1 !important;
+  }
+
+  html[data-markly-theme="light"] .markly-setup-time-field[data-disabled="true"] .markly-setup-time-trigger,
+  [data-markly-theme="light"] .markly-setup-time-field[data-disabled="true"] .markly-setup-time-trigger {
+    color: rgba(23, 35, 30, 0.58) !important;
+    opacity: 1 !important;
+  }
+
+  html[data-markly-theme="light"] .markly-setup-time-field[data-disabled="true"] span,
+  [data-markly-theme="light"] .markly-setup-time-field[data-disabled="true"] span {
+    color: rgba(23, 35, 30, 0.48) !important;
+  }
+
+  html[data-markly-theme="light"] .markly-setup-flexible-row,
+  [data-markly-theme="light"] .markly-setup-flexible-row {
+    background: #ffffff !important;
+    border-color: rgba(16, 35, 27, 0.14) !important;
+  }
+
+  html[data-markly-theme="light"] .markly-setup-checkbox,
+  [data-markly-theme="light"] .markly-setup-checkbox {
+    position: relative;
+    border: 1px solid rgba(16, 35, 27, 0.22) !important;
+    border-radius: 6px !important;
+    background: #ffffff !important;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.72) !important;
+  }
+
+  html[data-markly-theme="light"] .markly-setup-checkbox[aria-checked="true"],
+  [data-markly-theme="light"] .markly-setup-checkbox[aria-checked="true"] {
+    border-color: #0d5c53 !important;
+    background: #0d5c53 !important;
+    box-shadow: 0 0 0 3px rgba(13, 92, 83, 0.10) !important;
+  }
+
+  html[data-markly-theme="light"] .markly-setup-checkbox[aria-checked="true"]::after,
+  [data-markly-theme="light"] .markly-setup-checkbox[aria-checked="true"]::after {
+    position: absolute;
+    width: 6px;
+    height: 10px;
+    border-right: 2px solid #ffffff;
+    border-bottom: 2px solid #ffffff;
+    content: "";
+    transform: translateY(-1px) rotate(45deg);
+  }
+
+  html[data-markly-theme="light"] .markly-setup-checkbox[aria-checked="true"] > *,
+  [data-markly-theme="light"] .markly-setup-checkbox[aria-checked="true"] > * {
+    opacity: 0;
+  }
+
   [data-markly-theme="light"] input::placeholder,
   [data-markly-theme="light"] textarea::placeholder {
     color: rgba(23, 35, 30, 0.42) !important;

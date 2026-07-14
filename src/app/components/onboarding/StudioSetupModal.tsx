@@ -21,6 +21,7 @@ import {
 
 type StudioSetupModalProps = {
   open: boolean
+  theme: "light" | "dark"
   initialProfile: StudioProfile
   onComplete: (profile: StudioProfile) => void
   onCancel?: () => void
@@ -58,25 +59,25 @@ function SelectField({
       <p className="mb-2 text-[12px] font-semibold" style={{ color: T.text }}>{label}</p>
       <Select value={value} onValueChange={onChange}>
         <SelectTrigger
-          className="min-h-[50px] rounded-[14px] border px-4 py-3 text-left text-[13px] font-semibold shadow-none data-[placeholder]:text-[rgba(240,237,228,0.42)]"
+          className="markly-setup-select-trigger min-h-[50px] rounded-[14px] border px-4 py-3 text-left text-[13px] font-semibold shadow-none transition-[background-color,border-color,color] duration-200 data-[placeholder]:text-[var(--markly-faint)]"
           style={{
-            background: "linear-gradient(180deg, rgba(2,8,6,0.74), rgba(2,8,6,0.52))",
-            borderColor: value ? "rgba(240,237,228,0.22)" : T.border,
+            background: "color-mix(in srgb, var(--markly-bg-sec) 88%, var(--markly-bg))",
+            borderColor: value ? T.borderStrong : T.border,
             color: value ? T.text : T.faint,
-            boxShadow: value ? "inset 0 1px 0 rgba(240,237,228,0.06)" : "none",
+            boxShadow: "inset 0 1px 0 color-mix(in srgb, var(--markly-text) 5%, transparent)",
           }}
         >
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent
-          className="z-[140] rounded-[14px] border bg-[#081713] p-1 text-[#F0EDE4] shadow-[0_24px_80px_rgba(0,0,0,0.55)]"
-          style={{ borderColor: "rgba(240,237,228,0.14)" }}
+          className="markly-setup-select-content z-[140] rounded-[14px] border p-1 shadow-[0_12px_32px_rgba(0,0,0,0.22)]"
+          style={{ background: T.card, borderColor: T.borderStrong, color: T.text }}
         >
           {options.map((option) => (
             <SelectItem
               key={option}
               value={option}
-              className="rounded-[10px] px-3 py-2.5 text-[13px] text-[rgba(240,237,228,0.76)] focus:bg-[rgba(240,237,228,0.08)] focus:text-[#F0EDE4]"
+              className="markly-setup-select-item rounded-[10px] px-3 py-2.5 text-[13px] text-[var(--markly-muted)] focus:bg-[color-mix(in_srgb,var(--markly-accent)_10%,transparent)] focus:text-[var(--markly-text)]"
             >
               {option}
             </SelectItem>
@@ -100,7 +101,8 @@ function TimeField({
 }) {
   return (
     <div
-      className="rounded-[14px] border p-3 transition-all duration-200"
+      className="markly-setup-time-field rounded-[14px] border p-3 transition-all duration-200"
+      data-disabled={disabled ? "true" : "false"}
       style={{
         background: disabled ? "rgba(2,8,6,0.28)" : "rgba(2,8,6,0.54)",
         borderColor: disabled ? "rgba(240,237,228,0.07)" : "rgba(240,237,228,0.12)",
@@ -113,7 +115,7 @@ function TimeField({
       </span>
       <Select value={value} onValueChange={onChange} disabled={disabled}>
         <SelectTrigger
-          className="h-auto rounded-[10px] border-0 bg-transparent p-0 text-left text-[20px] font-semibold shadow-none ring-0 focus:ring-0 focus-visible:ring-0 disabled:cursor-not-allowed [&>svg]:opacity-50"
+          className="markly-setup-time-trigger h-auto rounded-[10px] border-0 bg-transparent p-0 text-left text-[20px] font-semibold shadow-none ring-0 focus:ring-0 focus-visible:ring-0 disabled:cursor-not-allowed [&>svg]:opacity-50"
           style={{ color: T.text }}
         >
           <SelectValue />
@@ -150,7 +152,7 @@ function Chip({
     <button
       type="button"
       onClick={onClick}
-      className="rounded-full border px-3.5 py-2 text-[12px] font-semibold transition-all duration-200"
+      className="flex min-h-11 w-full items-center justify-center rounded-full border px-3 py-2 text-center text-[12px] font-semibold leading-tight transition-all duration-200"
       style={{
         background: active ? T.text : "rgba(2,8,6,0.42)",
         borderColor: active ? T.text : T.border,
@@ -201,7 +203,7 @@ function VerticalOptionCard({
   )
 }
 
-export default function StudioSetupModal({ open, initialProfile, onComplete, onCancel }: StudioSetupModalProps) {
+export default function StudioSetupModal({ open, theme, initialProfile, onComplete, onCancel }: StudioSetupModalProps) {
   const [step, setStep] = useState(0)
   const [profile, setProfile] = useState<StudioProfile>(initialProfile)
   const [error, setError] = useState("")
@@ -316,7 +318,13 @@ export default function StudioSetupModal({ open, initialProfile, onComplete, onC
   const primaryLabel = step === 0 ? "Configurar meu studio" : step === totalSteps - 1 ? "Entrar no dashboard" : "Continuar"
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center px-4 py-6" role="dialog" aria-modal="true" aria-label="Studio Setup">
+    <div
+      className="markly-setup-root fixed inset-0 z-[120] flex items-center justify-center px-4 py-6"
+      data-markly-theme={theme}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Studio Setup"
+    >
       <div className="absolute inset-0 bg-black/72 backdrop-blur-xl" />
 
       <motion.div
@@ -563,8 +571,8 @@ export default function StudioSetupModal({ open, initialProfile, onComplete, onC
                             disabled={profile.flexibleHours}
                           />
                         </div>
-                        <div className="mt-3 flex items-center gap-2.5 rounded-[14px] border px-3 py-2.5" style={{ background: "rgba(2,8,6,0.36)", borderColor: T.border }}>
-                          <LottieCheckbox checked={profile.flexibleHours} onChange={(checked) => update("flexibleHours", checked)} />
+                        <div className="markly-setup-flexible-row mt-3 flex items-center gap-2.5 rounded-[14px] border px-3 py-2.5" style={{ background: "rgba(2,8,6,0.36)", borderColor: T.border }}>
+                          <LottieCheckbox className="markly-setup-checkbox" checked={profile.flexibleHours} onChange={(checked) => update("flexibleHours", checked)} />
                           <button
                             type="button"
                             onClick={() => update("flexibleHours", !profile.flexibleHours)}
@@ -584,7 +592,7 @@ export default function StudioSetupModal({ open, initialProfile, onComplete, onC
                 <div>
                   <h2 className="font-display text-2xl font-semibold" style={{ color: T.text }}>{verticalConfig.specialtiesQuestion}</h2>
                   <p className="mt-2 text-sm" style={{ color: T.muted }}>Selecione quantos quiser. Você pode ajustar isso depois.</p>
-                  <div className="mt-6 flex flex-wrap gap-2">
+                  <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
                     {verticalConfig.styleOptions.map((item) => (
                       <Chip key={item} label={item} active={profile.mainStyles.includes(item)} onClick={() => toggleStyle(item)} />
                     ))}

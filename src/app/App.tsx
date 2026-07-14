@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, CSSProperties } from "react"
+import { useState, useEffect, useLayoutEffect, useRef, CSSProperties } from "react"
 import { motion } from "motion/react"
 import gsap from "gsap"
 import { SplitText } from "gsap/SplitText"
@@ -227,7 +227,7 @@ function LaptopMockup() {
               >
                 <div className="min-w-0">
                   <p className="text-[9px] uppercase tracking-[0.16em]" style={{ color: T.faint }}>Painel interno</p>
-                  <p className="truncate text-[12px] font-semibold" style={{ color: T.text }}>Olá, Bruno</p>
+                  <p className="truncate text-[12px] font-semibold" style={{ color: T.text }}>Olá, seu nome</p>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <span className="hidden rounded-full border px-2 py-0.5 text-[9px] md:inline-flex" style={{ borderColor: T.border, color: T.muted }}>Owner</span>
@@ -680,6 +680,28 @@ function ProductSection() {
     { name: "Lucas Rocha", sessions: 2, tag: "Estética" },
     { name: "Carla Vieira", sessions: 7, tag: "Unhas" },
   ]
+  const portfolioPreviewItems = [
+    {
+      label: "Barbearia",
+      image: "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=420&q=80",
+    },
+    {
+      label: "Estética",
+      image: "https://images.unsplash.com/photo-1515377905703-c4788e51af15?auto=format&fit=crop&w=420&q=80",
+    },
+    {
+      label: "Unhas",
+      image: "https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=420&q=80",
+    },
+    {
+      label: "Tatuagem",
+      image: "https://images.unsplash.com/photo-1565058379802-bbe93b2f703a?auto=format&fit=crop&w=420&q=80",
+    },
+    {
+      label: "Outros",
+      image: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=420&q=80",
+    },
+  ]
 
   // Sincroniza o painel sticky com o item que cruza a faixa central da viewport.
   // Threshold 0 + banda estreita: dispara poucas vezes e os cards têm altura fixa,
@@ -899,7 +921,27 @@ function ProductSection() {
               {active === 3 && (
                 <div>
                   <div className="mb-4 grid grid-cols-3 gap-2">
-                    {Array.from({ length: 6 }).map((_, i) => <div key={i} className="aspect-square rounded-[12px] border" style={{ background: `linear-gradient(135deg, rgba(240,237,228,0.09) 0%, rgba(0,71,65,0.28) 100%)`, borderColor: T.border }} />)}
+                    {portfolioPreviewItems.map(({ label, image }) => (
+                      <div
+                        key={label}
+                        className="group relative aspect-square overflow-hidden rounded-[12px] border"
+                        style={{ background: T.bgSec, borderColor: T.border }}
+                      >
+                        <img
+                          src={image}
+                          alt={`Referência de ${label.toLowerCase()} no portfólio`}
+                          className="h-full w-full object-cover opacity-80 transition duration-500 group-hover:scale-105 group-hover:opacity-100"
+                          loading="lazy"
+                        />
+                        <div
+                          className="absolute inset-0"
+                          style={{ background: "linear-gradient(180deg, transparent 25%, rgba(2,8,6,0.72) 100%)" }}
+                        />
+                        <span className="absolute bottom-2 left-2 right-2 truncate text-[9px] font-semibold" style={{ color: T.text }}>
+                          {label}
+                        </span>
+                      </div>
+                    ))}
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     {["Barbearia", "Estética", "Unhas", "Tatuagem", "Outros"].map((s) => <span key={s} className="rounded-full border px-2 py-0.5 text-[9px]" style={{ borderColor: T.border, color: T.muted }}>{s}</span>)}
@@ -1999,6 +2041,13 @@ export default function App() {
   const hash = useHashRoute()
   const authMode = hash.startsWith("#/cadastro") ? "cadastro" : hash.startsWith("#/login") ? "login" : null
   const isDevDashboard = hash.startsWith("#/painel")
+
+  useLayoutEffect(() => {
+    if (isDevDashboard) return
+    const root = document.documentElement
+    delete root.dataset.marklyTheme
+    root.classList.remove("dark")
+  }, [isDevDashboard])
 
   return (
     <div style={{ fontFamily: "Poppins, sans-serif", background: T.bg, minHeight: "100vh" }}>
