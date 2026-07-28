@@ -105,6 +105,7 @@ type StudioOperationalData = {
   portfolioItems: PortfolioItem[]
   financeTransactions: FinanceTransaction[]
   calendarEvents: CalendarEvent[]
+  messages: MessageThread[]
 }
 type SidebarLayoutMode = "expanded" | "hover" | "collapsed"
 type AppearanceMode = "dark" | "light"
@@ -1520,6 +1521,12 @@ function clientStatusStyle(status: ClientStatus) {
   }
 }
 
+function clientStatusLabel(status: ClientStatus, verticalConfig: VerticalConfig) {
+  return verticalConfig.id === "barbearia" && status === "Sessão marcada"
+    ? "Atendimento marcado"
+    : status
+}
+
 function clientAnamnesisStyle(status: ClientAnamnesisStatus) {
   if (status === "Preenchida") {
     return {
@@ -1599,15 +1606,14 @@ function clientMatchesQuery(client: ClientItem, query: string) {
 }
 
 function clientSummaryFromList(clients: ClientItem[]) {
-  const extraClients = Math.max(0, clients.length - clientsMock.clients.length)
   return {
-    activeClients: clientsMock.summary.activeClients + extraClients,
-    newThisMonth: clientsMock.summary.newThisMonth + extraClients,
-    withBudget: clientsMock.summary.withBudget + clients.filter((client) => client.id.startsWith("cli-new") && client.flags.openBudget).length,
-    unansweredBudgets: clientsMock.summary.unansweredBudgets,
-    withSession: clientsMock.summary.withSession + clients.filter((client) => client.id.startsWith("cli-new") && client.flags.scheduledSession).length,
-    todaySessions: clientsMock.summary.todaySessions,
-    withoutReturn: clientsMock.summary.withoutReturn + clients.filter((client) => client.id.startsWith("cli-new") && client.flags.needsReturn).length,
+    activeClients: clients.filter((client) => client.status !== "Inativo").length,
+    newThisMonth: clients.filter((client) => client.status === "Novo cliente").length,
+    withBudget: clients.filter((client) => client.flags.openBudget).length,
+    unansweredBudgets: clients.filter((client) => client.flags.needsReturn && client.flags.openBudget).length,
+    withSession: clients.filter((client) => client.flags.scheduledSession).length,
+    todaySessions: clients.filter((client) => client.sessions.some((session) => session.date.toLowerCase().includes("hoje"))).length,
+    withoutReturn: clients.filter((client) => client.flags.needsReturn).length,
   }
 }
 
@@ -1813,7 +1819,7 @@ function applyPortfolioAction(item: PortfolioItem, action: string): { item: Port
   return { item, message: `"${action}" ainda é uma ação mockada.` }
 }
 
-function StatCard({ item, index }: { item: (typeof overviewMock.stats)[number]; index: number }) {
+function StatCard({ item, index }: { item: ReturnType<typeof buildStudioOverview>["stats"][number]; index: number }) {
   const Icon = item.icon
 
   return (
@@ -1848,9 +1854,13 @@ function Panel({ title, action, children }: { title: string; action?: string; ch
   )
 }
 
-function AttentionList() {
+function AttentionList({ items: sourceItems }: { items: ReturnType<typeof buildStudioOverview>["attentionItems"] }) {
   const [resolved, setResolved] = useState<string[]>([])
-  const items = overviewMock.attentionItems.filter((item) => !resolved.includes(item.name))
+  const items = sourceItems.filter((item) => !resolved.includes(item.name))
+
+  useEffect(() => {
+    setResolved([])
+  }, [sourceItems])
 
   return (
     <Panel title="Precisa de atenção" action="Prioridade de hoje">
@@ -1903,14 +1913,15 @@ function scheduleStatusStyle(status: string) {
   }
 }
 
-function TodaySchedule() {
+function TodaySchedule({ items }: { items: ReturnType<typeof buildStudioOverview>["todaySchedule"] }) {
   return (
-    <Panel title="Agenda de hoje" action={`${overviewMock.todaySchedule.length} sessões`}>
-      <div className="flex flex-col gap-3">
-        {overviewMock.todaySchedule.map((event) => {
+    <Panel title="Agenda de hoje" action={`${items.length} atendimento(s)`}>
+      {items.length ? (
+        <div className="flex flex-col gap-3">
+        {items.map((event) => {
           const statusStyle = scheduleStatusStyle(event.status)
           return (
-            <div key={event.time} className="flex flex-col gap-3 rounded-[14px] border p-3 transition duration-200 hover:border-[color-mix(in_srgb,var(--markly-text)_22%,transparent)] sm:flex-row sm:items-center" style={{ background: T.bgSec, borderColor: T.border }}>
+            <div key={event.id} className="flex flex-col gap-3 rounded-[14px] border p-3 transition duration-200 hover:border-[color-mix(in_srgb,var(--markly-text)_22%,transparent)] sm:flex-row sm:items-center" style={{ background: T.bgSec, borderColor: T.border }}>
               <div className="flex h-10 w-14 shrink-0 items-center justify-center rounded-[12px] text-[12px] font-semibold" style={{ background: "color-mix(in srgb, var(--markly-text) 6%, transparent)", color: T.accent }}>
                 {event.time}
               </div>
@@ -1924,7 +1935,13 @@ function TodaySchedule() {
             </div>
           )
         })}
-      </div>
+        </div>
+      ) : (
+        <div className="border px-4 py-6 text-center" style={{ background: T.bgSec, borderColor: T.border }}>
+          <p className="text-sm font-semibold" style={{ color: T.text }}>Nenhum atendimento para hoje.</p>
+          <p className="mt-1 text-[12px]" style={{ color: T.faint }}>A agenda deste studio está livre.</p>
+        </div>
+      )}
     </Panel>
   )
 }
@@ -2066,6 +2083,315 @@ function buildCalendarMockEvents(): CalendarEvent[] {
     at(7, "10:30", "Retoque lettering", "Bianca Torres", "Sinal pago"),
     at(10, "09:30", "Consulta dragão oriental", "Caio Lima", "Anamnese pendente"),
   ]
+}
+
+const STUDIO_OPERATIONAL_DATA_KEY = "markly_studio_operational_data_v3"
+
+function cloneOperationalValue<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T
+}
+
+function replaceOperationalStrings<T>(value: T, replacements: [string, string][]): T {
+  if (typeof value === "string") {
+    const replaced = replacements.reduce(
+      (current, [from, to]) => current.split(from).join(to),
+      value,
+    )
+    return replaced as T
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => replaceOperationalStrings(item, replacements)) as T
+  }
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, item]) => [key, replaceOperationalStrings(item, replacements)]),
+    ) as T
+  }
+  return value
+}
+
+function isStudioOperationalData(value: unknown): value is StudioOperationalData {
+  if (!value || typeof value !== "object") return false
+  const data = value as Partial<StudioOperationalData>
+  return [
+    data.budgetColumns,
+    data.clients,
+    data.portfolioItems,
+    data.financeTransactions,
+    data.calendarEvents,
+    data.messages,
+  ].every(Array.isArray)
+}
+
+function readStudioOperationalDataCache() {
+  if (typeof window === "undefined") return {} as Record<string, StudioOperationalData>
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(STUDIO_OPERATIONAL_DATA_KEY) ?? "{}") as Record<string, unknown>
+    return Object.fromEntries(
+      Object.entries(parsed).filter((entry): entry is [string, StudioOperationalData] => isStudioOperationalData(entry[1])),
+    )
+  } catch {
+    return {} as Record<string, StudioOperationalData>
+  }
+}
+
+function saveStudioOperationalDataCache(cache: Record<string, StudioOperationalData>) {
+  if (typeof window === "undefined") return
+  window.localStorage.setItem(STUDIO_OPERATIONAL_DATA_KEY, JSON.stringify(cache))
+}
+
+const alternativeClientNames: [string, string][] = [
+  ["Mariana Alves", "Felipe Ramos"],
+  ["Marina Alves", "Felipe Ramos"],
+  ["Júlia Martins", "Renato Silva"],
+  ["Rafael Nunes", "Diego Martins"],
+  ["Lucas Rocha", "Henrique Alves"],
+  ["Caio Lima", "Marcelo Nunes"],
+  ["Fernanda Dias", "André Luiz"],
+  ["Bianca Torres", "Thiago Costa"],
+  ["Pedro Santos", "Vinícius Melo"],
+  ["Carla Vieira", "Eduardo Ramos"],
+  ["Rafael Mendes", "Gustavo Prado"],
+]
+
+const barberDatasetReplacements: [string, string][] = [
+  ...alternativeClientNames,
+  ["Marina", "Felipe"],
+  ["@marinaalves", "@feliperamos"],
+  ["@rafaelnunes", "@diegomartins"],
+  ["@juliamartins", "@renatosilva"],
+  ["@lucasrocha", "@henriquealves"],
+  ["Sessão floral P&B", "Corte clássico + barba"],
+  ["Sessão realismo ombro", "Corte social"],
+  ["Retoque fine line", "Acabamento e pezinho"],
+  ["Consulta blackwork", "Avaliação de visagismo"],
+  ["Fechamento floral", "Transformação completa"],
+  ["Fine line costela", "Degradê navalhado"],
+  ["fine line costela", "degradê navalhado"],
+  ["Fine line", "Degradê"],
+  ["fine line", "degradê"],
+  ["Blackwork braço", "Platinado + corte"],
+  ["Blackwork", "Platinado"],
+  ["blackwork", "platinado"],
+  ["Autoral", "Corte personalizado"],
+  ["Old school", "Corte clássico"],
+  ["Anime/geek", "Corte criativo"],
+  ["Minimalista", "Acabamento básico"],
+  ["Dragão oriental", "Corte e barba executivo"],
+  ["Oriental", "Corte clássico"],
+  ["Lettering mão", "Barba desenhada"],
+  ["Lettering", "Barba"],
+  ["Realismo ombro", "Corte social"],
+  ["Realismo", "Corte social"],
+  ["Floral", "Corte + barba"],
+  ["Geométrico", "Sobrancelha"],
+  ["Mandala ombro", "Corte infantil"],
+  ["Flash autoral", "Corte express"],
+  ["flash autoral", "corte express"],
+  ["Ajuste no desenho", "Ajuste no acabamento"],
+  ["deixar a flor um pouco menor e manter o caule mais fino", "deixar o degradê mais baixo e manter o acabamento marcado"],
+  ["reduzir a flor e deixar o caule mais fino", "baixar o degradê e reforçar o acabamento"],
+  ["costela ou no braço", "degradê baixo ou médio"],
+  ["a costela combina melhor", "o degradê baixo combina melhor"],
+  ["uma composição", "uma proposta"],
+  ["aquele flash pequeno", "aquele horário de sábado"],
+  ["tattoo", "serviço"],
+  ["Tattoo", "Serviço"],
+  ["Anamnese pendente", "Preferências pendentes"],
+  ["Anamnese", "Preferências"],
+  ["sessões", "atendimentos"],
+  ["Sessões", "Atendimentos"],
+  ["sessão", "atendimento"],
+  ["Sessão", "Atendimento"],
+]
+
+function buildBaseOperationalData(): StudioOperationalData {
+  return {
+    budgetColumns: cloneOperationalValue(budgetMock.columns),
+    clients: cloneOperationalValue(clientsMock.clients),
+    portfolioItems: cloneOperationalValue(portfolioMock),
+    financeTransactions: cloneOperationalValue(financeMock.transactions),
+    calendarEvents: buildCalendarMockEvents(),
+    messages: cloneOperationalValue(messagesMock),
+  }
+}
+
+function buildStudioOperationalData(profile: StudioProfile, studioId: string): StudioOperationalData {
+  const base = buildBaseOperationalData()
+  if (profile.vertical === "tatuagem") return base
+
+  const verticalConfig = getVerticalConfig(profile.vertical)
+  const replacements = profile.vertical === "barbearia"
+    ? barberDatasetReplacements
+    : [
+        ...alternativeClientNames,
+        ["Fine line", verticalConfig.styleOptions[0] ?? "Serviço"],
+        ["Blackwork", verticalConfig.styleOptions[1] ?? "Serviço premium"],
+        ["Floral", verticalConfig.styleOptions[2] ?? "Pacote"],
+        ["Realismo", verticalConfig.styleOptions[3] ?? "Atendimento"],
+        ["tattoo", "serviço"],
+        ["Tattoo", "Serviço"],
+        ["sessões", "atendimentos"],
+        ["Sessões", "Atendimentos"],
+        ["sessão", "atendimento"],
+        ["Sessão", "Atendimento"],
+      ] as [string, string][]
+  const data = replaceOperationalStrings(base, replacements)
+  const seed = [...studioId].reduce((total, char) => total + char.charCodeAt(0), 0)
+
+  data.budgetColumns = data.budgetColumns.map((column, index) => ({
+    ...column,
+    count: Math.max(column.items.length, column.count - 1 - ((seed + index) % 3)),
+    items: column.items.map((item) => {
+      if (profile.vertical !== "barbearia") return item
+      const serviceValue = Math.max(45, Math.round(parseBudgetValue(item.valueRange) * 0.2))
+      const depositValue = item.deposit
+        ? Math.max(20, Math.round(parseBudgetValue(item.deposit) * 0.2))
+        : null
+      return {
+        ...item,
+        bodyPlacement: "",
+        valueRange: formatCurrency(serviceValue),
+        deposit: depositValue ? `${formatCurrency(depositValue)}${item.deposit.toLowerCase().includes("pendente") ? " pendente" : ""}` : null,
+      }
+    }),
+  }))
+  data.clients = data.clients.map((client, index) => ({
+    ...client,
+    bodyPlacement: profile.vertical === "barbearia" ? "" : client.bodyPlacement,
+    interest: profile.vertical === "barbearia"
+      ? `${client.style} · ${["horário pela manhã", "atendimento premium", "pacote mensal", "encaixe esta semana", "retorno agendado"][index] ?? "atendimento personalizado"}`
+      : client.interest,
+    status: (client.status as string) === "Atendimento marcada" ? "Sessão marcada" : client.status,
+    value: formatCurrency(profile.vertical === "barbearia" ? 80 + index * 45 : 180 + index * 90),
+    numericValue: profile.vertical === "barbearia" ? 80 + index * 45 : 180 + index * 90,
+  }))
+  data.financeTransactions = data.financeTransactions.map((transaction, index) => ({
+    ...transaction,
+    amount: profile.vertical === "barbearia"
+      ? Math.max(45, Math.round(transaction.amount * 0.24) + index * 5)
+      : Math.max(90, Math.round(transaction.amount * 0.55)),
+  }))
+  data.messages = data.messages.map((message, index) => ({
+    ...message,
+    value: formatCurrency(profile.vertical === "barbearia" ? 70 + index * 35 : 190 + index * 80),
+  }))
+  data.portfolioItems = data.portfolioItems.map((item, index) => ({
+    ...item,
+    bodyPlacement: profile.vertical === "barbearia" ? "" : item.bodyPlacement,
+    metrics: {
+      photos: Math.max(2, item.metrics.photos - 1),
+      views: item.metrics.views + ((seed + index * 37) % 240),
+      saves: item.metrics.saves + ((seed + index * 7) % 30),
+    },
+  }))
+  return data
+}
+
+function operationalDataMatchesProfile(data: StudioOperationalData | undefined, profile: StudioProfile) {
+  if (!data) return false
+  if (profile.vertical === "barbearia") {
+    return data.clients.every((client) => !client.bodyPlacement) &&
+      data.clients.every((client) => !client.instagram.includes("marinaalves"))
+  }
+  return true
+}
+
+function parseBudgetValue(value: string) {
+  const matches = value.match(/\d[\d.]*/g)
+  if (!matches?.length) return 0
+  const values = matches.map((item) => Number(item.replace(/\./g, ""))).filter(Number.isFinite)
+  return values.length > 1
+    ? Math.round(values.reduce((total, item) => total + item, 0) / values.length)
+    : values[0] ?? 0
+}
+
+function buildStudioOverview(data: StudioOperationalData, profile: StudioProfile) {
+  const budgetItems = allBudgetItems(data.budgetColumns)
+  const todayValue = toDateValue(new Date())
+  const todaySchedule = data.calendarEvents
+    .filter((event) => event.date === todayValue)
+    .sort((a, b) => a.time.localeCompare(b.time))
+  const openBudgetCount = data.budgetColumns
+    .filter((column) => column.id !== "closed")
+    .reduce((total, column) => total + column.count, 0)
+  const unansweredCount = data.messages.filter((message) => message.unread).length
+  const pendingIncome = data.financeTransactions.filter(
+    (transaction) => transaction.type === "income" && transaction.status === "Pendente",
+  )
+  const pendingDepositsAmount = pendingIncome.reduce((total, transaction) => total + transaction.amount, 0)
+  const estimatedRevenue = data.financeTransactions
+    .filter((transaction) => transaction.type === "income")
+    .reduce((total, transaction) => total + transaction.amount, 0)
+  const pendingBudgets = budgetItems.filter((item) => budgetHasPendingDeposit(item))
+  const activeClients = data.clients.filter((client) => client.status !== "Inativo")
+  const conversionBase = Math.max(1, openBudgetCount)
+  const closedCount = data.budgetColumns.find((column) => column.id === "closed")?.count ?? 0
+  const ticketAverage = activeClients.length
+    ? Math.round(activeClients.reduce((total, client) => total + client.numericValue, 0) / activeClients.length)
+    : 0
+  const attentionItems = [
+    ...data.messages
+      .filter((message) => message.unread || message.priority === "Alta")
+      .slice(0, 2)
+      .map((message) => ({
+        name: message.client,
+        description: message.subject,
+        badge: message.channel,
+        action: message.nextAction,
+      })),
+    ...pendingBudgets.slice(0, 2).map((budget) => ({
+      name: budget.client,
+      description: budget.title,
+      badge: "Pagamento",
+      action: budget.nextAction,
+    })),
+    ...todaySchedule.slice(0, 1).map((event) => ({
+      name: event.client,
+      description: `${event.title} às ${event.time}`,
+      badge: "Hoje",
+      action: "Ver agenda",
+    })),
+  ].filter((item, index, items) => items.findIndex((candidate) => candidate.name === item.name) === index).slice(0, 4)
+  const pipelineColumns: BudgetColumnId[] = ["new", "analysis", "deposit", "scheduled"]
+  const pipeline = pipelineColumns.map((columnId) => {
+    const column = data.budgetColumns.find((item) => item.id === columnId)
+    const value = column?.items.reduce((total, item) => total + parseBudgetValue(item.valueRange), 0) ?? 0
+    return {
+      label: column?.title ?? "Etapa",
+      count: column?.count ?? 0,
+      value: formatCurrency(value),
+    }
+  })
+  const searchItems = [
+    ...data.clients.slice(0, 2).map((client) => ({ title: client.name, type: "Cliente", description: `${client.style} · ${client.lastContact}` })),
+    ...budgetItems.slice(0, 2).map((budget) => ({ title: budget.title, type: "Orçamento", description: `${budget.valueRange} · ${budget.status}` })),
+    ...todaySchedule.slice(0, 1).map((event) => ({ title: event.title, type: "Agenda", description: `Hoje às ${event.time}` })),
+  ]
+
+  return {
+    summary: {
+      todaySessions: todaySchedule.length,
+      unansweredBudgets: unansweredCount,
+      pendingDepositsAmount,
+    },
+    stats: [
+      { label: "Orçamentos abertos", value: String(openBudgetCount), hint: `${unansweredCount} sem resposta`, icon: FileText },
+      { label: profile.vertical === "tatuagem" ? "Sessões hoje" : "Atendimentos hoje", value: String(todaySchedule.length), hint: todaySchedule[0] ? `Próximo às ${todaySchedule[0].time}` : "Agenda livre", icon: Calendar },
+      { label: "Sinais pendentes", value: formatCurrency(pendingDepositsAmount), hint: `${pendingIncome.length} aguardando pagamento`, icon: WalletCards },
+      { label: "Faturamento estimado", value: formatCurrency(estimatedRevenue), hint: "mês atual", icon: TrendingUp },
+    ],
+    attentionItems,
+    todaySchedule,
+    pipeline,
+    studioPulse: [
+      { label: "Ticket médio", value: formatCurrency(ticketAverage), description: "clientes ativos", icon: WalletCards },
+      { label: "Tempo médio de resposta", value: profile.vertical === "barbearia" ? "11 min" : "18 min", description: "média estimada", icon: Clock },
+      { label: "Agenda ocupada", value: `${Math.min(98, 58 + todaySchedule.length * 11)}%`, description: "semana atual", icon: Calendar },
+      { label: "Taxa de fechamento", value: `${Math.min(92, Math.round((closedCount / conversionBase) * 100) + 54)}%`, description: "orçamentos convertidos", icon: TrendingUp },
+    ],
+    searchItems,
+  }
 }
 
 function AddSessionPopover({ clients, onAdd }: { clients: ClientItem[]; onAdd: (clientName: string, time: string) => void }) {
@@ -2310,11 +2636,11 @@ function CalendarView({
   )
 }
 
-function PipelineSummary() {
+function PipelineSummary({ items }: { items: ReturnType<typeof buildStudioOverview>["pipeline"] }) {
   return (
     <Panel title="Pipeline de orçamentos" action="Valores estimados">
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {overviewMock.pipeline.map((stage) => (
+        {items.map((stage) => (
           <div
             key={stage.label}
             className="rounded-[14px] border p-4 transition duration-200 hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--markly-text)_22%,transparent)]"
@@ -2335,11 +2661,11 @@ function PipelineSummary() {
   )
 }
 
-function StudioPulse() {
+function StudioPulse({ items }: { items: ReturnType<typeof buildStudioOverview>["studioPulse"] }) {
   return (
     <Panel title="Pulso do studio" action="Análise rápida">
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {overviewMock.studioPulse.map((metric, index) => {
+        {items.map((metric, index) => {
           const MetricIcon = metric.icon
           return (
             <div key={metric.label} className="rounded-[14px] border p-4 transition duration-200 hover:border-[color-mix(in_srgb,var(--markly-text)_18%,transparent)]" style={{ background: T.bgSec, borderColor: T.border }}>
@@ -2413,6 +2739,9 @@ function BudgetQueueRow({ item, onOpen }: { item: BudgetItem; onOpen: (item: Bud
 function BudgetPriorities({ items, onOpen }: { items: BudgetItem[]; onOpen: (item: BudgetItem) => void }) {
   const priorityIds = ["bgt-001", "bgt-007", "bgt-005"]
   const priorities = priorityIds.map((id) => items.find((item) => item.id === id)).filter((item): item is BudgetItem => Boolean(item))
+  const pendingDepositAmount = items
+    .filter((item) => budgetHasPendingDeposit(item))
+    .reduce((total, item) => total + parseBudgetValue(item.deposit ?? ""), 0)
 
   return (
     <aside className="border lg:sticky lg:top-24 lg:self-start" style={{ background: T.card, borderColor: T.border }}>
@@ -2455,7 +2784,7 @@ function BudgetPriorities({ items, onOpen }: { items: BudgetItem[]; onOpen: (ite
       <div className="border-t px-4 py-3" style={{ borderColor: T.border, background: "color-mix(in srgb, var(--markly-text) 2%, transparent)" }}>
         <div className="flex items-center justify-between gap-3 text-[11px]">
           <span style={{ color: T.faint }}>Sinais aguardando</span>
-          <span className="font-semibold" style={{ color: T.text }}>{formatCurrency(budgetMock.summary.pendingDepositsAmount)}</span>
+          <span className="font-semibold" style={{ color: T.text }}>{formatCurrency(pendingDepositAmount)}</span>
         </div>
       </div>
     </aside>
@@ -2473,6 +2802,7 @@ function BudgetBoard({
   onOpenBudget: (item: BudgetItem) => void
   onNewBudget: () => void
 }) {
+  const verticalConfig = useVerticalConfig()
   const filteredColumns = useMemo(() => filterBudgetColumns(columns, filters), [columns, filters])
   const [activeStage, setActiveStage] = useState<"all" | BudgetColumnId>("all")
   const allItems = useMemo(() => allBudgetItems(columns), [columns])
@@ -2480,11 +2810,22 @@ function BudgetBoard({
   const activeColumn = activeStage === "all" ? null : filteredColumns.find((column) => column.id === activeStage)
   const activeItems = activeColumn?.items ?? filteredItems
   const hasFilters = JSON.stringify(filters) !== JSON.stringify(initialBudgetFilters)
+  const openBudgetCount = columns
+    .filter((column) => column.id !== "closed")
+    .reduce((total, column) => total + column.count, 0)
+  const negotiationAmount = allItems
+    .filter((item) => item.status !== "Fechado" && item.status !== "Perdido")
+    .reduce((total, item) => total + parseBudgetValue(item.valueRange), 0)
+  const pendingDepositItems = allItems.filter((item) => budgetHasPendingDeposit(item))
+  const pendingDepositAmount = pendingDepositItems.reduce(
+    (total, item) => total + parseBudgetValue(item.deposit ?? ""),
+    0,
+  )
   const metrics = [
-    { label: "Em aberto", value: String(budgetMock.summary.openBudgets), note: "12 aguardam resposta", icon: FileText },
-    { label: "Em negociação", value: formatCurrency(budgetMock.summary.negotiationAmount), note: "pipeline atual", icon: TrendingUp },
-    { label: "Sinais pendentes", value: formatCurrency(budgetMock.summary.pendingDepositsAmount), note: "4 pagamentos", icon: WalletCards },
-    { label: "Tempo de resposta", value: "6h", note: "média do studio", icon: MessageSquare },
+    { label: "Em aberto", value: String(openBudgetCount), note: `${columns[0]?.count ?? 0} novos pedidos`, icon: FileText },
+    { label: "Em negociação", value: formatCurrency(negotiationAmount), note: "pipeline atual", icon: TrendingUp },
+    { label: "Sinais pendentes", value: formatCurrency(pendingDepositAmount), note: `${pendingDepositItems.length} pagamentos`, icon: WalletCards },
+    { label: "Tempo de resposta", value: verticalConfig.id === "barbearia" ? "11 min" : "6h", note: "média do studio", icon: MessageSquare },
   ]
   const stageOptions = [
     { id: "all" as const, title: "Todos", count: filteredItems.length },
@@ -3174,13 +3515,14 @@ function ClientsView({
   const filteredClients = useMemo(() => filterClients(clients, filters), [clients, filters])
   const hasFilters = JSON.stringify(filters) !== JSON.stringify(initialClientFilters)
   const summary = clientSummaryFromList(clients)
+  const appointmentLabel = verticalConfig.id === "barbearia" ? "atendimento" : "sessão"
   const tableGridCols = verticalConfig.showAnamnesis
     ? "grid-cols-[1.15fr_1fr_0.9fr_0.7fr_1fr_0.65fr_0.72fr]"
     : "grid-cols-[1.2fr_1.05fr_0.95fr_0.75fr_1.05fr_0.7fr]"
   const summaryCards = [
     { title: "Clientes ativos", value: String(summary.activeClients), description: `${summary.newThisMonth} novos este mês`, icon: Users },
     { title: "Com orçamento", value: String(summary.withBudget), description: `${summary.unansweredBudgets} aguardando resposta`, icon: FileText },
-    { title: "Com sessão marcada", value: String(summary.withSession), description: `${summary.todaySessions} sessões hoje`, icon: Calendar },
+    { title: `Com ${appointmentLabel} marcado`, value: String(summary.withSession), description: `${summary.todaySessions} ${appointmentLabel}(s) hoje`, icon: Calendar },
     { title: "Sem retorno", value: String(summary.withoutReturn), description: "follow-up recomendado", icon: MessageSquare },
   ]
 
@@ -3195,7 +3537,7 @@ function ClientsView({
           <div>
             <h3 className="text-sm font-semibold" style={{ color: T.text }}>Central de clientes</h3>
             <p className="mt-1 text-[12px] leading-5" style={{ color: T.faint }}>
-              Contatos, interesses, orçamentos e sessões{verticalConfig.showAnamnesis ? ` e ${verticalConfig.anamnesisSidebarLabel.toLowerCase()}` : ""} no mesmo lugar.
+              Contatos, interesses, orçamentos e {appointmentLabel}s{verticalConfig.showAnamnesis ? ` e ${verticalConfig.anamnesisSidebarLabel.toLowerCase()}` : ""} no mesmo lugar.
             </p>
           </div>
           <span className="text-[11px]" style={{ color: T.faint }}>
@@ -3252,7 +3594,7 @@ function ClientsView({
                       <span className="block truncate text-[12px] font-semibold" style={{ color: T.muted }}>{client.interest}</span>
                       <span className="mt-0.5 block truncate text-[11px]" style={{ color: T.faint }}>{client.source}</span>
                     </span>
-                    <ClientBadge style={clientStatusStyle(client.status)}>{client.status}</ClientBadge>
+                    <ClientBadge style={clientStatusStyle(client.status)}>{clientStatusLabel(client.status, verticalConfig)}</ClientBadge>
                     <span className="text-[12px] font-semibold" style={{ color: T.muted }}>{client.lastContact}</span>
                     <span className="inline-flex min-w-0 items-center gap-1 text-[12px] font-semibold" style={{ color: T.accent }}>
                       <span className="truncate">{client.nextAction}</span>
@@ -3285,7 +3627,7 @@ function ClientsView({
                     <span className="text-sm font-semibold" style={{ color: T.text }}>{client.value}</span>
                   </div>
                   <div className="mt-3 flex flex-wrap gap-2">
-                    <ClientBadge style={clientStatusStyle(client.status)}>{client.status}</ClientBadge>
+                    <ClientBadge style={clientStatusStyle(client.status)}>{clientStatusLabel(client.status, verticalConfig)}</ClientBadge>
                     {verticalConfig.showAnamnesis && (
                       <ClientBadge style={clientAnamnesisStyle(client.anamnesis)}>{verticalConfig.anamnesisSidebarLabel}: {client.anamnesis}</ClientBadge>
                     )}
@@ -3461,6 +3803,7 @@ function ClientSearchModal({
   onOpenChange: (open: boolean) => void
   onOpenClient: (client: ClientItem) => void
 }) {
+  const verticalConfig = useVerticalConfig()
   const [query, setQuery] = useState("")
   const [resolvedQuery, setResolvedQuery] = useState("")
   const [isSearching, setIsSearching] = useState(false)
@@ -3568,7 +3911,7 @@ function ClientSearchModal({
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.16, delay: index * 0.025 }}
                   >
-                    <ClientBadge style={clientStatusStyle(client.status)}>{client.status}</ClientBadge>
+                    <ClientBadge style={clientStatusStyle(client.status)}>{clientStatusLabel(client.status, verticalConfig)}</ClientBadge>
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-semibold" style={{ color: T.text }}>{client.name}</span>
                       <span className="mt-0.5 block truncate text-[12px]" style={{ color: T.faint }}>
@@ -3786,7 +4129,7 @@ function ClientDetailPanel({
       >
         <SheetHeader className="border-b px-6 py-5 pr-14" style={{ borderColor: T.border }}>
           <div className="flex flex-wrap items-center gap-2">
-            <ClientBadge style={clientStatusStyle(client.status)}>{client.status}</ClientBadge>
+            <ClientBadge style={clientStatusStyle(client.status)}>{clientStatusLabel(client.status, verticalConfig)}</ClientBadge>
             {verticalConfig.showAnamnesis && (
               <ClientBadge style={clientAnamnesisStyle(client.anamnesis)}>{verticalConfig.anamnesisSidebarLabel}: {client.anamnesis}</ClientBadge>
             )}
@@ -4030,14 +4373,23 @@ function MessageSummaryCard({
   )
 }
 
-function MessagesView() {
+function MessagesView({ messages }: { messages: MessageThread[] }) {
   const verticalConfig = useVerticalConfig()
-  const [selectedId, setSelectedId] = useState(messagesMock[0]?.id ?? "")
+  const [selectedId, setSelectedId] = useState(messages[0]?.id ?? "")
   const [query, setQuery] = useState("")
   const [quickFilter, setQuickFilter] = useState("Todas")
+  const [dismissedSuggestionIds, setDismissedSuggestionIds] = useState<Set<string>>(() => new Set())
+
+  useEffect(() => {
+    setSelectedId(messages[0]?.id ?? "")
+    setQuery("")
+    setQuickFilter("Todas")
+    setDismissedSuggestionIds(new Set())
+  }, [messages])
+
   const visibleMessages = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
-    return messagesMock.filter((message) => {
+    return messages.filter((message) => {
       const matchesQuery = !normalizedQuery || [
         message.client,
         message.handle,
@@ -4060,19 +4412,29 @@ function MessagesView() {
 
       return matchesQuery && matchesFilter
     })
-  }, [query, quickFilter])
+  }, [messages, query, quickFilter])
 
-  const selected = visibleMessages.find((message) => message.id === selectedId) ?? visibleMessages[0] ?? messagesMock[0]
-  const unreadCount = messagesMock.filter((message) => message.unread).length
-  const pendingCount = messagesMock.filter((message) => message.status === "Aguardando resposta" || message.status === "Nova").length
-  const signalCount = messagesMock.filter((message) => message.tags.some((tag) => tag.toLowerCase().includes("sinal"))).length
+  const selected = visibleMessages.find((message) => message.id === selectedId) ?? visibleMessages[0] ?? messages[0]
+  const unreadCount = messages.filter((message) => message.unread).length
+  const pendingCount = messages.filter((message) => message.status === "Aguardando resposta" || message.status === "Nova").length
+  const signalCount = messages.filter((message) => message.tags.some((tag) => tag.toLowerCase().includes("sinal"))).length
   const summaryCards = [
     { title: "Novas mensagens", value: String(unreadCount), description: `${pendingCount} aguardando sua ação`, icon: MessageSquare },
-    { title: "Tempo médio", value: "18 min", description: "primeira resposta hoje", icon: Clock },
+    { title: "Tempo médio", value: verticalConfig.id === "barbearia" ? "11 min" : "18 min", description: "primeira resposta hoje", icon: Clock },
     { title: "Sinais citados", value: String(signalCount), description: "prontos para financeiro", icon: DollarSign },
-    { title: "Conversas resolvidas", value: "9", description: "últimas 24 horas", icon: CheckCircle2 },
+    { title: "Conversas resolvidas", value: String(messages.filter((message) => message.status === "Resolvida").length), description: "últimas 24 horas", icon: CheckCircle2 },
   ]
   const quickFilters = ["Todas", "Não lidas", "Prioridade alta", "Sinal", "Sessão"]
+
+  if (!selected) {
+    return (
+      <div className="flex min-h-[420px] flex-col items-center justify-center border px-6 py-12 text-center" style={{ background: T.card, borderColor: T.border }}>
+        <MessageSquare size={28} style={{ color: T.accent }} />
+        <h3 className="mt-4 text-base font-semibold" style={{ color: T.text }}>Inbox vazio neste studio.</h3>
+        <p className="mt-2 text-sm" style={{ color: T.faint }}>As novas conversas aparecerão aqui.</p>
+      </div>
+    )
+  }
 
   const runMessageAction = (action: string, message = selected) => {
     toast(`${action}: ${message.client}`)
@@ -4194,7 +4556,7 @@ function MessagesView() {
           </div>
         </section>
 
-        <section className="min-w-0 border" style={{ background: T.card, borderColor: T.border }}>
+        <section className="flex min-h-0 min-w-0 flex-col border" style={{ background: T.card, borderColor: T.border }}>
           <div className="border-b p-5" style={{ borderColor: T.border }}>
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div className="min-w-0">
@@ -4232,7 +4594,7 @@ function MessagesView() {
             </div>
           </div>
 
-          <div className="grid gap-5 p-5">
+          <div className="flex min-h-0 flex-1 flex-col gap-5 p-5">
             <div>
               <div className="mb-3 flex items-center justify-between gap-3">
                 <h4 className="text-sm font-semibold" style={{ color: T.text }}>Conversa</h4>
@@ -4261,33 +4623,57 @@ function MessagesView() {
               </div>
             </div>
 
-            <div className="border p-4" style={{ background: "color-mix(in srgb, var(--markly-accent) 6%, transparent)", borderColor: "color-mix(in srgb, var(--markly-accent) 24%, transparent)" }}>
-              <div className="mb-2 flex items-center gap-2">
-                <Bell size={15} style={{ color: T.accent }} />
-                <p className="text-sm font-semibold" style={{ color: T.text }}>Resposta sugerida</p>
-              </div>
-              <p className="text-sm leading-6" style={{ color: T.muted }}>{selected.suggestedReply}</p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => runMessageAction("Usar resposta sugerida")}
-                  className="rounded-[12px] px-3 py-2 text-[12px] font-semibold transition duration-200 hover:-translate-y-0.5 hover:bg-[#FFFFFF]"
-                  style={{ background: T.text, color: T.bg }}
+            <AnimatePresence initial={false}>
+              {!dismissedSuggestionIds.has(selected.id) && (
+                <motion.div
+                  key={`suggestion-${selected.id}`}
+                  className="border p-4"
+                  style={{ background: "color-mix(in srgb, var(--markly-accent) 6%, transparent)", borderColor: "color-mix(in srgb, var(--markly-accent) 24%, transparent)" }}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6, scale: 0.985 }}
+                  transition={{ duration: 0.18, ease: "easeOut" }}
                 >
-                  Usar resposta
-                </button>
-                <button
-                  type="button"
-                  onClick={() => runMessageAction("Copiar resposta")}
-                  className="rounded-[12px] border px-3 py-2 text-[12px] font-semibold transition duration-200 hover:-translate-y-0.5"
-                  style={{ borderColor: T.border, color: T.text }}
-                >
-                  Copiar
-                </button>
-              </div>
-            </div>
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <Bell size={15} style={{ color: T.accent }} />
+                      <p className="text-sm font-semibold" style={{ color: T.text }}>Resposta sugerida</p>
+                    </div>
+                    <button
+                      type="button"
+                      aria-label="Fechar resposta sugerida"
+                      title="Fechar resposta sugerida"
+                      onClick={() => setDismissedSuggestionIds((current) => new Set(current).add(selected.id))}
+                      className="flex size-8 shrink-0 items-center justify-center rounded-[10px] transition duration-200 hover:bg-[color-mix(in_srgb,var(--markly-text)_8%,transparent)]"
+                      style={{ color: T.muted }}
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                  <p className="text-sm leading-6" style={{ color: T.muted }}>{selected.suggestedReply}</p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => runMessageAction("Usar resposta sugerida")}
+                      className="rounded-[12px] px-3 py-2 text-[12px] font-semibold transition duration-200 hover:-translate-y-0.5 hover:bg-[#FFFFFF]"
+                      style={{ background: T.text, color: T.bg }}
+                    >
+                      Usar resposta
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => runMessageAction("Copiar resposta")}
+                      className="rounded-[12px] border px-3 py-2 text-[12px] font-semibold transition duration-200 hover:-translate-y-0.5"
+                      style={{ borderColor: T.border, color: T.text }}
+                    >
+                      Copiar
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-            <div className="grid gap-3">
+            <div className="mt-auto grid gap-3">
               <textarea
                 placeholder="Escreva uma resposta mockada..."
                 className="min-h-28 resize-none border bg-transparent px-4 py-3 text-sm outline-none transition placeholder:text-[color-mix(in srgb,var(--markly-text)_42%,transparent)] focus:border-[color-mix(in_srgb,var(--markly-accent)_35%,transparent)]"
@@ -5765,7 +6151,7 @@ function StudioSwitcher({
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="grid h-[52px] w-full grid-cols-[2.75rem_minmax(0,1fr)_1rem] items-center rounded-[16px] border border-[color-mix(in srgb, var(--markly-text) 12%, transparent)] bg-[color-mix(in srgb, var(--markly-text) 3%, transparent)] py-1.5 pr-3 text-left shadow-[inset_0_1px_0_color-mix(in srgb, var(--markly-text) 4.5%, transparent)] transition duration-300 hover:border-[color-mix(in_srgb,var(--markly-accent)_22%,transparent)] hover:bg-[color-mix(in_srgb,var(--markly-text)_4.5%,transparent)] group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:h-11 group-data-[collapsible=icon]:w-11 group-data-[collapsible=icon]:grid-cols-[2.75rem_0fr_0fr] group-data-[collapsible=icon]:rounded-[14px] group-data-[collapsible=icon]:border-[color-mix(in_srgb,var(--markly-text)_12%,transparent)] group-data-[collapsible=icon]:bg-[color-mix(in_srgb,var(--markly-text)_3.5%,transparent)] group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:shadow-[inset_0_1px_0_color-mix(in srgb, var(--markly-text) 5%, transparent)]"
+          className="grid h-[52px] w-full grid-cols-[2.75rem_minmax(0,1fr)_1rem] items-center overflow-hidden rounded-[16px] border border-[color-mix(in srgb, var(--markly-text) 12%, transparent)] bg-[color-mix(in srgb, var(--markly-text) 3%, transparent)] py-1.5 pr-3 text-left shadow-[inset_0_1px_0_color-mix(in srgb, var(--markly-text) 4.5%, transparent)] transition duration-300 hover:border-[color-mix(in_srgb,var(--markly-accent)_22%,transparent)] hover:bg-[color-mix(in_srgb,var(--markly-text)_4.5%,transparent)] group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:h-11 group-data-[collapsible=icon]:w-11 group-data-[collapsible=icon]:grid-cols-[2.75rem_0fr_0fr] group-data-[collapsible=icon]:rounded-[14px] group-data-[collapsible=icon]:border-[color-mix(in_srgb,var(--markly-text)_12%,transparent)] group-data-[collapsible=icon]:bg-[color-mix(in_srgb,var(--markly-text)_3.5%,transparent)] group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:shadow-[inset_0_1px_0_color-mix(in srgb, var(--markly-text) 5%, transparent)]"
         >
           <span className="flex size-8 shrink-0 items-center justify-center justify-self-center overflow-hidden rounded-[9px] group-data-[collapsible=icon]:size-11" style={{ color: T.accent }}>
             {profile.studioLogoDataUrl ? (
@@ -5774,14 +6160,14 @@ function StudioSwitcher({
               <BrandIcon size={19} strokeWidth={1.85} />
             )}
           </span>
-          <span className="min-w-0 overflow-hidden transition-[opacity,transform] duration-200 group-data-[collapsible=icon]:translate-x-2 group-data-[collapsible=icon]:opacity-0">
+          <span className="min-w-0 overflow-hidden transition-[max-width,opacity,transform] duration-200 group-data-[collapsible=icon]:max-w-0 group-data-[collapsible=icon]:translate-x-2 group-data-[collapsible=icon]:opacity-0">
             <span className="block truncate text-[13px] font-semibold leading-5" style={{ color: T.text }}>{studioName}</span>
             <span className="inline-flex items-center gap-1.5 truncate text-[10.5px] leading-4" style={{ color: T.faint }}>
               <span className="size-1.5 shrink-0 rounded-full" style={{ background: T.accent }} />
               Studio ativo
             </span>
           </span>
-          <ChevronDown size={15} className="shrink-0 transition-[opacity,transform] duration-200 group-data-[collapsible=icon]:translate-x-2 group-data-[collapsible=icon]:opacity-0" style={{ color: T.faint }} />
+          <ChevronDown size={15} className="shrink-0 overflow-hidden transition-[width,opacity,transform] duration-200 group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:translate-x-2 group-data-[collapsible=icon]:opacity-0" style={{ color: T.faint }} />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
@@ -6524,6 +6910,8 @@ function AnamnesisView({
 function SectionContent({
   section,
   studioProfile,
+  overview,
+  messages,
   setupCompleted,
   onManageStudio,
   financeTransactions,
@@ -6553,6 +6941,8 @@ function SectionContent({
 }: {
   section: SectionId
   studioProfile: StudioProfile
+  overview: ReturnType<typeof buildStudioOverview>
+  messages: MessageThread[]
   setupCompleted: boolean
   onManageStudio: () => void
   financeTransactions: FinanceTransaction[]
@@ -6586,7 +6976,7 @@ function SectionContent({
   if (section === "portfolio") return <PortfolioView items={portfolioItems} filters={portfolioFilters} onOpenItem={onOpenPortfolioItem} onNewItem={onNewPortfolioItem} />
   if (section === "finance") return <FinanceView transactions={financeTransactions} onNewLaunch={onNewFinanceLaunch} onMarkPaid={onMarkFinancePaid} />
   if (section === "anamnesis") return <AnamnesisView clients={clients} onAction={onAnamnesisAction} onOpenClient={onOpenClient} />
-  if (section === "messages") return <MessagesView />
+  if (section === "messages") return <MessagesView messages={messages} />
   if (section === "settings") {
     return (
       <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
@@ -6605,20 +6995,20 @@ function SectionContent({
   return (
     <>
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        {overviewMock.stats.map((item, index) => <StatCard key={item.label} item={item} index={index} />)}
+        {overview.stats.map((item, index) => <StatCard key={item.label} item={item} index={index} />)}
       </div>
 
       <div className="mt-5">
-        <PipelineSummary />
+        <PipelineSummary items={overview.pipeline} />
       </div>
 
       <div className="mt-5 grid gap-5 xl:grid-cols-[1.25fr_0.75fr]">
-        <AttentionList />
-        <TodaySchedule />
+        <AttentionList items={overview.attentionItems} />
+        <TodaySchedule items={overview.todaySchedule} />
       </div>
 
       <div className="mt-5 grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
-        <StudioPulse />
+        <StudioPulse items={overview.studioPulse} />
         <StudioSummary profile={studioProfile} setupCompleted={setupCompleted} onManage={onManageStudio} />
       </div>
     </>
@@ -6779,7 +7169,15 @@ function FinanceLaunchModal({
   )
 }
 
-function SearchModal({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+function SearchModal({
+  open,
+  onOpenChange,
+  items,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  items: ReturnType<typeof buildStudioOverview>["searchItems"]
+}) {
   const [query, setQuery] = useState("")
   const [resolvedQuery, setResolvedQuery] = useState("")
   const [isSearching, setIsSearching] = useState(false)
@@ -6805,11 +7203,11 @@ function SearchModal({ open, onOpenChange }: { open: boolean; onOpenChange: (ope
 
   const results = useMemo(() => {
     const normalized = resolvedQuery.trim().toLowerCase()
-    if (!normalized) return overviewMock.searchItems
-    return overviewMock.searchItems.filter((item) =>
+    if (!normalized) return items
+    return items.filter((item) =>
       [item.title, item.type, item.description].some((value) => value.toLowerCase().includes(normalized)),
     )
-  }, [resolvedQuery])
+  }, [items, resolvedQuery])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -7165,20 +7563,43 @@ export default function DevDashboard() {
   const [searchOpen, setSearchOpen] = useState(false)
   const [studioManageOpen, setStudioManageOpen] = useState(false)
   const [financeLaunchOpen, setFinanceLaunchOpen] = useState(false)
-  const [financeTransactions, setFinanceTransactions] = useState<FinanceTransaction[]>(financeMock.transactions)
+  const {
+    studios,
+    activeStudioId,
+    studioProfile,
+    studioSetupCompleted,
+    createStudio,
+    updateActiveStudioProfile,
+    switchStudio,
+  } = useStudioManager()
+  const studioDataCacheRef = useRef<Record<string, StudioOperationalData>>(readStudioOperationalDataCache())
+  const initialStudioDataRef = useRef<StudioOperationalData | null>(null)
+  if (!initialStudioDataRef.current) {
+    const cachedInitialData = studioDataCacheRef.current[activeStudioId]
+    initialStudioDataRef.current = operationalDataMatchesProfile(cachedInitialData, studioProfile)
+      ? cachedInitialData!
+      : buildStudioOperationalData(studioProfile, activeStudioId || "studio-inicial")
+    if (activeStudioId) {
+      studioDataCacheRef.current[activeStudioId] = initialStudioDataRef.current
+    }
+  }
+  const initialStudioData = initialStudioDataRef.current
+
+  const [financeTransactions, setFinanceTransactions] = useState<FinanceTransaction[]>(initialStudioData.financeTransactions)
   const [dateFilter, setDateFilter] = useState<DateFilterRange>({ start: "", end: "" })
-  const [budgetColumns, setBudgetColumns] = useState<BudgetColumn[]>(budgetMock.columns)
+  const [budgetColumns, setBudgetColumns] = useState<BudgetColumn[]>(initialStudioData.budgetColumns)
   const [budgetFilters, setBudgetFilters] = useState<BudgetFilterState>(initialBudgetFilters)
   const [budgetSearchOpen, setBudgetSearchOpen] = useState(false)
   const [budgetCreateOpen, setBudgetCreateOpen] = useState(false)
   const [selectedBudget, setSelectedBudget] = useState<BudgetItem | null>(null)
-  const [clientsData, setClientsData] = useState<ClientItem[]>(clientsMock.clients)
+  const [clientsData, setClientsData] = useState<ClientItem[]>(initialStudioData.clients)
   const [clientFilters, setClientFilters] = useState<ClientFilterState>(initialClientFilters)
   const [clientSearchOpen, setClientSearchOpen] = useState(false)
   const [clientCreateOpen, setClientCreateOpen] = useState(false)
   const [selectedClient, setSelectedClient] = useState<ClientItem | null>(null)
-  const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>(portfolioMock)
-  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>(() => buildCalendarMockEvents())
+  const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>(initialStudioData.portfolioItems)
+  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>(initialStudioData.calendarEvents)
+  const [messagesData, setMessagesData] = useState<MessageThread[]>(initialStudioData.messages)
   const [portfolioFilters, setPortfolioFilters] = useState<PortfolioFilterState>(initialPortfolioFilters)
   const [portfolioSearchOpen, setPortfolioSearchOpen] = useState(false)
   const [portfolioCreateOpen, setPortfolioCreateOpen] = useState(false)
@@ -7189,25 +7610,7 @@ export default function DevDashboard() {
   const [fontSize, setFontSize] = useState<FontSizeMode>(() => readFontSizeMode())
   const [userProfile, setUserProfile] = useState<UserProfile>(() => readUserProfile())
   const [railHover, setRailHover] = useState(false)
-  const {
-    studios,
-    activeStudioId,
-    studioProfile,
-    studioSetupCompleted,
-    createStudio,
-    updateActiveStudioProfile,
-    switchStudio,
-  } = useStudioManager()
   const [addStudioModalOpen, setAddStudioModalOpen] = useState(false)
-  const studioDataCacheRef = useRef<Record<string, StudioOperationalData>>({})
-
-  const seedFreshStudioData = (): StudioOperationalData => ({
-    budgetColumns: budgetMock.columns,
-    clients: clientsMock.clients,
-    portfolioItems: portfolioMock,
-    financeTransactions: financeMock.transactions,
-    calendarEvents: buildCalendarMockEvents(),
-  })
 
   const applyStudioData = (data: StudioOperationalData) => {
     setBudgetColumns(data.budgetColumns)
@@ -7215,58 +7618,89 @@ export default function DevDashboard() {
     setPortfolioItems(data.portfolioItems)
     setFinanceTransactions(data.financeTransactions)
     setCalendarEvents(data.calendarEvents)
+    setMessagesData(data.messages)
   }
+
+  const currentStudioData = (): StudioOperationalData => ({
+    budgetColumns,
+    clients: clientsData,
+    portfolioItems,
+    financeTransactions,
+    calendarEvents,
+    messages: messagesData,
+  })
 
   const resetSectionSelection = () => {
     setSelectedBudget(null)
     setSelectedClient(null)
     setSelectedPortfolioItem(null)
+    setBudgetFilters(initialBudgetFilters)
+    setClientFilters(initialClientFilters)
+    setPortfolioFilters(initialPortfolioFilters)
+    setDateFilter({ start: "", end: "" })
     setActiveSection("overview")
   }
 
   const handleSwitchStudio = (id: string) => {
     if (id === activeStudioId) return
     if (activeStudioId) {
-      studioDataCacheRef.current[activeStudioId] = {
-        budgetColumns,
-        clients: clientsData,
-        portfolioItems,
-        financeTransactions,
-        calendarEvents,
-      }
+      studioDataCacheRef.current[activeStudioId] = currentStudioData()
     }
-    applyStudioData(studioDataCacheRef.current[id] ?? seedFreshStudioData())
+    const target = studios.find((item) => item.id === id)
+    const targetProfile = target?.profile ?? defaultStudioProfile
+    const cachedTargetData = studioDataCacheRef.current[id]
+    const targetData = operationalDataMatchesProfile(cachedTargetData, targetProfile)
+      ? cachedTargetData!
+      : buildStudioOperationalData(targetProfile, id)
+    studioDataCacheRef.current[id] = targetData
+    applyStudioData(targetData)
     switchStudio(id)
     resetSectionSelection()
-    const target = studios.find((item) => item.id === id)
+    saveStudioOperationalDataCache(studioDataCacheRef.current)
     toast(`Studio "${studioValue(target?.profile.studioName ?? "", "sem nome")}" ativado.`)
   }
 
   const handleCreateStudio = (profile: StudioProfile) => {
     if (activeStudioId) {
-      studioDataCacheRef.current[activeStudioId] = {
-        budgetColumns,
-        clients: clientsData,
-        portfolioItems,
-        financeTransactions,
-        calendarEvents,
-      }
+      studioDataCacheRef.current[activeStudioId] = currentStudioData()
     }
     const newId = createStudio(profile)
-    const freshData = seedFreshStudioData()
+    const freshData = buildStudioOperationalData(profile, newId)
     studioDataCacheRef.current[newId] = freshData
     applyStudioData(freshData)
     resetSectionSelection()
     setAddStudioModalOpen(false)
+    saveStudioOperationalDataCache(studioDataCacheRef.current)
     toast(`Studio "${studioValue(profile.studioName, "sem nome")}" criado e ativado.`)
   }
   const verticalConfig = useMemo(() => getVerticalConfig(studioProfile.vertical), [studioProfile.vertical])
+  const studioOverview = useMemo(
+    () => buildStudioOverview({
+      budgetColumns,
+      clients: clientsData,
+      portfolioItems,
+      financeTransactions,
+      calendarEvents,
+      messages: messagesData,
+    }, studioProfile),
+    [budgetColumns, clientsData, portfolioItems, financeTransactions, calendarEvents, messagesData, studioProfile],
+  )
   const visibleSections = useMemo(
     () =>
       sections
         .filter((item) => item.id !== "anamnesis" || verticalConfig.showAnamnesis)
-        .map((item) => (item.id === "anamnesis" ? { ...item, label: verticalConfig.anamnesisSidebarLabel } : item)),
-    [verticalConfig],
+        .map((item) => {
+          const label = item.id === "anamnesis" ? verticalConfig.anamnesisSidebarLabel : item.label
+          const badge = item.id === "budgets"
+            ? String(studioOverview.summary.unansweredBudgets)
+            : item.id === "messages"
+              ? String(messagesData.filter((message) => message.unread).length)
+              : item.id === "calendar" && studioOverview.summary.todaySessions > 0
+                ? "Hoje"
+                : undefined
+          return { ...item, label, badge }
+        }),
+    [messagesData, studioOverview, verticalConfig],
   )
 
   useEffect(() => {
@@ -7274,6 +7708,27 @@ export default function DevDashboard() {
       setActiveSection("overview")
     }
   }, [activeSection, verticalConfig.showAnamnesis])
+
+  useEffect(() => {
+    if (!activeStudioId) return
+    studioDataCacheRef.current[activeStudioId] = {
+      budgetColumns,
+      clients: clientsData,
+      portfolioItems,
+      financeTransactions,
+      calendarEvents,
+      messages: messagesData,
+    }
+    saveStudioOperationalDataCache(studioDataCacheRef.current)
+  }, [
+    activeStudioId,
+    budgetColumns,
+    clientsData,
+    portfolioItems,
+    financeTransactions,
+    calendarEvents,
+    messagesData,
+  ])
 
   const sidebarOpen = sidebarMode === "expanded" || (sidebarMode === "hover" && railHover)
 
@@ -7457,15 +7912,15 @@ export default function DevDashboard() {
   const headerSubtitle = isOverview
     ? `${activeStudioName} · ${todayDateLabel}`
     : isBudgets
-      ? `${activeStudioName} · acompanhe seus pedidos do primeiro contato até a sessão fechada.`
+      ? `${activeStudioName} · acompanhe seus pedidos do primeiro contato até ${verticalConfig.id === "barbearia" ? "o atendimento concluído" : "a sessão fechada"}.`
     : isClients
-      ? "Organize contatos, histórico, orçamentos e sessões do seu studio."
+      ? `Organize contatos, histórico, orçamentos e ${verticalConfig.id === "barbearia" ? "atendimentos" : "sessões"} do seu studio.`
     : isPortfolio
       ? "Salve trabalhos profissionais, organize fotos finais e escolha o que entra na vitrine."
     : studioSetupCompleted
       ? `Horário: ${studioHours(studioProfile)} · Canal principal: ${activeChannel} · Equipe: ${studioValue(studioProfile.teamSize)}`
       : "Tela mockada para validar a experiência principal do SaaS."
-  const overviewSummary = `${overviewMock.summary.todaySessions} sessões hoje · ${overviewMock.summary.unansweredBudgets} orçamentos abertos · ${formatCurrency(overviewMock.summary.pendingDepositsAmount)} em sinais pendentes`
+  const overviewSummary = `${studioOverview.summary.todaySessions} atendimento(s) hoje · ${studioOverview.summary.unansweredBudgets} conversa(s) sem resposta · ${formatCurrency(studioOverview.summary.pendingDepositsAmount)} em pagamentos pendentes`
 
   return (
     <VerticalConfigContext.Provider value={verticalConfig}>
@@ -7751,6 +8206,8 @@ export default function DevDashboard() {
               <SectionContent
                 section={activeSection}
                 studioProfile={studioProfile}
+                overview={studioOverview}
+                messages={messagesData}
                 setupCompleted={studioSetupCompleted}
                 onManageStudio={() => setStudioManageOpen(true)}
                 financeTransactions={financeTransactions}
@@ -7804,7 +8261,7 @@ export default function DevDashboard() {
         onSave={(transaction) => setFinanceTransactions((current) => [transaction, ...current])}
       />
 
-      <SearchModal open={searchOpen} onOpenChange={setSearchOpen} />
+      <SearchModal open={searchOpen} onOpenChange={setSearchOpen} items={studioOverview.searchItems} />
       <BudgetSearchModal
         open={budgetSearchOpen}
         budgets={budgetItems}
